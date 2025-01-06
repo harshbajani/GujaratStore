@@ -1,0 +1,327 @@
+"use client";
+
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import Link from "next/link";
+import OtpModal from "@/components/OTPModal";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { resendOTP, signUp, verifyOTP } from "@/lib/actions/auth.actions";
+import { authFormSchema, FormType } from "@/lib/validations";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+} from "./ui/card";
+
+const AuthForm = ({ type }: { type: FormType }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const router = useRouter();
+
+  const formSchema = authFormSchema(type);
+  type FormValues = z.infer<typeof formSchema>;
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues:
+      type === "sign-up"
+        ? {
+            name: "",
+            email: "",
+            phone: "",
+            password: "",
+            confirmPassword: "",
+          }
+        : {
+            email: "",
+            password: "",
+          },
+  });
+
+  const onSubmit = async (values: FormValues) => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      if (type === "sign-up") {
+        const result = await signUp({
+          name: values.name!,
+          email: values.email,
+          phone: values.phone!,
+          password: values.password,
+        });
+
+        if (result.success) {
+          setUserEmail(values.email);
+
+          setShowOtpModal(true);
+        } else {
+          setErrorMessage(result.message);
+        }
+      } else {
+        const result = await signIn("credentials", {
+          email: values.email,
+          password: values.password,
+          redirect: false,
+        });
+
+        if (result?.error) {
+          setErrorMessage(result.error);
+        } else if (result?.ok) {
+          router.push("/");
+          router.refresh();
+        }
+      }
+    } catch (error) {
+      console.error("Authentication error:", error);
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex w-full flex-col">
+      {/* Header section with responsive height and padding */}
+      <div className="relative min-h-[180px] w-full sm:min-h-[220px] md:min-h-[240px]">
+        <div className="absolute inset-0 bg-[url('/bg/bg1.png')] bg-cover bg-center sm:bg-contain md:bg-[top_00%_right_200px]" />
+        <div className="absolute inset-0 bg-brand-200/30" />
+
+        <div className="relative z-10 flex h-full flex-col items-center justify-center p-4 text-center sm:p-6 md:p-8 mt-14">
+          <h1 className="h1 mb-2 text-2xl sm:text-3xl md:text-4xl">
+            નમસ્તે જી
+          </h1>
+          <p className="subtitle-1 text-sm sm:text-base md:text-lg">
+            Let&apos;s Discover The World Of Gujarat Art & Crafts
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-1 w-full bg-[url('/bg/bg2.png')] bg-cover bg-center bg-no-repeat md:bg-[top_50%_right_200px]">
+        <div className="w-full px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-16 lg:py-12">
+          <Card className="mx-auto w-full max-w-lg shadow-md">
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="auth-form"
+              >
+                <CardHeader className="space-y-2 px-4 pt-6 sm:px-6 sm:pt-8">
+                  <h1 className="form-title text-xl sm:text-2xl md:text-3xl">
+                    {type === "sign-in" ? "Sign In" : "Sign Up"}
+                  </h1>
+                  <CardDescription className="text-center text-sm sm:text-base md:text-left">
+                    {type === "sign-up"
+                      ? "Create an account to get started"
+                      : "Sign in to your account"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 px-4 sm:px-6">
+                  {type === "sign-up" && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-sm sm:text-base">
+                              Name
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter your name"
+                                {...field}
+                                className="h-10 sm:h-11"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-sm sm:text-base">
+                              Email
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter your email"
+                                {...field}
+                                className="h-10 sm:h-11"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-sm sm:text-base">
+                              Phone
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter your phone number"
+                                {...field}
+                                className="h-10 sm:h-11"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-sm sm:text-base">
+                              Password
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                placeholder="Enter your password"
+                                {...field}
+                                className="h-10 sm:h-11"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-sm sm:text-base">
+                              Confirm Password
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                placeholder="Confirm your password"
+                                {...field}
+                                className="h-10 sm:h-11"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
+                  {type === "sign-in" && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-sm sm:text-base">
+                              Email
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter your email"
+                                {...field}
+                                className="h-10 sm:h-11"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-sm sm:text-base">
+                              Password
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                placeholder="Enter your password"
+                                {...field}
+                                className="h-10 sm:h-11"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
+                </CardContent>
+                <CardFooter className="flex flex-col space-y-4 px-4 pb-6 sm:px-6 sm:pb-8">
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="form-submit-button w-full text-sm sm:text-base"
+                  >
+                    {type === "sign-in" ? "Sign In" : "Sign Up"}
+                    {isLoading && <Loader2 className="ml-2 animate-spin" />}
+                  </Button>
+
+                  {errorMessage && (
+                    <p className="error-message">*{errorMessage}</p>
+                  )}
+
+                  <div className="flex-center space-x-1 text-sm sm:text-base">
+                    <p className="text-light-100">
+                      {type === "sign-in"
+                        ? "Don't have an account?"
+                        : "Already have an account?"}
+                    </p>
+                    <Link
+                      href={type === "sign-in" ? "/sign-up" : "/sign-in"}
+                      className="font-medium text-brand hover:underline"
+                    >
+                      {type === "sign-in" ? "Sign Up" : "Sign In"}
+                    </Link>
+                  </div>
+                </CardFooter>
+              </form>
+            </Form>
+
+            {showOtpModal && (
+              <OtpModal
+                email={userEmail}
+                onVerified={verifyOTP}
+                onResendOTP={resendOTP}
+              />
+            )}
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AuthForm;
