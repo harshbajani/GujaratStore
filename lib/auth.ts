@@ -30,7 +30,11 @@ export const sendEmailOTP = async (email: string, otp: string) => {
                 <!-- Header with Logo -->
                 <tr>
                   <td style="text-align: center; padding: 20px 0; background-color: #FA7275;">
-                    <h1 style="text-align: center; font-size: 24px; color: white;">The Gujarat Store </h1>
+                    <img
+                  src="https://gujarat-store.vercel.app/_next/image?url=%2Flogo.png&w=128&q=75"
+                  alt="The Gujarat Store Logo"
+                  style="max-width: 150px; height: auto; display: block; margin: 0 auto;"
+                />
                   </td>
                 </tr>
                 
