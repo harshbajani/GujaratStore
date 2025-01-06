@@ -17,6 +17,11 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Gujarat Store",
   description: "Let's Discover The World Of Gujarat Art & Crafts",
+  icons: [
+    {
+      url: "https://gujarat-store.vercel.app/_next/image?url=%2Flogo.png&w=128&q=75",
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -26,6 +31,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta property="og:title" content="Gujarat Store" />
+        <meta
+          property="og:description"
+          content="Let's Discover The World Of Gujarat Art & Crafts"
+        />
+        <meta
+          property="og:image"
+          content="https://gujarat-store.vercel.app/_next/image?url=%2Flogo.png&w=128&q=75"
+        />
+        <meta property="og:url" content="https://gujarat-store.vercel.app" />
+        <meta property="og:type" content="website" />
+      </head>
       <body
         className={`${poppins.variable} ${playfair.variable} font-poppins antialiased`}
       >
