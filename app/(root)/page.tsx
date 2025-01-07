@@ -5,6 +5,7 @@ import NewCollection from "@/components/NewCollection";
 import OrganicAndFlavours from "@/components/OrganicAndFlavours";
 import Testimonials from "@/components/Testimonials";
 import { useAuth } from "@/hooks/useAuth";
+import Blogs from "./blog/page";
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
@@ -16,6 +17,7 @@ export default function Home() {
         <NewCollection />
         <OrganicAndFlavours />
         <Testimonials />
+        <Blogs />
       </div>
     );
   }

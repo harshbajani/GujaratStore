@@ -287,3 +287,72 @@ export const testimonials = [
     productType: "Home & Wellness",
   },
 ];
+
+export const blogList = [
+  {
+    id: 1,
+    image: "/blog/blog-01.jpg",
+    user: "Admin",
+    heading: "સંરક્ષણમંત્રી રાજનાથસિંહે ગઈકાલે નવીદિ...",
+    date: "13/2/2024",
+    description:
+      "The mobile app development process and an entrepreneur's journey to starting a business are surprisingly very similar. Just like there is no particular blueprint for starting a business, there is no rigid mobile application development strategy that can be followed.",
+  },
+  {
+    id: 2,
+    image: "/blog/blog-02.jpg",
+    user: "Admin",
+    heading: "Summer Fun: Rediscovering t...",
+    date: "13/2/2024",
+    description:
+      "The mobile app development process and an entrepreneur's journey to starting a business are surprisingly very similar. Just like there is no particular blueprint for starting a business, there is no rigid mobile application development strategy that can be followed.",
+  },
+  {
+    id: 3,
+    image: "/blog/blog-03.jpg",
+    user: "Admin",
+    heading: "Kalighat Painting - The Folk Art...",
+    date: "13/2/2024",
+    description:
+      "The mobile app development process and an entrepreneur's journey to starting a business are surprisingly very similar. Just like there is no particular blueprint for starting a business, there is no rigid mobile application development strategy that can be followed.",
+  },
+  {
+    id: 4,
+    image: "/blog/blog-04.jpg",
+    user: "Admin",
+    heading: "The Journey of Indian Spices",
+    date: "13/2/2024",
+    description:
+      "The mobile app development process and an entrepreneur's journey to starting a business are surprisingly very similar. Just like there is no particular blueprint for starting a business, there is no rigid mobile application development strategy that can be followed.",
+  },
+  {
+    id: 5,
+    image: "/blog/blog-05.jpg",
+    user: "Admin",
+    heading: "રવા ઢોકળા ~ બાફેલા ગુજરાતી નાસ્તા",
+    date: "13/2/2024",
+    description:
+      "The mobile app development process and an entrepreneur's journey to starting a business are surprisingly very similar. Just like there is no particular blueprint for starting a business, there is no rigid mobile application development strategy that can be followed.",
+  },
+];
+
+export const features = [
+  {
+    heading: "એકજ ભાવની દુકાન",
+    title: "FIXED PRICE SHOP",
+    subtitle:
+      "Fair and Equal across countries to support art and crafts of India",
+  },
+  {
+    heading: "ખરી પરીક્ષણ",
+    title: "100% INVENTORY MODEL",
+    subtitle:
+      "Our innovative model makes both customers and artisans life easier. All listed products are available and ready to ship",
+  },
+  {
+    heading: "કારીગર પરિવાર",
+    title: "350+ ARTISAN'S",
+    subtitle:
+      "Largest Artisan network nationwide reaching our customers home through the Gujarat Store",
+  },
+];
