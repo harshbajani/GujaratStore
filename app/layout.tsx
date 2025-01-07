@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     url: "https://gujarat-store.vercel.app",
     images: [
       {
-        url: "https://gujarat-store.vercel.app/logo.png", // Path to your logo
+        url: "https://gujarat-store.vercel.app/thumbnail.png", // Path to your logo
         width: 1200, // Recommended dimensions for Open Graph
         height: 630,
         alt: "Gujarat Store Logo",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Gujarat Store",
     description: "Let's Discover The World Of Gujarat Art & Crafts",
-    images: ["https://gujarat-store.vercel.app/logo.png"], // Same path as above
+    images: ["https://gujarat-store.vercel.app/thumbnail.png"], // Same path as above
   },
 };
 
