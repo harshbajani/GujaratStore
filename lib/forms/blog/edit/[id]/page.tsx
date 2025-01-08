@@ -22,8 +22,8 @@ import { getBlogById } from "@/lib/actions/blog.actions";
 
 import Image from "next/image";
 import { convertToBase64 } from "@/lib/utils";
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-import "react-quill/dist/quill.snow.css"; // Import Quill CSS
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+import "quill/dist/quill.snow.css";
 import dynamic from "next/dynamic";
 import Loader from "@/components/Loader";
 
