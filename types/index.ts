@@ -1,4 +1,5 @@
-import { Types } from "mongoose";
+import { features } from "@/constants";
+import { Document, Types } from "mongoose";
 
 export interface IOTPDocument {
   email: string;
@@ -63,4 +64,47 @@ export interface CollectionItemProps {
   item: ImageItem | ContentItem;
   isImageType: boolean;
   index: number;
+}
+
+export interface Blog {
+  id: string;
+  image: string;
+  heading: string;
+  user: string;
+  date: string;
+  description: string;
+  category: string;
+}
+
+export interface FeaturesAndBlogsProps {
+  blogs: Blog[];
+  features: typeof features;
+}
+
+export interface IBlog extends Document {
+  _id: Types.ObjectId;
+  imageId: string;
+  user: string;
+  date: string;
+  heading: string;
+  description: string;
+  category: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TransformedBlog {
+  id: string;
+  image: string;
+  user: string;
+  date: string;
+  heading: string;
+  description: string;
+  category: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
 }
