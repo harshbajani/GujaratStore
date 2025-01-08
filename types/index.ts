@@ -1,3 +1,4 @@
+import { features } from "@/constants";
 import { Types } from "mongoose";
 
 export interface IOTPDocument {
@@ -63,4 +64,47 @@ export interface CollectionItemProps {
   item: ImageItem | ContentItem;
   isImageType: boolean;
   index: number;
+}
+
+export interface Blog {
+  id: string;
+  image: string;
+  heading: string;
+  user: string;
+  date: string;
+  description: string;
+  category: string;
+}
+
+export interface FeaturesAndBlogsProps {
+  blogs: Blog[];
+  features: typeof features;
+}
+
+export interface TransformedBlog {
+  id: string;
+  image: string;
+  heading: string;
+  user: string;
+  date: string;
+  description: string;
+  category: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+}
+
+export interface MongoDBBlog {
+  _id: string;
+  imageId: string;
+  heading: string;
+  user: string;
+  date: string;
+  description: string;
+  category: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

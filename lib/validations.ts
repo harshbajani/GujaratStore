@@ -30,3 +30,18 @@ export const authFormSchema = (formType: FormType) => {
       }
     );
 };
+
+export const blogSchema = z.object({
+  _id: z.string().optional(),
+  imageId: z.string().min(1, "Image is required."),
+  user: z.string().min(2, "User name is too short."),
+  date: z.string().min(1, "Please enter a valid date."),
+  heading: z.string().min(1, "Please enter a heading."),
+  description: z
+    .string()
+    .min(10, "Description should be at least 10 characters."),
+  category: z.string().min(2, "Please enter a proper category"),
+  metaTitle: z.string().min(1, "Meta title is required."),
+  metaDescription: z.string().min(1, "Meta description is required."),
+  metaKeywords: z.string().optional(),
+});

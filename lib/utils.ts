@@ -7,6 +7,19 @@ export function cn(...inputs: ClassValue[]) {
 export const parseStringify = (value: unknown) =>
   JSON.parse(JSON.stringify(value));
 
+export function convertToBase64(file: File): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const fileReader = new FileReader();
+    fileReader.readAsDataURL(file);
+    fileReader.onload = () => {
+      resolve(fileReader.result as string);
+    };
+    fileReader.onerror = (error: ProgressEvent<FileReader>) => {
+      reject(error);
+    };
+  });
+}
+
 export const formatDateTime = (isoString: string | null | undefined) => {
   if (!isoString) return "—";
 
