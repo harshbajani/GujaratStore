@@ -20,7 +20,7 @@ import { createBlog } from "@/lib/actions/blog.actions";
 
 //* Dynamically import React Quill (it won't run server-side)
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
-import "react-quill/dist/quill.snow.css"; // Import Quill CSS
+import "quill/dist/quill.snow.css";
 import { Textarea } from "@/components/ui/textarea";
 
 type BlogFormData = z.infer<typeof blogSchema>;

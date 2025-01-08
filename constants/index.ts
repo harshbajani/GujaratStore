@@ -356,3 +356,105 @@ export const features = [
       "Largest Artisan network nationwide reaching our customers home through the Gujarat Store",
   },
 ];
+
+export const clothing = [
+  {
+    src: "/clothing/patola.jpg",
+    label: "Patola",
+  },
+  {
+    src: "/clothing/bandhani.png",
+    label: "Bandhani",
+  },
+  {
+    src: "/clothing/kurti.png",
+    label: "Kurti",
+  },
+  {
+    src: "/clothing/dressMaterials.jpg",
+    label: "Dress Materials",
+  },
+  {
+    src: "/clothing/fabrics.png",
+    label: "Fabrics",
+  },
+  {
+    src: "/clothing/gajiSilk.jpg",
+    label: "Gaji Silk",
+  },
+  {
+    src: "/clothing/dupattas.jpg",
+    label: "Dupattas",
+  },
+  {
+    src: "/clothing/stoles.png",
+    label: "Stoles",
+  },
+  {
+    src: "/clothing/saree.png",
+    label: "Sarees",
+  },
+  {
+    src: "/clothing/cushionCovers.jpg",
+    label: "Cushion Covers",
+  },
+  {
+    src: "/clothing/bedCovers.jpg",
+    label: "Bed Covers",
+  },
+  {
+    src: "/clothing/curtains.jpg",
+    label: "Curtains",
+  },
+];
+
+export const artisan = [
+  {
+    src: "/artisan/mats.jpg",
+    label: "Mats",
+  },
+  {
+    src: "/artisan/candles.png",
+    label: "Candles",
+  },
+  {
+    src: "/artisan/decor.jpg",
+    label: "Home Decor",
+  },
+  {
+    src: "/artisan/towels.jpg",
+    label: "Dress Towels",
+  },
+  {
+    src: "/artisan/bags.jpg",
+    label: "Bags",
+  },
+  {
+    src: "/artisan/organic.png",
+    label: "Organic Soaps",
+  },
+  {
+    src: "/artisan/notebooks.jpg",
+    label: "Notebooks",
+  },
+  {
+    src: "/artisan/belts.jpg",
+    label: "Belts",
+  },
+  {
+    src: "/artisan/footwear.png",
+    label: "Footwear",
+  },
+  {
+    src: "/artisan/toys.png",
+    label: "Toys",
+  },
+  {
+    src: "/artisan/diaries.jpg",
+    label: "Diaries",
+  },
+  {
+    src: "/artisan/pottery.png",
+    label: "Pottery",
+  },
+];
