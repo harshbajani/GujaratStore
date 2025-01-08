@@ -1,8 +1,8 @@
 import React from "react";
-import ClientBlogIdPage from "./client";
+import ClientBlogPage from "./client";
 
-const BlogIdPage = () => {
-  return <ClientBlogIdPage />;
+const BlogPage = () => {
+  return <ClientBlogPage />;
 };
 
-export default BlogIdPage;
+export default BlogPage;

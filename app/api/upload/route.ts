@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongodb";
 import { Readable } from "stream";
+import { ObjectId } from "mongodb";
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Promise to handle stream completion
-    const uploadPromise = new Promise((resolve, reject) => {
+    const uploadPromise = new Promise<ObjectId>((resolve, reject) => {
       uploadStream.on("finish", () => {
         resolve(uploadStream.id);
       });

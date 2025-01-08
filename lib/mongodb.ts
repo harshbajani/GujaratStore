@@ -17,9 +17,13 @@ export const connectToDB = async () => {
     if (!conn.connection.db) {
       throw new Error("Database connection failed");
     }
-    bucket = new GridFSBucket(conn.connection.db, {
-      bucketName: "uploads",
-    });
+
+    // Only create a new bucket if it doesn't exist
+    if (!bucket) {
+      bucket = new GridFSBucket(conn.connection.db, {
+        bucketName: "uploads",
+      });
+    }
 
     console.log("MongoDB connected successfully");
     return { bucket };

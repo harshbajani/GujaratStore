@@ -1,8 +1,8 @@
 import React from "react";
-import FeaturesAndBlogs from "./client";
+import ClientFeaturesAndBlogs from "./client";
 
-const BlogPage = () => {
-  return <FeaturesAndBlogs />;
+const FeaturesAndBlogs = () => {
+  return <ClientFeaturesAndBlogs />;
 };
 
-export default BlogPage;
+export default FeaturesAndBlogs;

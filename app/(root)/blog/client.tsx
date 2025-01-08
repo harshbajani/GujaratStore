@@ -4,10 +4,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
-import { getAllBlogs } from "@/lib/actions/blog.actions";
+import { getAllBlogs } from "@/lib/actions/blog.actions"; // Make sure getAllBlogs includes image handling logic
 import { features } from "@/constants";
 
-const FeaturesAndBlogs = () => {
+const ClientFeaturesAndBlogs = () => {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [blogRef, blogInView] = useInView({
     triggerOnce: true,
@@ -45,7 +45,7 @@ const FeaturesAndBlogs = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const data = await getAllBlogs();
+        const data = await getAllBlogs(); // Ensure this fetches images as base64
         console.log(data);
         setBlogs(data);
       } catch (err) {
@@ -89,8 +89,8 @@ const FeaturesAndBlogs = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {/* Left Column */}
             <motion.div variants={itemVariants} className="flex flex-col gap-6">
-              <BlogCard blog={blogs[0]} />
-              <BlogCard blog={blogs[1]} />
+              {blogs[0] && <BlogCard blog={blogs[0]} />}
+              {blogs[1] && <BlogCard blog={blogs[1]} />}
             </motion.div>
 
             {/* Middle Column - Larger Blog */}
@@ -100,8 +100,8 @@ const FeaturesAndBlogs = () => {
 
             {/* Right Column */}
             <motion.div variants={itemVariants} className="flex flex-col gap-6">
-              <BlogCard blog={blogs[3]} />
-              <BlogCard blog={blogs[4]} />
+              {blogs[3] && <BlogCard blog={blogs[3]} />}
+              {blogs[4] && <BlogCard blog={blogs[4]} />}
             </motion.div>
           </div>
         </div>
@@ -158,7 +158,7 @@ const FeaturesAndBlogs = () => {
 
 interface Blog {
   id: string;
-  image: string;
+  image: string; // Base64 string or image path
   heading: string;
   user: string;
   date: string;
@@ -185,7 +185,7 @@ const BlogCard = ({
         className={`relative rounded-lg overflow-hidden ${cardHeight} cursor-pointer`}
       >
         <Image
-          src={blog.image}
+          src={`data:image/jpeg;base64,${blog.image}`} // Render the base64 image here
           alt={blog.heading}
           width={500}
           height={500}
@@ -217,4 +217,4 @@ const BlogCard = ({
   );
 };
 
-export default FeaturesAndBlogs;
+export default ClientFeaturesAndBlogs;

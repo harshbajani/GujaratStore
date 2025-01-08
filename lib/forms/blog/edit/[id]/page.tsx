@@ -18,7 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { getBlogById, updateBlog } from "@/lib/actions/blog.actions";
+import { getBlogById } from "@/lib/actions/blog.actions";
 
 import Image from "next/image";
 import { convertToBase64 } from "@/lib/utils";
@@ -42,7 +42,7 @@ const EditBlogPage = () => {
   const form = useForm<BlogFormData>({
     resolver: zodResolver(blogSchema),
     defaultValues: {
-      image: "",
+      // image: "",
       user: "",
       date: "",
       heading: "",
@@ -72,7 +72,7 @@ const EditBlogPage = () => {
     if (!id) return;
     setIsSubmitting(true);
     try {
-      await updateBlog(id as string, data);
+      // await updateBlog(id as string, data);
       console.log("Blog updated successfully");
       router.push("/admin/blog"); // Redirect to blog list page
     } catch (error) {
@@ -90,7 +90,7 @@ const EditBlogPage = () => {
         const blog = await getBlogById(id as string);
         if (blog) {
           form.reset({
-            image: blog.image,
+            // image: blog.image,
             user: blog.user,
             date: blog.date,
             heading: blog.heading,
@@ -131,7 +131,7 @@ const EditBlogPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <FormField
                 control={form.control}
-                name="image"
+                name="imageId"
                 render={({ field: { onChange, value, ...field } }) => (
                   <FormItem>
                     <FormLabel>Image</FormLabel>
@@ -153,7 +153,7 @@ const EditBlogPage = () => {
                       />
                     )}
                     <FormMessage>
-                      {form.formState.errors.image?.message}
+                      {/* {form.formState.errors.image?.message} */}
                     </FormMessage>
                   </FormItem>
                 )}

@@ -1,5 +1,5 @@
 import { features } from "@/constants";
-import { Types } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export interface IOTPDocument {
   email: string;
@@ -81,25 +81,12 @@ export interface FeaturesAndBlogsProps {
   features: typeof features;
 }
 
-export interface TransformedBlog {
-  id: string;
-  image: string;
-  heading: string;
-  user: string;
-  date: string;
-  description: string;
-  category: string;
-  metaTitle: string;
-  metaDescription: string;
-  metaKeywords: string;
-}
-
-export interface MongoDBBlog {
-  _id: string;
+export interface IBlog extends Document {
+  _id: Types.ObjectId;
   imageId: string;
-  heading: string;
   user: string;
   date: string;
+  heading: string;
   description: string;
   category: string;
   metaTitle: string;
@@ -107,4 +94,17 @@ export interface MongoDBBlog {
   metaKeywords: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface TransformedBlog {
+  id: string;
+  image: string;
+  user: string;
+  date: string;
+  heading: string;
+  description: string;
+  category: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
 }

@@ -3,14 +3,14 @@
 import { connectToDB } from "@/lib/mongodb";
 import Blog from "@/lib/models/blog.model";
 import { blogSchema } from "@/lib/validations";
-import { MongoDBBlog, TransformedBlog } from "@/types";
+import { IBlog, TransformedBlog } from "@/types";
+import { Types } from "mongoose";
+import { ObjectId } from "mongodb";
 
-// * blog creation
 export async function createBlog(formData: FormData) {
   try {
     await connectToDB();
 
-    // Validate the form data
     const validatedData = blogSchema.parse({
       imageId: formData.get("imageId"),
       user: formData.get("user"),
@@ -23,9 +23,7 @@ export async function createBlog(formData: FormData) {
       metaKeywords: formData.get("metaKeywords"),
     });
 
-    // Create the blog post
     const blog = await Blog.create(validatedData);
-
     return { success: true, blog };
   } catch (error) {
     console.error("Blog creation error:", error);
@@ -33,29 +31,29 @@ export async function createBlog(formData: FormData) {
   }
 }
 
-// * get all blogs
 export async function getAllBlogs() {
   try {
     await connectToDB();
 
-    const blogs = await Blog.find({})
-      .sort({ createdAt: -1 }) // Sort by newest first
-      .lean() // Convert to plain JS objects
-      .exec();
+    const blogs = await Blog.find({}).sort({ createdAt: -1 }).lean().exec();
 
-    // Transform the data to include image URLs
-    const transformedBlogs = blogs.map((blog) => ({
-      id: blog._id as string,
-      heading: blog.heading,
-      user: blog.user,
-      date: blog.date,
-      description: blog.description,
-      category: blog.category,
-      image: `/api/files/${blog.imageId}`, // Use the GridFS file endpoint
-      metaTitle: blog.metaTitle,
-      metaDescription: blog.metaDescription,
-      metaKeywords: blog.metaKeywords,
-    }));
+    const transformedBlogs = await Promise.all(
+      blogs.map(async (blog) => {
+        const image = await getFileById(blog.imageId); // Fetch file using the new server action
+        return {
+          id: blog._id as string,
+          heading: blog.heading,
+          user: blog.user,
+          date: blog.date,
+          description: blog.description,
+          category: blog.category,
+          image: image.buffer.toString("base64"), // Returning the image as base64 for frontend use
+          metaTitle: blog.metaTitle,
+          metaDescription: blog.metaDescription,
+          metaKeywords: blog.metaKeywords,
+        };
+      })
+    );
 
     return transformedBlogs;
   } catch (error) {
@@ -64,18 +62,27 @@ export async function getAllBlogs() {
   }
 }
 
-// * get blog by id
 export async function getBlogById(id: string): Promise<TransformedBlog | null> {
   try {
     await connectToDB();
 
-    const blog = (await Blog.findById(id).lean().exec()) as MongoDBBlog | null;
+    // Check if the ObjectId is valid
+    if (!Types.ObjectId.isValid(id)) {
+      return null;
+    }
 
+    // Fetch the blog post from the database
+    const blog = (await Blog.findById(id)) as IBlog | null;
+
+    // If the blog doesn't exist, return null
     if (!blog) {
       return null;
     }
 
-    // Transform the single blog document
+    // Fetch the image using the getFileById function
+    const image = await getFileById(blog.imageId); // Fetch file using the new server action
+
+    // Transform the blog data to include the image as base64
     const transformedBlog = {
       id: blog._id.toString(),
       heading: blog.heading,
@@ -83,7 +90,7 @@ export async function getBlogById(id: string): Promise<TransformedBlog | null> {
       date: blog.date,
       description: blog.description,
       category: blog.category,
-      image: `/api/files/${blog.imageId}`, // Use the GridFS file endpoint
+      image: image.buffer.toString("base64"), // Return the image as base64 for frontend use
       metaTitle: blog.metaTitle,
       metaDescription: blog.metaDescription,
       metaKeywords: blog.metaKeywords,
@@ -93,5 +100,41 @@ export async function getBlogById(id: string): Promise<TransformedBlog | null> {
   } catch (error) {
     console.error("Error fetching blog:", error);
     throw new Error("Failed to fetch blog");
+  }
+}
+
+export async function getFileById(id: string) {
+  try {
+    const { bucket } = await connectToDB();
+
+    const fileId = new ObjectId(id);
+
+    // Get file info
+    const files = await bucket.find({ _id: fileId }).toArray();
+    if (!files.length) {
+      throw new Error("File not found");
+    }
+
+    const file = files[0];
+
+    // Create download stream
+    const downloadStream = bucket.openDownloadStream(fileId);
+
+    // Convert stream to buffer
+    const chunks: Buffer[] = [];
+    for await (const chunk of downloadStream) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+
+    // Return file details and buffer
+    return {
+      buffer,
+      contentType: file.contentType || "application/octet-stream",
+      filename: file.filename,
+    };
+  } catch (error) {
+    console.error("Error retrieving file:", error);
+    throw new Error("Failed to retrieve file");
   }
 }
