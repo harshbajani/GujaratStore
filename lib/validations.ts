@@ -13,7 +13,13 @@ export const authFormSchema = (formType: FormType) => {
         formType === "sign-up"
           ? z.string().min(10).max(15)
           : z.string().optional(),
-      password: z.string().min(6),
+      password: z
+        .string()
+        .min(8, "Password must be at least 8 characters")
+        .regex(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+          "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+        ),
       confirmPassword:
         formType === "sign-up" ? z.string().min(6) : z.string().optional(),
     })
@@ -30,6 +36,22 @@ export const authFormSchema = (formType: FormType) => {
       }
     );
 };
+
+export const resetFormSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+      ),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 export const blogSchema = z.object({
   _id: z.string().optional(),

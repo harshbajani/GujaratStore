@@ -137,6 +137,7 @@ export async function resendOTP(email: string): Promise<ActionResponse> {
   }
 }
 
+// * Sign Out Action
 export async function signOut(): Promise<ActionResponse> {
   return {
     success: true,
@@ -144,53 +145,91 @@ export async function signOut(): Promise<ActionResponse> {
   };
 }
 
-export const forgotPassword = async (email: string) => {
+// * Reset Password intiation
+export async function initiatePasswordReset(
+  email: string
+): Promise<ActionResponse> {
   try {
+    await connectToDB();
+
+    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
-      return { success: false, message: "No user found with this email" };
+      return {
+        success: false,
+        message: "No account found with this email address",
+      };
     }
 
-    const resetToken = generateOTP();
-    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    // Generate OTP
+    const otp = generateOTP();
 
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordTokenExpiry = resetTokenExpiry;
-    await user.save();
+    // Store OTP with expiration
+    await OTP.findOneAndUpdate(
+      { email },
+      {
+        otp,
+        type: "password-reset",
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+      },
+      { upsert: true, new: true }
+    );
 
-    await sendEmailOTP(email, resetToken);
+    // Send password reset email
+    await sendEmailOTP(email, otp);
 
-    return { success: true, message: "Reset password email sent" };
+    return {
+      success: true,
+      message: "Password reset instructions sent to your email",
+    };
   } catch (error) {
-    console.error("Forgot password error:", error);
-    return { success: false, message: "Something went wrong" };
+    console.error("Password reset initiation error:", error);
+    return {
+      success: false,
+      message: "Failed to process password reset request",
+    };
   }
-};
+}
 
-export const resetPassword = async (
+// * Reset Password
+export async function resetPassword(
   email: string,
-  token: string,
+  otp: string,
   newPassword: string
-) => {
+): Promise<ActionResponse> {
   try {
-    const user = await User.findOne({
+    await connectToDB();
+
+    // Verify OTP
+    const otpRecord = await OTP.findOne({
       email,
-      resetPasswordToken: token,
-      resetPasswordTokenExpiry: { $gt: Date.now() },
+      otp,
+      type: "password-reset",
+      expiresAt: { $gt: new Date() },
     });
 
-    if (!user) {
-      return { success: false, message: "Invalid or expired reset token" };
+    if (!otpRecord) {
+      return {
+        success: false,
+        message: "Invalid or expired reset code",
+      };
     }
 
-    user.password = newPassword;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordTokenExpiry = undefined;
-    await user.save();
+    // Update password
+    await User.updateOne({ email }, { password: newPassword });
 
-    return { success: true, message: "Password reset successful" };
+    // Delete used OTP
+    await OTP.deleteOne({ email, type: "password-reset" });
+
+    return {
+      success: true,
+      message: "Password reset successfully",
+    };
   } catch (error) {
-    console.error("Reset password error:", error);
-    return { success: false, message: "Something went wrong" };
+    console.error("Password reset error:", error);
+    return {
+      success: false,
+      message: "Failed to reset password",
+    };
   }
-};
+}
