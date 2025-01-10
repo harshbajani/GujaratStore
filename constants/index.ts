@@ -458,3 +458,108 @@ export const artisan = [
     label: "Pottery",
   },
 ];
+
+export const furnishings = [
+  {
+    src: "/furnishings/bambooChair.jpg",
+    label: "Bamboo Chair",
+  },
+  {
+    src: "/furnishings/caneChair.jpg",
+    label: "Cane Chair",
+  },
+  {
+    src: "/furnishings/handmadeMonochords.jpg",
+    label: "Handmade Monochords",
+  },
+  {
+    src: "/furnishings/tissueBox.jpg",
+    label: "Tissue Box",
+  },
+  {
+    src: "/furnishings/wickerBaskets.jpg",
+    label: "Wicker Baskets",
+  },
+  {
+    src: "/furnishings/woodenSwing.jpg",
+    label: "Wooden Swing",
+  },
+];
+
+export const homeDecor = [
+  {
+    src: "/homeDecor/Lippan-Art-Wall-Hanging.webp",
+    label: "Lippan Art Wall Hanging",
+  },
+  {
+    src: "/homeDecor/madhubaniArtPaintings.jpg",
+    label: "Madhubani Art Paintings",
+  },
+  {
+    src: "/homeDecor/madhubaniWallPlates.jpg",
+    label: "Madhubani Wall Plates",
+  },
+  {
+    src: "/homeDecor/traditionalToran.jpg",
+    label: "Traditional Toran",
+  },
+  {
+    src: "/homeDecor/wallArt.jpg",
+    label: "Wall Art",
+  },
+  {
+    src: "/homeDecor/woodenWallHanging.jpg",
+    label: "Wooden Wall Hanging",
+  },
+  {
+    src: "/homeDecor/brassPrabhavali.webp",
+    label: "Brass Prabhavali",
+  },
+  {
+    src: "/homeDecor/dhoopDani.webp",
+    label: "Dhoop Dani",
+  },
+  {
+    src: "/homeDecor/decorativeCushion.jpg",
+    label: "Decorative Cushion",
+  },
+  {
+    src: "/homeDecor/candleHolder.jpg",
+    label: "Candle Holder",
+  },
+  {
+    src: "/homeDecor/kalighatPaintings.jpg",
+    label: "Kalighat Paintngs",
+  },
+  {
+    src: "/homeDecor/rangoliMats.jpg",
+    label: "Rangoli Mats",
+  },
+];
+
+export const organic = [
+  {
+    src: "/organicBucket/roseSoap.png",
+    label: "Natural Handmade Olive Rose Soap ",
+  },
+  {
+    src: "/organicBucket/oil.jpg",
+    label: "Natural Handmade Nalpamaradi Thailam Oil",
+  },
+  {
+    src: "/organicBucket/sandalSoap.jpg",
+    label: "Sandal - Natural Flora Soap ",
+  },
+  {
+    src: "/organicBucket/roomDiffuser.jpg",
+    label: "Grapefruit Oil Room Diffuser",
+  },
+  {
+    src: "/organicBucket/teaTreeOil.jpg",
+    label: "Tea Tree Oil",
+  },
+  {
+    src: "/organicBucket/cedarSoap.jpg",
+    label: "Cedar Soap",
+  },
+];
