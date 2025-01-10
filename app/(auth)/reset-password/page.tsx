@@ -1,20 +1,16 @@
-import { FC } from "react";
+"use client";
 import ResetPasswordForm from "@/components/ResetPasswordForm";
 import { redirect } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
-interface PageProps {
-  searchParams: { [key: string]: string | undefined };
-}
-
-const ResetPasswordPage: FC<PageProps> = ({ searchParams }) => {
-  const email = searchParams.email;
-  const token = searchParams.token;
+export default function ResetPasswordPage() {
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email");
+  const token = searchParams.get("token");
 
   if (!email || !token) {
     redirect("/forgot-password");
   }
 
   return <ResetPasswordForm email={email} token={token} />;
-};
-
-export default ResetPasswordPage;
+}
