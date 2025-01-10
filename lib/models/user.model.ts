@@ -8,8 +8,6 @@ const userSchema = new mongoose.Schema({
   isVerified: { type: Boolean, default: false },
   verificationToken: String,
   verificationTokenExpiry: Date,
-  resetPasswordToken: String,
-  resetPasswordTokenExpiry: Date,
 });
 
 const User = mongoose.models.User || mongoose.model("User", userSchema);

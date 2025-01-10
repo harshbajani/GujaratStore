@@ -306,6 +306,9 @@ const AuthForm = ({ type }: { type: FormType }) => {
                       {type === "sign-in" ? "Sign Up" : "Sign In"}
                     </Link>
                   </div>
+                  <Link href="/forgot-password" className="text-sm text-brand ">
+                    Forgot Password?
+                  </Link>
                 </CardFooter>
               </form>
             </Form>
