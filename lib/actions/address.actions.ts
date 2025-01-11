@@ -69,7 +69,7 @@ export async function updateAddress(addressId: string, address: IAddress) {
       },
       {
         $set: {
-          "addewsses.$._id": validatedAddress._id,
+          "addresses.$._id": validatedAddress._id,
           "addresses.$.name": validatedAddress.name,
           "addresses.$.contact": validatedAddress.contact,
           "addresses.$.type": validatedAddress.type,

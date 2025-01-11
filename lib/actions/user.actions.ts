@@ -99,9 +99,7 @@ export async function getUserById(
 interface UpdateUserData {
   name?: string;
   phone?: string;
-  gender?: "male" | "female" | "other";
-  dateOfBirth?: Date;
-  profileImage?: string;
+  email?: string;
 }
 
 export async function updateUserProfile(
