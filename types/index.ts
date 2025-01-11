@@ -1,5 +1,7 @@
 import { features } from "@/constants";
+import { deliveryAddress } from "@/lib/validations";
 import { Document, Types } from "mongoose";
+import { z } from "zod";
 
 export interface IOTPDocument {
   email: string;
@@ -22,19 +24,6 @@ export interface IUser {
   isVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
-  gender?: "male" | "female" | "other";
-  shippingAddresses?: Array<{
-    _id?: Types.ObjectId | string;
-    address1: string;
-    address2: string;
-    city: string;
-    state: string;
-    landmark: string;
-    pincode: string;
-    isDefault: boolean;
-  }>;
-  dateOfBirth?: Date;
-  profileImage?: string;
   wishlist?: (Types.ObjectId | string)[];
 }
 
@@ -107,4 +96,37 @@ export interface TransformedBlog {
   metaTitle: string;
   metaDescription: string;
   metaKeywords: string;
+}
+
+export interface IAddress {
+  _id?: string;
+  name: string;
+  contact: string;
+  type: string;
+  address_line_1: string;
+  address_line_2: string;
+  locality: string;
+  pincode: string;
+  state: string;
+  landmark?: string;
+  alternativeContact?: string;
+}
+
+type DeliveryAddress = z.infer<typeof deliveryAddress>;
+
+export interface AddressCardProps {
+  type: string;
+  name: string;
+  contact: string;
+  address: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+export interface AddressDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  isEditing: boolean;
+  editingAddress: DeliveryAddress | null;
+  onSubmit: (data: DeliveryAddress) => Promise<void>;
 }
