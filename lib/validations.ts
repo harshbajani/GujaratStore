@@ -67,3 +67,26 @@ export const blogSchema = z.object({
   metaDescription: z.string().min(1, "Meta description is required."),
   metaKeywords: z.string().optional(),
 });
+
+export const deliveryAddress = z.object({
+  _id: z.string().optional(),
+  name: z.string().min(2, "Name is too short"),
+  contact: z
+    .string()
+    .regex(/^[0-9]+$/, "Contact number must contain only numbers")
+    .max(10, "Only 10 digits are allowed"),
+  type: z.string(),
+  address_line_1: z.string().min(1, "Address line 1 is required"),
+  address_line_2: z.string().min(1, "Address line 2 is required"),
+  locality: z.string().min(1, "Locality is required"),
+  pincode: z
+    .string()
+    .regex(/^[0-9]+$/, "Contact number must contain only numbers")
+    .max(6, "Pincode should be only 6 digits"),
+  state: z.string().min(1, "State is required"),
+  landmark: z.string().optional(),
+  alternativeContact: z
+    .string()
+    .regex(/^[0-9]+$/, "Contact number must contain only numbers")
+    .optional(),
+});

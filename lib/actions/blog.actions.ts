@@ -41,13 +41,13 @@ export async function getAllBlogs() {
       blogs.map(async (blog) => {
         const image = await getFileById(blog.imageId); // Fetch file using the new server action
         return {
-          id: blog._id as string,
+          id: (blog._id as Types.ObjectId).toString(), // Ensure id is a string
           heading: blog.heading,
           user: blog.user,
           date: blog.date,
           description: blog.description,
           category: blog.category,
-          image: image.buffer.toString("base64"), // Returning the image as base64 for frontend use
+          image: image.buffer.toString("base64"), // Return the image as base64 for frontend use
           metaTitle: blog.metaTitle,
           metaDescription: blog.metaDescription,
           metaKeywords: blog.metaKeywords,
@@ -80,14 +80,14 @@ export async function getBlogById(id: string): Promise<TransformedBlog | null> {
     }
 
     // Fetch the image using the getFileById function
-    const image = await getFileById(blog.imageId); // Fetch file using the new server action
+    const image = await getFileById(blog.imageId);
 
     // Transform the blog data to include the image as base64
     const transformedBlog = {
-      id: blog._id.toString(),
+      id: blog._id.toString(), // Ensure id is a string
       heading: blog.heading,
       user: blog.user,
-      date: blog.date,
+      date: blog.date, // Convert date to string
       description: blog.description,
       category: blog.category,
       image: image.buffer.toString("base64"), // Return the image as base64 for frontend use
