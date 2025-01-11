@@ -13,14 +13,18 @@ import {
   Star,
   Bell,
   LogOut,
+  ChevronRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import Profile from "./components/Profile";
 import Address from "./components/Address";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useUserDetails } from "@/hooks/useUserDetails";
 
 const ProfilePage = () => {
   const [activeSection, setActiveSection] = useState("profile");
+  const userDetails = useUserDetails();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -93,28 +97,48 @@ const ProfilePage = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
-        <div className="w-full md:w-64 space-y-2 shadow-md p-2 rounded">
-          {sidebarItems.map((item) => (
+        <div className="flex flex-col">
+          <div className="flex-center">
+            <Card className="flex items-center gap-4 p-4 shadow-md w-full md:w-64 h-20">
+              <Avatar className="w-16 h-16">
+                <AvatarFallback className="text-muted-foreground text-2xl">
+                  {userDetails.user?.name[0]}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-sm font-semibold">Hello,</p>
+                <h1 className="text-xl font-semibold">
+                  {userDetails.user?.name}
+                </h1>
+              </div>
+            </Card>
+          </div>
+          <div className="w-full md:w-64 mt-2 space-y-2 shadow-md p-2 rounded">
+            {sidebarItems.map((item) => (
+              <Button
+                key={item.id}
+                variant="ghost"
+                className={`w-full justify-start items-center gap-2 hover:bg-red-100 ${
+                  activeSection === item.id ? "bg-red-200 text-brand" : ""
+                }`}
+                onClick={() => setActiveSection(item.id)}
+              >
+                <div className="flex items-center gap-2 flex-1">
+                  {item.icon}
+                  <span>{item.label}</span>
+                </div>
+                <ChevronRight className="text-brand ml-auto" />
+              </Button>
+            ))}
             <Button
-              key={item.id}
               variant="ghost"
-              className={`w-full justify-start gap-2 hover:bg-red-100 ${
-                activeSection === item.id ? "bg-red-200 text-brand" : ""
-              }`}
-              onClick={() => setActiveSection(item.id)}
+              className="w-full justify-start gap-2 text-red-600 hover:bg-red-100"
+              onClick={handleSignOut}
             >
-              {item.icon}
-              <span>{item.label}</span>
+              <LogOut className="w-4 h-4" />
+              <span>LOG OUT</span>
             </Button>
-          ))}
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-2 text-red-600 hover:bg-red-100"
-            onClick={handleSignOut}
-          >
-            <LogOut className="w-4 h-4" />
-            <span>LOG OUT</span>
-          </Button>
+          </div>
         </div>
 
         {/* Main Content */}
