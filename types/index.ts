@@ -25,6 +25,7 @@ export interface IUser {
   verificationToken?: string;
   verificationTokenExpiry?: Date;
   wishlist?: (Types.ObjectId | string)[];
+  __v: number;
 }
 
 export type UserResponse = Omit<

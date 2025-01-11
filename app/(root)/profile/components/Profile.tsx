@@ -1,3 +1,5 @@
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useUserDetails } from "@/hooks/useUserDetails";
 import React from "react";
 
@@ -9,24 +11,24 @@ const Profile = () => {
       <h2 className="text-xl font-semibold">Personal Information</h2>
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Name</label>
-          <input
+          <Label className="block text-sm font-medium mb-1">Name</Label>
+          <Input
             type="text"
             className="w-full p-2 border rounded-md"
             defaultValue={userDetails.user?.name || ""}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input
+          <Label className="block text-sm font-medium mb-1">Email</Label>
+          <Input
             type="email"
             className="w-full p-2 border rounded-md"
             defaultValue={userDetails.user?.email || ""}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Contact No.</label>
-          <input
+          <Label className="block text-sm font-medium mb-1">Contact No.</Label>
+          <Input
             type="tel"
             className="w-full p-2 border rounded-md"
             defaultValue={userDetails.user?.phone || ""}

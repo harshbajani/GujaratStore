@@ -1,26 +1,21 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { connectToDB } from "@/lib/mongodb";
 import User from "@/lib/models/user.model";
 import { getServerSession } from "next-auth";
 
-import { ActionResponse, UserResponse } from "@/types/index";
+import { ActionResponse, IUser, UserResponse } from "@/types/index";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
 
 // Helper function to convert MongoDB user to safe user response
-const sanitizeUser = (user: any): UserResponse => {
+const sanitizeUser = (user: IUser): UserResponse => {
   const { ...safeUser } = user;
 
   return {
     ...safeUser,
     _id: safeUser._id.toString(),
-    shippingAddresses: safeUser.shippingAddresses?.map((addr: any) => ({
-      ...addr,
-      _id: addr._id.toString(),
-    })),
-    wishlist: safeUser.wishlist?.map((id: any) => id.toString()),
+    wishlist: safeUser.wishlist?.map((id) => id.toString()),
   };
 };
 
@@ -50,7 +45,7 @@ export async function getCurrentUser(): Promise<ActionResponse<UserResponse>> {
     return {
       success: true,
       message: "User details fetched successfully",
-      data: sanitizeUser(user),
+      data: sanitizeUser(user as IUser),
     };
   } catch (error) {
     console.error("Error fetching user details:", error);
@@ -89,7 +84,7 @@ export async function getUserById(
     return {
       success: true,
       message: "User details fetched successfully",
-      data: sanitizeUser(user),
+      data: sanitizeUser(user as IUser),
     };
   } catch (error) {
     console.error("Error fetching user:", error);
@@ -142,7 +137,7 @@ export async function updateUserProfile(
     return {
       success: true,
       message: "Profile updated successfully",
-      data: sanitizeUser(updatedUser),
+      data: sanitizeUser(updatedUser as IUser),
     };
   } catch (error) {
     console.error("Error updating profile:", error);
@@ -187,7 +182,7 @@ export async function addToWishlist(
     return {
       success: true,
       message: "Added to wishlist successfully",
-      data: sanitizeUser(updatedUser),
+      data: sanitizeUser(updatedUser as IUser),
     };
   } catch (error) {
     console.error("Error adding to wishlist:", error);
@@ -232,7 +227,7 @@ export async function removeFromWishlist(
     return {
       success: true,
       message: "Removed from wishlist successfully",
-      data: sanitizeUser(updatedUser),
+      data: sanitizeUser(updatedUser as IUser),
     };
   } catch (error) {
     console.error("Error removing from wishlist:", error);
