@@ -17,7 +17,7 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import Profile from "./components/Profile";
 import Address from "./components/Address";
@@ -28,11 +28,15 @@ import Coupons from "./components/Coupons";
 import Loader from "@/components/Loader";
 
 const ProfilePage = () => {
-  const [activeSection, setActiveSection] = useState("profile");
-  const [userData, setUserData] = useState<UserResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
+
+  const [activeSection, setActiveSection] = useState(
+    () => searchParams.get("section") || "profile"
+  );
+  const [userData, setUserData] = useState<UserResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -60,6 +64,11 @@ const ProfilePage = () => {
 
     fetchUserData();
   }, [toast]);
+
+  useEffect(() => {
+    // Update URL when activeSection changes
+    router.replace(`/profile?section=${activeSection}`);
+  }, [activeSection, router]);
 
   const handleProfileUpdate = (updatedUser: UserResponse) => {
     setUserData(updatedUser);
@@ -98,7 +107,7 @@ const ProfilePage = () => {
       icon: <ShoppingBag className="w-4 h-4" />,
     },
     { id: "address", label: "ADDRESS", icon: <MapPin className="w-4 h-4" /> },
-    { id: "coupons", label: "COUPON'S", icon: <Ticket className="w-4 h-4" /> },
+    { id: "coupons", label: "COUPONS", icon: <Ticket className="w-4 h-4" /> },
     { id: "wishlist", label: "WISHLIST", icon: <Heart className="w-4 h-4" /> },
     {
       id: "reviews",
