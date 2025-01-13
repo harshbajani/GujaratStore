@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { signOut as nextAuthSignOut } from "next-auth/react";
@@ -14,25 +15,59 @@ import {
   Bell,
   LogOut,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import Profile from "./components/Profile";
 import Address from "./components/Address";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useUserDetails } from "@/hooks/useUserDetails";
+import { getCurrentUser } from "@/lib/actions/user.actions";
+import { UserResponse } from "@/types";
 import Coupons from "./components/Coupons";
 
 const ProfilePage = () => {
   const [activeSection, setActiveSection] = useState("profile");
-  const userDetails = useUserDetails();
+  const [userData, setUserData] = useState<UserResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const result = await getCurrentUser();
+        if (result.success && result.data) {
+          setUserData(result.data);
+        } else {
+          toast({
+            title: "Error",
+            description: result.message || "Failed to fetch user details",
+            variant: "destructive",
+          });
+        }
+      } catch {
+        toast({
+          title: "Error",
+          description: "Failed to fetch user details",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [toast]);
+
+  const handleProfileUpdate = (updatedUser: UserResponse) => {
+    setUserData(updatedUser);
+  };
+
   const handleSignOut = async () => {
     try {
-      await nextAuthSignOut({ redirect: false }); // * First, call the client-side NextAuth signOut
-      const response = await serverSignOut(); // * Then call your server action
+      await nextAuthSignOut({ redirect: false });
+      const response = await serverSignOut();
       if (response.success) {
         toast({ title: "Success", description: "Signed out successfully" });
         router.push("/sign-in");
@@ -77,9 +112,22 @@ const ProfilePage = () => {
   ];
 
   const renderContent = () => {
+    if (!userData) {
+      return (
+        <div className="flex items-center justify-center min-h-[200px]">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      );
+    }
+
     switch (activeSection) {
       case "profile":
-        return <Profile />;
+        return (
+          <Profile
+            initialData={userData}
+            onProfileUpdate={handleProfileUpdate}
+          />
+        );
       case "address":
         return <Address />;
       case "coupons":
@@ -96,6 +144,14 @@ const ProfilePage = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row gap-8">
@@ -105,14 +161,12 @@ const ProfilePage = () => {
             <Card className="flex items-center gap-4 p-4 shadow-md w-full md:w-64 h-20">
               <Avatar className="w-16 h-16">
                 <AvatarFallback className="text-muted-foreground text-2xl">
-                  {userDetails.user?.name[0]}
+                  {userData?.name[0]}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <p className="text-sm font-semibold">Hello,</p>
-                <h1 className="text-xl font-semibold">
-                  {userDetails.user?.name}
-                </h1>
+                <h1 className="text-xl font-semibold">{userData?.name}</h1>
               </div>
             </Card>
           </div>

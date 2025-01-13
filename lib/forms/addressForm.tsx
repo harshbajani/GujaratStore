@@ -260,7 +260,7 @@ const AddressDialog: React.FC<AddressDialogProps> = ({
               <Button
                 type="submit"
                 className="bg-brand hover:bg-brand-100"
-                onClick={() => onOpenChange(false)}
+                // onClick={() => onOpenChange(false)}
               >
                 Save
               </Button>

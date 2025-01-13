@@ -96,14 +96,8 @@ export async function getUserById(
 }
 
 // Update user profile
-interface UpdateUserData {
-  name?: string;
-  phone?: string;
-  email?: string;
-}
-
 export async function updateUserProfile(
-  data: UpdateUserData
+  data: Partial<Pick<IUser, "name" | "email" | "phone">>
 ): Promise<ActionResponse<UserResponse>> {
   try {
     const session = await getServerSession(authOptions);
@@ -117,10 +111,40 @@ export async function updateUserProfile(
 
     await connectToDB();
 
+    // If email is being updated, check if it's already in use
+    if (data.email && data.email !== session.user.email) {
+      const existingUser = await User.findOne({
+        email: data.email,
+        _id: { $ne: session.user.id },
+      });
+
+      if (existingUser) {
+        return {
+          success: false,
+          message: "Email already in use",
+        };
+      }
+    }
+
+    // If phone is being updated, check if it's already in use
+    if (data.phone) {
+      const existingUser = await User.findOne({
+        phone: data.phone,
+        _id: { $ne: session.user.id },
+      });
+
+      if (existingUser) {
+        return {
+          success: false,
+          message: "Phone number already in use",
+        };
+      }
+    }
+
     const updatedUser = await User.findOneAndUpdate(
       { email: session.user.email },
       { $set: data },
-      { new: true, runValidators: true }
+      { new: true }
     ).lean();
 
     if (!updatedUser) {
@@ -130,7 +154,10 @@ export async function updateUserProfile(
       };
     }
 
+    // Revalidate relevant paths
     revalidatePath("/profile");
+    revalidatePath("/account");
+    revalidatePath("/wishlist"); // Since user has wishlist field
 
     return {
       success: true,
@@ -138,7 +165,7 @@ export async function updateUserProfile(
       data: sanitizeUser(updatedUser as IUser),
     };
   } catch (error) {
-    console.error("Error updating profile:", error);
+    console.error("Error updating user profile:", error);
     return {
       success: false,
       message: "Failed to update profile",

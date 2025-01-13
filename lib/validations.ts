@@ -13,13 +13,16 @@ export const authFormSchema = (formType: FormType) => {
         formType === "sign-up"
           ? z.string().min(10).max(15)
           : z.string().optional(),
-      password: z
-        .string()
-        .min(8, "Password must be at least 8 characters")
-        .regex(
-          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-          "Password must contain at least one uppercase letter, one lowercase letter, and one number"
-        ),
+      password:
+        formType === "sign-up"
+          ? z
+              .string()
+              .min(8, "Password must be at least 8 characters")
+              .regex(
+                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+              )
+          : z.string().min(8, "Password must be at least 8 characters"),
       confirmPassword:
         formType === "sign-up" ? z.string().min(6) : z.string().optional(),
     })
@@ -85,8 +88,5 @@ export const deliveryAddress = z.object({
     .max(6, "Pincode should be only 6 digits"),
   state: z.string().min(1, "State is required"),
   landmark: z.string().optional(),
-  alternativeContact: z
-    .string()
-    .regex(/^[0-9]+$/, "Contact number must contain only numbers")
-    .optional(),
+  alternativeContact: z.string().optional(),
 });
