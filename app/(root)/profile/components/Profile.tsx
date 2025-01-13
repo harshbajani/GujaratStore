@@ -154,7 +154,7 @@ const Profile = ({ initialData, onProfileUpdate }: ProfileProps) => {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto primary-btn"
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes
