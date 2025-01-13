@@ -25,6 +25,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getCurrentUser } from "@/lib/actions/user.actions";
 import { UserResponse } from "@/types";
 import Coupons from "./components/Coupons";
+import Loader from "@/components/Loader";
 
 const ProfilePage = () => {
   const [activeSection, setActiveSection] = useState("profile");
@@ -147,7 +148,7 @@ const ProfilePage = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader />
       </div>
     );
   }
