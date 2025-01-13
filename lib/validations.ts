@@ -90,3 +90,13 @@ export const deliveryAddress = z.object({
   landmark: z.string().optional(),
   alternativeContact: z.string().optional(),
 });
+
+export const inquirySchema = z.object({
+  name: z.string().nonempty(),
+  email: z.string().email(),
+  phone: z
+    .string()
+    .regex(/^[0-9]+$/, "Contact number must contain only numbers")
+    .max(10, "Only 10 digits are allowed"),
+  message: z.string().optional(),
+});
