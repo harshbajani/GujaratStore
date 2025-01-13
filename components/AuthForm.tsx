@@ -28,12 +28,14 @@ import {
   CardFooter,
   CardHeader,
 } from "./ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 const AuthForm = ({ type }: { type: FormType }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const { toast } = useToast();
   const router = useRouter();
 
   const formSchema = authFormSchema(type);
@@ -70,10 +72,15 @@ const AuthForm = ({ type }: { type: FormType }) => {
         });
 
         if (result.success) {
+          toast({ title: "Success", description: "Signed Up successfully" });
           setUserEmail(values.email);
 
           setShowOtpModal(true);
         } else {
+          toast({
+            title: "Failed",
+            description: result.message || "Failed to sign up",
+          });
           setErrorMessage(result.message);
         }
       } else {
@@ -84,8 +91,13 @@ const AuthForm = ({ type }: { type: FormType }) => {
         });
 
         if (result?.error) {
+          toast({
+            title: "Failed",
+            description: result.error || "Failed to sign out",
+          });
           setErrorMessage(result.error);
         } else if (result?.ok) {
+          toast({ title: "Success", description: "Signed In successfully" });
           router.push("/");
           router.refresh();
         }

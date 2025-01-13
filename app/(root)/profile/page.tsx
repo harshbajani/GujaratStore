@@ -21,6 +21,7 @@ import Profile from "./components/Profile";
 import Address from "./components/Address";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useUserDetails } from "@/hooks/useUserDetails";
+import Coupons from "./components/Coupons";
 
 const ProfilePage = () => {
   const [activeSection, setActiveSection] = useState("profile");
@@ -81,6 +82,8 @@ const ProfilePage = () => {
         return <Profile />;
       case "address":
         return <Address />;
+      case "coupons":
+        return <Coupons />;
       default:
         return (
           <div className="p-4">
