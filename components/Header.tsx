@@ -108,14 +108,13 @@ const Header = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="center">
                     {UserNavLinks.map((link) => (
-                      <DropdownMenuItem key={link.route} asChild>
-                        <Link
-                          href={link.route}
-                          className="flex items-center space-x-2"
-                        >
-                          <link.icon className="h-4 w-4" />
-                          <span>{link.label}</span>
-                        </Link>
+                      <DropdownMenuItem
+                        key={link.route}
+                        onClick={() => router.push(link.route)} // Explicitly trigger the navigation
+                        className="cursor-pointer flex items-center space-x-2"
+                      >
+                        <link.icon className="h-4 w-4" />
+                        <span>{link.label}</span>
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>

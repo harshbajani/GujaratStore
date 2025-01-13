@@ -76,33 +76,17 @@ export const SocialLinks = [
 ];
 
 export const UserNavLinks = [
+  { route: "/profile?section=profile", label: "My Profile", icon: User },
+  { route: "/profile?section=wishlist", label: "Wishlist", icon: Heart },
+  { route: "/profile?section=orders", label: "Orders", icon: Package },
   {
-    route: "/profile",
-    label: "My Profile",
-    icon: User,
-  },
-  {
-    route: "/wishlist",
-    label: "Wishlist",
-    icon: Heart,
-  },
-  {
-    route: "/orders",
-    label: "Orders",
-    icon: Package,
-  },
-  {
-    route: "/notifications",
+    route: "/profile?section=notifications",
     label: "Notifications",
     icon: Bell,
   },
+  { route: "/profile?section=coupons", label: "Coupons", icon: Ticket },
   {
-    route: "/coupons",
-    label: "Coupon's",
-    icon: Ticket,
-  },
-  {
-    route: "/customer-care",
+    route: "/profile?section=customer-care",
     label: "Customer Care",
     icon: HeadphonesIcon,
   },
