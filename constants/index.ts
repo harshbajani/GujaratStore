@@ -5,6 +5,7 @@ import {
   Bell,
   Ticket,
   HeadphonesIcon,
+  PhoneIcon,
 } from "lucide-react";
 export const NavLinks = [
   {
@@ -89,6 +90,11 @@ export const UserNavLinks = [
     route: "/profile?section=customer-care",
     label: "Customer Care",
     icon: HeadphonesIcon,
+  },
+  {
+    route: "/contact-us",
+    label: "Contact Us",
+    icon: PhoneIcon,
   },
 ];
 
