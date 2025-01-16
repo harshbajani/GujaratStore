@@ -18,6 +18,7 @@ import { Button } from "./ui/button";
 interface OtpModalProps {
   email: string;
   type?: "verification" | "password-reset";
+  role: "user" | "vendor";
   onVerified: (
     email: string,
     otp: string
@@ -30,6 +31,7 @@ interface OtpModalProps {
 const OtpModal = ({
   email,
   type = "verification",
+  role = "user",
   onVerified,
   onResendOTP,
 }: OtpModalProps) => {
@@ -65,7 +67,9 @@ const OtpModal = ({
       const result = await onVerified(email, otp);
 
       if (result.success) {
-        if (type === "password-reset") {
+        if (type === "password-reset" && role === "vendor") {
+          router.push(`/vendor/reset-password?email=${email}&token=${otp}`);
+        } else if (type === "password-reset" && role === "user") {
           router.push(`/reset-password?email=${email}&token=${otp}`);
         } else {
           router.push("/sign-in");

@@ -21,11 +21,11 @@ import {
 import { useForm } from "react-hook-form";
 import { AddressDialogProps } from "@/types";
 import { useEffect, useState } from "react";
-import { deliveryAddress } from "../validations";
+import { Address } from "../validations";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 
-type DeliveryAddress = z.infer<typeof deliveryAddress>;
+type DeliveryAddress = z.infer<typeof Address>;
 
 const AddressDialog: React.FC<AddressDialogProps> = ({
   open,
@@ -36,7 +36,7 @@ const AddressDialog: React.FC<AddressDialogProps> = ({
 }) => {
   const [country] = useState("India");
   const form = useForm<DeliveryAddress>({
-    resolver: zodResolver(deliveryAddress),
+    resolver: zodResolver(Address),
     defaultValues: editingAddress || {
       name: "",
       contact: "",

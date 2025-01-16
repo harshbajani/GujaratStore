@@ -6,7 +6,7 @@ import { getServerSession } from "next-auth";
 
 import { ActionResponse, IUser, UserResponse } from "@/types/index";
 import { revalidatePath } from "next/cache";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
+import { authOptions } from "../nextAuthConfig";
 
 // Helper function to convert MongoDB user to safe user response
 const sanitizeUser = (user: IUser): UserResponse => {
@@ -24,7 +24,7 @@ export async function getCurrentUser(): Promise<ActionResponse<UserResponse>> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.email && session?.user.role !== "user") {
       return {
         success: false,
         message: "Not authenticated",
@@ -63,7 +63,7 @@ export async function getUserById(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.email && session?.user.role !== "user") {
       return {
         success: false,
         message: "Not authenticated",
@@ -102,7 +102,7 @@ export async function updateUserProfile(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.email && session?.user.role !== "user") {
       return {
         success: false,
         message: "Not authenticated",
@@ -180,7 +180,7 @@ export async function addToWishlist(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.email && session?.user.role !== "user") {
       return {
         success: false,
         message: "Not authenticated",
@@ -225,7 +225,7 @@ export async function removeFromWishlist(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.email && session?.user.role !== "user") {
       return {
         success: false,
         message: "Not authenticated",

@@ -16,7 +16,7 @@ import {
   deleteAddress,
   updateAddress,
 } from "@/lib/actions/address.actions";
-import { deliveryAddress } from "@/lib/validations";
+import { Address as deliveryAddress } from "@/lib/validations";
 import { AddressCardProps } from "@/types";
 import AddressDialog from "@/lib/forms/addressForm";
 import { useUserDetails } from "@/hooks/useUserDetails";

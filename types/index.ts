@@ -1,5 +1,5 @@
 import { features } from "@/constants";
-import { deliveryAddress } from "@/lib/validations";
+import { Address } from "@/lib/validations";
 import { Document, Types } from "mongoose";
 import { z } from "zod";
 
@@ -21,6 +21,7 @@ export interface IUser {
   email: string;
   phone: string;
   password: string;
+  role: "user";
   isVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
@@ -28,8 +29,26 @@ export interface IUser {
   __v: number;
 }
 
+export interface IVendor {
+  _id: Types.ObjectId | string;
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  role: "vendor";
+  isVerified: boolean;
+  verificationToken?: string;
+  verificationTokenExpiry?: Date;
+  __v: number;
+}
+
 export type UserResponse = Omit<
   IUser,
+  "password" | "verificationToken" | "verificationTokenExpiry"
+>;
+
+export type VendorResponse = Omit<
+  IVendor,
   "password" | "verificationToken" | "verificationTokenExpiry"
 >;
 
@@ -113,7 +132,7 @@ export interface IAddress {
   alternativeContact?: string;
 }
 
-type DeliveryAddress = z.infer<typeof deliveryAddress>;
+type DeliveryAddress = z.infer<typeof Address>;
 
 export interface AddressCardProps {
   type: string;
