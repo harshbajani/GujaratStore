@@ -1,22 +1,22 @@
 "use server";
 
 import { connectToDB } from "@/lib/mongodb";
-import User from "@/lib/models/user.model";
 import OTP from "@/lib/models/otp.model";
 import { generateOTP, sendEmailOTP } from "@/lib/auth";
+import Vendor from "../models/vendor.model";
 
 type SignUpData = {
   name: string;
   email: string;
   phone: string;
   password: string;
-  role: "user";
+  role: "vendor";
 };
 
 type ActionResponse = {
   success: boolean;
   message: string;
-  data?: { tempUserId?: string };
+  data?: { tempVendorId?: string };
 };
 
 // * Sign Up Action
@@ -25,14 +25,14 @@ export async function signUp(data: SignUpData): Promise<ActionResponse> {
     await connectToDB();
 
     // Check if user exists
-    const existingUser = await User.findOne({
-      $or: [{ email: data.email }, { phone: data.phone }, { role: data.role }],
+    const existingVendor = await Vendor.findOne({
+      $or: [{ email: data.email }, { phone: data.phone }],
     });
 
-    if (existingUser) {
+    if (existingVendor) {
       return {
         success: false,
-        message: "User already exists",
+        message: "A vendor with this email or phone already exists",
       };
     }
 
@@ -52,22 +52,26 @@ export async function signUp(data: SignUpData): Promise<ActionResponse> {
     // Store OTP
     await OTP.create({ email: data.email, otp });
 
-    // Create user
-    const user = await User.create({
-      ...data,
+    // Create vendor with role explicitly set
+    const vendor = await Vendor.create({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      password: data.password,
+      role: "vendor", // Explicitly set role
       isVerified: false,
     });
 
     return {
       success: true,
-      message: "User created successfully. OTP sent to email.",
-      data: { tempUserId: user._id },
+      message: "Vendor account created successfully. Please verify your email.",
+      data: { tempVendorId: vendor._id.toString() },
     };
   } catch (error) {
     console.error("Signup error:", error);
     return {
       success: false,
-      message: "Internal server error",
+      message: "Failed to create vendor account. Please try again.",
     };
   }
 }
@@ -89,7 +93,7 @@ export async function verifyOTP(
     }
 
     // Update user verification status
-    await User.updateOne({ email }, { isVerified: true });
+    await Vendor.updateOne({ email }, { isVerified: true });
 
     // Delete OTP record
     await OTP.deleteOne({ email });
@@ -154,7 +158,7 @@ export async function initiatePasswordReset(
     await connectToDB();
 
     // Check if user exists
-    const user = await User.findOne({ email });
+    const user = await Vendor.findOne({ email });
     if (!user) {
       return {
         success: false,
@@ -217,7 +221,7 @@ export async function resetPassword(
     }
 
     // Update password
-    await User.updateOne({ email }, { password: newPassword });
+    await Vendor.updateOne({ email }, { password: newPassword });
 
     // Delete used OTP
     await OTP.deleteOne({ email, type: "password-reset" });

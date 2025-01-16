@@ -69,6 +69,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
           email: values.email,
           phone: values.phone!,
           password: values.password,
+          role: "user",
         });
 
         if (result.success) {
@@ -87,6 +88,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
         const result = await signIn("credentials", {
           email: values.email,
           password: values.password,
+          role: "user",
           redirect: false,
         });
 

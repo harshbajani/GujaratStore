@@ -16,13 +16,13 @@ import {
   deleteAddress,
   updateAddress,
 } from "@/lib/actions/address.actions";
-import { deliveryAddress } from "@/lib/validations";
+import { Address } from "@/lib/validations";
 import { AddressCardProps } from "@/types";
 import AddressDialog from "@/lib/forms/addressForm";
 import { useUserDetails } from "@/hooks/useUserDetails";
 import Loader from "@/components/Loader";
 
-type DeliveryAddress = z.infer<typeof deliveryAddress>;
+type DeliveryAddress = z.infer<typeof Address>;
 
 const Address = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);

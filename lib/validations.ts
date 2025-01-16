@@ -71,7 +71,7 @@ export const blogSchema = z.object({
   metaKeywords: z.string().optional(),
 });
 
-export const deliveryAddress = z.object({
+export const Address = z.object({
   _id: z.string().optional(),
   name: z.string().min(2, "Name is too short"),
   contact: z

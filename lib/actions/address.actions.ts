@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import User from "@/lib/models/user.model";
 import { connectToDB } from "@/lib/mongodb";
-import { deliveryAddress } from "@/lib/validations";
+import { Address } from "@/lib/validations";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
 import { IAddress } from "@/types";
@@ -18,7 +18,7 @@ export async function addAddress(address: IAddress) {
       return { success: false, message: "Not authenticated" };
     }
 
-    const validatedAddress = deliveryAddress.parse(address);
+    const validatedAddress = Address.parse(address);
 
     await connectToDB();
 
@@ -57,7 +57,7 @@ export async function updateAddress(addressId: string, address: IAddress) {
       return { success: false, message: "Not authenticated" };
     }
 
-    const validatedAddress = deliveryAddress.parse(address);
+    const validatedAddress = Address.parse(address);
 
     await connectToDB();
 

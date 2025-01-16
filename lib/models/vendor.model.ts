@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const deliveryAddressSchema = new mongoose.Schema({
+const storeAddressSchema = new mongoose.Schema({
   name: { type: String, required: true, minlength: 2 },
   contact: { type: String, required: true, minlength: 10 },
   type: { type: String },
@@ -13,17 +13,22 @@ const deliveryAddressSchema = new mongoose.Schema({
   alternativeContact: { type: String, optional: true },
 });
 
-const userSchema = new mongoose.Schema({
+const store = new mongoose.Schema({
+  name: { type: String, required: true, minlength: 2 },
+  addresses: { type: [storeAddressSchema], required: true },
+});
+
+const vendorSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ["user"], default: "user" },
-  addresses: { type: [deliveryAddressSchema], required: false },
+  role: { type: String, enum: ["vendor"], default: "vendor" },
+  store: { type: store, required: false },
   isVerified: { type: Boolean, default: false },
   verificationToken: String,
   verificationTokenExpiry: Date,
 });
 
-const User = mongoose.models.User || mongoose.model("User", userSchema);
-export default User;
+const Vendor = mongoose.models.Vendor || mongoose.model("Vendor", vendorSchema);
+export default Vendor;

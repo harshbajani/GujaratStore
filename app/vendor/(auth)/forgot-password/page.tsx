@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import OtpModal from "@/components/OTPModal";
-import { initiatePasswordReset } from "@/lib/actions/auth.actions";
+import { initiatePasswordReset } from "@/lib/actions/vendorAuth.actions";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -62,23 +62,9 @@ const ForgotPasswordForm = () => {
 
   return (
     <div className="flex w-full flex-col">
-      <div className="relative min-h-[180px] w-full sm:min-h-[220px] md:min-h-[240px]">
-        <div className="absolute inset-0 bg-[url('/bg/bg1.png')] bg-cover bg-center sm:bg-contain md:bg-[top_00%_right_200px]" />
-        <div className="absolute inset-0 bg-brand-200/30" />
-
-        <div className="relative z-10 flex h-full flex-col items-center justify-center p-4 text-center sm:p-6 md:p-8 mt-14">
-          <h1 className="h1 mb-2 text-2xl sm:text-3xl md:text-4xl">
-            નમસ્તે જી
-          </h1>
-          <p className="subtitle-1 text-sm sm:text-base md:text-lg">
-            Let&apos;s Discover The World Of Gujarat Art & Crafts
-          </p>
-        </div>
-      </div>
-
-      <div className="flex flex-1 w-full bg-[url('/bg/bg2.png')] bg-cover bg-center bg-no-repeat md:bg-[top_50%_right_200px]">
+      <div className="flex flex-1 w-full ">
         <div className="w-full px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-16 lg:py-12">
-          <Card className="mx-auto w-full max-w-lg shadow-md">
+          <Card className="mx-auto w-full shadow-md">
             <CardHeader>
               <CardTitle>Reset Password</CardTitle>
             </CardHeader>
@@ -130,7 +116,7 @@ const ForgotPasswordForm = () => {
         <OtpModal
           email={email}
           type="password-reset"
-          role="user"
+          role="vendor"
           onVerified={handlePasswordReset}
           onResendOTP={(email) => initiatePasswordReset(email)}
         />
