@@ -309,6 +309,7 @@ const VendorForm = ({ type }: { type: FormType }) => {
         {showOtpModal && (
           <OtpModal
             email={vendorEmail}
+            role="vendor"
             onVerified={verifyOTP}
             onResendOTP={resendOTP}
           />

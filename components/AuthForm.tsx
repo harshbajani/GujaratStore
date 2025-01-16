@@ -330,6 +330,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
             {showOtpModal && (
               <OtpModal
                 email={userEmail}
+                role="user"
                 onVerified={verifyOTP}
                 onResendOTP={resendOTP}
               />
