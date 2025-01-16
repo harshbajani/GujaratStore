@@ -2,6 +2,7 @@
 
 import DashboardPage from "./dashboard/page";
 import { useSession } from "next-auth/react";
+import { withVendorProtection } from "./HOC";
 
 const AdminPage = () => {
   const { data: session } = useSession();
@@ -17,4 +18,4 @@ const AdminPage = () => {
   );
 };
 
-export default AdminPage;
+export default withVendorProtection(AdminPage);
