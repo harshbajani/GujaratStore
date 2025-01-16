@@ -3,6 +3,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { SessionProvider } from "next-auth/react";
 import Image from "next/image";
+import { withAuthProtection } from "./HOC";
 
 const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -31,4 +32,4 @@ const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export default AuthenticatedLayout;
+export default withAuthProtection(AuthenticatedLayout);

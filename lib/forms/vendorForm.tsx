@@ -27,7 +27,7 @@ import { Loader2 } from "lucide-react";
 import { resendOTP, signUp, verifyOTP } from "../actions/vendorAuth.actions";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import OtpModal from "@/components/OTPModal";
 
 const VendorForm = ({ type }: { type: FormType }) => {
@@ -35,6 +35,8 @@ const VendorForm = ({ type }: { type: FormType }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [vendorEmail, setVendorEmail] = useState("");
+  const { data: session } = useSession();
+  console.log("Session Data:", session);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -99,7 +101,7 @@ const VendorForm = ({ type }: { type: FormType }) => {
           setErrorMessage(result.error);
         } else if (result?.ok) {
           toast({ title: "Success", description: "Signed In successfully" });
-          router.push("/vendor/dashboard");
+          window.location.href = "/vendor/dashboard";
           router.refresh();
         }
       }
