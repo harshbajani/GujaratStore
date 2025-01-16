@@ -15,7 +15,7 @@ const DashboardPage = () => {
       const response = await serverSignOut();
       if (response.success) {
         toast({ title: "Success", description: "Signed out successfully" });
-        router.push("/");
+        router.push("/vendor/sign-in");
       } else {
         toast({
           title: "Failed",
