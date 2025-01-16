@@ -61,57 +61,50 @@ const ForgotPasswordForm = () => {
   };
 
   return (
-    <div className="flex w-full flex-col">
-      <div className="flex flex-1 w-full ">
-        <div className="w-full px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-16 lg:py-12">
-          <Card className="mx-auto w-full shadow-md">
-            <CardHeader>
-              <CardTitle>Reset Password</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="auth-form"
-                >
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter your email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button
-                    type="submit"
-                    className="w-full form-submit-button"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sending Reset Instructions...
-                      </>
-                    ) : (
-                      "Reset Password"
-                    )}
-                  </Button>
-                  {errorMessage && (
-                    <p className="text-error text-sm text-center">
-                      {errorMessage}
-                    </p>
-                  )}
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+    <div className="w-full min-h-screen lg:min-h-full flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-12">
+      <Card className="w-full max-w-md lg:max-w-lg shadow-md">
+        <CardHeader className="space-y-2 p-4 sm:p-6">
+          <CardTitle className="text-xl sm:text-2xl text-center lg:text-left">
+            Reset Password
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="auth-form">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button
+                type="submit"
+                className="w-full form-submit-button"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending Reset Instructions...
+                  </>
+                ) : (
+                  "Reset Password"
+                )}
+              </Button>
+              {errorMessage && (
+                <p className="text-error text-sm text-center">{errorMessage}</p>
+              )}
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
       {showOtpModal && (
         <OtpModal
           email={email}

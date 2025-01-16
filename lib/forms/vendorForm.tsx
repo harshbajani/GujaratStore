@@ -114,13 +114,13 @@ const VendorForm = ({ type }: { type: FormType }) => {
   };
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-16 lg:py-12 flex flex-1">
-      <Card className="mx-auto w-full max-w-lg shadow-md">
-        <CardHeader className="space-y-2 px-4 pt-6 sm:px-6 sm:pt-8">
-          <CardTitle>
+    <div className="w-full min-h-screen lg:min-h-full flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-12">
+      <Card className="w-full max-w-md lg:max-w-lg shadow-md">
+        <CardHeader className="space-y-2 p-4 sm:p-6">
+          <CardTitle className="text-xl sm:text-2xl text-center lg:text-left">
             {type === "sign-in" ? "Sign In" : "Sign Up"} to account
           </CardTitle>
-          <CardDescription className="text-center text-sm sm:text-base md:text-left">
+          <CardDescription className="text-sm sm:text-base text-center lg:text-left">
             {type === "sign-in"
               ? "Enter your email & password to sign in"
               : "Enter your details to sign up with us"}
@@ -276,7 +276,7 @@ const VendorForm = ({ type }: { type: FormType }) => {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full text-sm sm:text-base"
+                className="primary-btn w-full"
               >
                 {type === "sign-in" ? "Sign In" : "Sign Up"}
                 {isLoading && <Loader2 className="ml-2 animate-spin" />}
