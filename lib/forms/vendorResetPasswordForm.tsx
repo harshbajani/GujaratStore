@@ -57,81 +57,74 @@ const VendorResetPasswordForm = ({ email, token }: ResetPasswordFormProps) => {
   };
 
   return (
-    <div className="flex w-full flex-col">
-      <div className="flex flex-1 w-full ">
-        <div className="w-full px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-16 lg:py-12">
-          <Card className="mx-auto w-full max-w-lg shadow-md">
-            <CardHeader>
-              <CardTitle>Set New Password</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="auth-form"
-                >
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>New Password</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="Enter new password"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+    <div className="w-full min-h-screen lg:min-h-full flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-12">
+      <Card className="w-full max-w-md lg:max-w-lg shadow-md">
+        <CardHeader className="space-y-2 p-4 sm:p-6">
+          <CardTitle className="text-xl sm:text-2xl text-center lg:text-left">
+            Set New Password
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="auth-form">
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>New Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter new password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <FormField
-                    control={form.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm New Password</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="Confirm new password"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm New Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Confirm new password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <Button
-                    type="submit"
-                    className="w-full form-submit-button"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Updating Password...
-                      </>
-                    ) : (
-                      "Update Password"
-                    )}
-                  </Button>
+              <Button
+                type="submit"
+                className="w-full form-submit-button"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating Password...
+                  </>
+                ) : (
+                  "Update Password"
+                )}
+              </Button>
 
-                  {errorMessage && (
-                    <p className="text-error text-sm text-center">
-                      {errorMessage}
-                    </p>
-                  )}
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              {errorMessage && (
+                <p className="text-error text-sm text-center">{errorMessage}</p>
+              )}
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
