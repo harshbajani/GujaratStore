@@ -154,8 +154,8 @@ const VendorProfileForm = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Full Name</FormLabel>
-                      <div className="relative">
-                        <User2 className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+                      <div className="relative flex items-center">
+                        <User2 className="w-4 h-4 absolute left-3 top-3 text-muted-foreground pointer-events-none" />
                         <FormControl>
                           <Input {...field} className="bg-muted/50 pl-10" />
                         </FormControl>
@@ -174,8 +174,8 @@ const VendorProfileForm = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Email</FormLabel>
-                      <div className="relative">
-                        <Mail className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+                      <div className="relative flex items-center">
+                        <Mail className="w-4 h-4 absolute left-3 text-muted-foreground pointer-events-none" />
                         <FormControl>
                           <Input {...field} className="bg-muted/50 pl-10" />
                         </FormControl>
@@ -197,8 +197,8 @@ const VendorProfileForm = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Contact Number</FormLabel>
-                      <div className="relative">
-                        <Phone className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+                      <div className="relative flex items-center">
+                        <Phone className="w-4 h-4 absolute left-3 top-3 text-muted-foreground pointer-events-none" />
                         <FormControl>
                           <Input
                             {...field}
