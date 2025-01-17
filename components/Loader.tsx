@@ -4,7 +4,7 @@ import Image from "next/image";
 
 const Loader = () => {
   return (
-    <div className="h-screen flex flex-col items-center justify-center">
+    <div className="min-h-screen flex flex-col items-center justify-center">
       <Image
         src="/loader.svg"
         alt="loader"

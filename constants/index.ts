@@ -6,6 +6,16 @@ import {
   Ticket,
   HeadphonesIcon,
   PhoneIcon,
+  ChartPie,
+  Tag,
+  ShoppingCart,
+  ClipboardList,
+  Users,
+  Building,
+  Percent,
+  Star,
+  LayoutPanelLeft,
+  PencilLine,
 } from "lucide-react";
 export const NavLinks = [
   {
@@ -217,8 +227,6 @@ export const flavoursOfGujarat = [
     label: "Sing Bhujiya(સિંગ ભુજિયા)",
   },
 ];
-
-// constants/testimonials.ts
 
 export const testimonials = [
   {
@@ -551,5 +559,58 @@ export const organic = [
   {
     src: "/organicBucket/cedarSoap.jpg",
     label: "Cedar Soap",
+  },
+];
+
+export const vendorSidebarLinks = [
+  {
+    label: "Dashboard",
+    route: "/vendor/dashboard",
+    icon: ChartPie,
+  },
+  {
+    label: "Attribute",
+    route: "/vendor/attribute",
+    icon: Tag,
+  },
+  {
+    label: "Brand",
+    route: "/vendor/brand",
+    icon: Star,
+  },
+  {
+    label: "Category",
+    route: "/vendor/category",
+    icon: LayoutPanelLeft,
+  },
+  {
+    label: "Products",
+    route: "/vendor/products",
+    icon: ShoppingCart,
+  },
+  {
+    label: "Orders",
+    route: "/vendor/orders",
+    icon: ClipboardList,
+  },
+  {
+    label: "Blogs",
+    route: "/vendor/blogs",
+    icon: PencilLine,
+  },
+  {
+    label: "Customers",
+    route: "/vendor/customers",
+    icon: Users,
+  },
+  {
+    label: "Industries",
+    route: "/vendor/industry",
+    icon: Building,
+  },
+  {
+    label: "Discount",
+    route: "/vendor/discounts",
+    icon: Percent,
   },
 ];

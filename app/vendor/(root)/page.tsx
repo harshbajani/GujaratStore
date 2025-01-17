@@ -1,8 +1,8 @@
 "use client";
 
-import DashboardPage from "./dashboard/page";
+import { withVendorProtection } from "../HOC";
 import { useSession } from "next-auth/react";
-import { withVendorProtection } from "./HOC";
+import DashboardPage from "@/app/vendor/(root)/dashboard/page";
 
 const AdminPage = () => {
   const { data: session } = useSession();
