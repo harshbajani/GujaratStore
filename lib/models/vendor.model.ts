@@ -15,7 +15,7 @@ const storeAddressSchema = new mongoose.Schema({
 
 const store = new mongoose.Schema({
   name: { type: String, required: true, minlength: 2 },
-  addresses: { type: [storeAddressSchema], required: true },
+  addresses: { type: storeAddressSchema, required: true },
 });
 
 const vendorSchema = new mongoose.Schema({
