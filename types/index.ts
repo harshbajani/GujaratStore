@@ -148,6 +148,7 @@ export type StoreData = {
 };
 
 export interface IStore {
+  _id?: string;
   storeName: string;
   contact: string;
   address: {

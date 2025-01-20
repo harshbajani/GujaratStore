@@ -39,12 +39,14 @@ import {
 } from "../actions/storeProfile.actions";
 import { useToast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
+import { useRouter } from "next/navigation";
 
 type StoreInfo = z.infer<typeof storeSchema>;
 
 const Storeform = () => {
   const [country] = useState("India");
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
   const { toast } = useToast();
 
   const form = useForm<StoreInfo>({
@@ -86,8 +88,8 @@ const Storeform = () => {
       toast({
         title: "Success",
         description: "Store details saved successfully!",
-        variant: "default",
       });
+      router.push("/vendor/dashboard");
     } catch (error) {
       console.error("Submission error:", error);
       toast({

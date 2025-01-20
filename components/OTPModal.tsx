@@ -72,7 +72,11 @@ const OtpModal = ({
         } else if (type === "password-reset" && role === "user") {
           router.push(`/reset-password?email=${email}&token=${otp}`);
         } else {
-          router.push("/sign-in");
+          if (role === "user") {
+            router.push("/sign-in");
+          } else {
+            router.push("/vendor/sign-in");
+          }
         }
       } else {
         setErrorMessage(result.message || "Invalid OTP. Please try again.");

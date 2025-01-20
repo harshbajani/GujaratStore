@@ -11,7 +11,7 @@ const DashboardPage = () => {
         <h1 className="h1">Dashboard</h1>
       </div>
       <div className="p-2 bg-white border rounded-md min-h-screen shadow-md">
-        dashboard componenets and functions to calculate and display data
+        dashboard componenets and functions to calculate and display data Store
       </div>
     </div>
   );
