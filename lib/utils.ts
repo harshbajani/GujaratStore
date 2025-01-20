@@ -72,6 +72,7 @@ export const toSchemaFormat = (data: StoreData) => ({
 
 // Helper function to convert from MongoDB schema to IStore interface
 export const toInterfaceFormat = (store: {
+  _id?: string;
   storeName: string;
   contact: string;
   addresses: {
@@ -87,6 +88,7 @@ export const toInterfaceFormat = (store: {
   if (!store) return null;
 
   return {
+    _id: store._id,
     storeName: store.storeName,
     contact: store.contact,
     address: {

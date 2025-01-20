@@ -122,7 +122,6 @@ export async function getStore() {
     if (!formattedData) {
       return { success: false, error: "Failed to process store data" };
     }
-
     return {
       success: true,
       data: formattedData,
