@@ -36,6 +36,7 @@ export interface IVendor {
   phone: string;
   password: string;
   role: "vendor";
+  store: IStore;
   isVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
@@ -130,6 +131,34 @@ export interface IAddress {
   state: string;
   landmark?: string;
   alternativeContact?: string;
+}
+
+export type StoreData = {
+  storeName: string;
+  contact: string;
+  address: {
+    address_line_1: string;
+    address_line_2: string;
+    locality: string;
+    pincode: string;
+    state: string;
+    landmark?: string;
+  };
+  alternativeContact?: string;
+};
+
+export interface IStore {
+  storeName: string;
+  contact: string;
+  address: {
+    address_line_1: string;
+    address_line_2: string;
+    locality: string;
+    pincode: string;
+    state: string;
+    landmark?: string;
+  };
+  alternativeContact: string;
 }
 
 type DeliveryAddress = z.infer<typeof Address>;

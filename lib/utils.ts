@@ -1,3 +1,4 @@
+import { IStore, StoreData } from "@/types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -53,4 +54,49 @@ export const formatDateTime = (isoString: string | null | undefined) => {
   const month = monthNames[date.getMonth()];
 
   return `${time}, ${day} ${month}`;
+};
+
+export const toSchemaFormat = (data: StoreData) => ({
+  storeName: data.storeName,
+  contact: data.contact,
+  addresses: {
+    address_line_1: data.address.address_line_1,
+    address_line_2: data.address.address_line_2,
+    locality: data.address.locality,
+    pincode: data.address.pincode,
+    state: data.address.state,
+    landmark: data.address.landmark,
+  },
+  alternativeContact: data.alternativeContact,
+});
+
+// Helper function to convert from MongoDB schema to IStore interface
+export const toInterfaceFormat = (store: {
+  storeName: string;
+  contact: string;
+  addresses: {
+    address_line_1: string;
+    address_line_2: string;
+    locality: string;
+    pincode: string;
+    state: string;
+    landmark?: string;
+  };
+  alternativeContact?: string;
+}): IStore | null => {
+  if (!store) return null;
+
+  return {
+    storeName: store.storeName,
+    contact: store.contact,
+    address: {
+      address_line_1: store.addresses.address_line_1,
+      address_line_2: store.addresses.address_line_2,
+      locality: store.addresses.locality,
+      pincode: store.addresses.pincode,
+      state: store.addresses.state,
+      landmark: store.addresses.landmark,
+    },
+    alternativeContact: store.alternativeContact || "",
+  };
 };
