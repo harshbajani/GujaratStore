@@ -9,24 +9,16 @@ import { Button } from "@/components/ui/button";
 import { useParams } from "next/navigation";
 import { getAllBlogs, getBlogById } from "@/lib/actions/blog.actions";
 import Loader from "@/components/Loader";
+import { TransformedBlog } from "@/types/index";
 
-interface Blog {
-  id: string;
-  image: string;
-  heading: string;
-  user: string;
-  date: string;
-  description: string;
-  category: string;
-  metaTitle: string;
-  metaDescription: string;
-  metaKeywords: string;
+interface ClientBlogPageProps {
+  initialBlog: TransformedBlog | null;
 }
 
-const ClientBlogPage = () => {
+const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
   const { id } = useParams();
-  const [blog, setBlog] = useState<Blog | null>(null);
-  const [relatedBlogs, setRelatedBlogs] = useState<Blog[]>([]);
+  const [blog, setBlog] = useState<TransformedBlog | null>(initialBlog);
+  const [relatedBlogs, setRelatedBlogs] = useState<TransformedBlog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

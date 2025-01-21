@@ -1,4 +1,3 @@
-import { features } from "@/constants";
 import { Address } from "@/lib/validations";
 import { Document, Types } from "mongoose";
 import { z } from "zod";
@@ -74,21 +73,6 @@ export interface CollectionItemProps {
   item: ImageItem | ContentItem;
   isImageType: boolean;
   index: number;
-}
-
-export interface Blog {
-  id: string;
-  image: string;
-  heading: string;
-  user: string;
-  date: string;
-  description: string;
-  category: string;
-}
-
-export interface FeaturesAndBlogsProps {
-  blogs: Blog[];
-  features: typeof features;
 }
 
 export interface IBlog extends Document {

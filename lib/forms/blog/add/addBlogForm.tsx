@@ -78,8 +78,6 @@ const AddBlog = () => {
       const result = await createBlog(formData);
 
       if (result.success) {
-        // Handle success (e.g., show message, redirect)
-        console.log("Blog created successfully");
         form.reset({
           heading: "",
           user: "",
@@ -102,10 +100,7 @@ const AddBlog = () => {
 
   return (
     <section className="sm:px-5 md:px-1 lg:px-2">
-      <h1 className="text-black text-2xl font-semibold sm:mb-5 md:mb-2">
-        Add Blogs
-      </h1>
-      <div className="bg-white border border-gray-300 rounded-xl p-6 text-black">
+      <div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -151,15 +146,15 @@ const AddBlog = () => {
                 )}
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <FormField
                 control={form.control}
-                name="date"
+                name="heading"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>Heading</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" />
+                      <Input {...field} placeholder="Heading" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -179,22 +174,21 @@ const AddBlog = () => {
                   </FormItem>
                 )}
               />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <FormField
                 control={form.control}
-                name="heading"
+                name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Heading</FormLabel>
+                    <FormLabel>Date</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Heading" />
+                      <Input {...field} type="date" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+            </div>
+            <div className="grid grid-cols-1  gap-2">
               <FormField
                 control={form.control}
                 name="description"
@@ -263,7 +257,7 @@ const AddBlog = () => {
             />
             <Button
               type="submit"
-              className="text-white px-6 mt-5"
+              className="primary-btn px-6 mt-5"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Submitting..." : "Submit"}
