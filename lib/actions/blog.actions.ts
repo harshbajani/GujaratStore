@@ -138,3 +138,18 @@ export async function getFileById(id: string) {
     throw new Error("Failed to retrieve file");
   }
 }
+
+//* Delete a blog post
+export async function deleteBlog(id: string) {
+  try {
+    await connectToDB();
+    const deletedBlog = await Blog.findByIdAndDelete(id).lean();
+    if (!deletedBlog) {
+      throw new Error("Blog not found");
+    }
+    return deletedBlog;
+  } catch (error) {
+    console.error(`Failed to delete blog with id ${id}:`, error);
+    throw new Error("Failed to delete blog");
+  }
+}

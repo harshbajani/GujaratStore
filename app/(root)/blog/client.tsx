@@ -6,9 +6,11 @@ import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
 import { getAllBlogs } from "@/lib/actions/blog.actions"; // Make sure getAllBlogs includes image handling logic
 import { features } from "@/constants";
+import { TransformedBlog } from "@/types";
 
-const ClientFeaturesAndBlogs = () => {
-  const [blogs, setBlogs] = useState<Blog[]>([]);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ClientFeaturesAndBlogs = ({ initialBlog }: any) => {
+  const [blogs, setBlogs] = useState<TransformedBlog[]>(initialBlog);
   const [blogRef, blogInView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
@@ -156,21 +158,11 @@ const ClientFeaturesAndBlogs = () => {
   );
 };
 
-interface Blog {
-  id: string;
-  image: string; // Base64 string or image path
-  heading: string;
-  user: string;
-  date: string;
-  description: string;
-  category: string;
-}
-
 const BlogCard = ({
   blog,
   featured = false,
 }: {
-  blog: Blog;
+  blog: TransformedBlog;
   featured?: boolean;
 }) => {
   if (!blog) return null;

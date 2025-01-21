@@ -1,11 +1,9 @@
 "use client";
-
 import Hero from "@/components/Hero";
 import NewCollection from "@/components/NewCollection";
 import OrganicAndFlavours from "@/components/OrganicAndFlavours";
 import Testimonials from "@/components/Testimonials";
 import { useAuth } from "@/hooks/useAuth";
-import Blogs from "./blog/page";
 
 const ClientHomePage = () => {
   const { isAuthenticated } = useAuth();
@@ -17,10 +15,10 @@ const ClientHomePage = () => {
         <NewCollection />
         <OrganicAndFlavours />
         <Testimonials />
-        <Blogs />
       </div>
     );
   }
+  return null;
 };
 
 export default ClientHomePage;
