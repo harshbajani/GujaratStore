@@ -122,3 +122,8 @@ export const inquirySchema = z.object({
     .max(10, "Only 10 digits are allowed"),
   message: z.string().optional(),
 });
+
+export const parentCategorySchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  isActive: z.boolean().default(true),
+});

@@ -1,4 +1,3 @@
-// lib/models/jobPosition.model.ts
 import mongoose, { Schema } from "mongoose";
 
 const attributeSchema = new Schema({

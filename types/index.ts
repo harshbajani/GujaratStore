@@ -170,3 +170,9 @@ export interface AttributeFormData {
   name: string;
   isActive: boolean;
 }
+
+export interface ParentCategoryFormData {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
