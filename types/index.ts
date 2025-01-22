@@ -164,3 +164,9 @@ export interface AddressDialogProps {
   editingAddress: DeliveryAddress | null;
   onSubmit: (data: DeliveryAddress) => Promise<void>;
 }
+
+export interface AttributeFormData {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
