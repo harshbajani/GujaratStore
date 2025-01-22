@@ -22,6 +22,7 @@ import { createBlog } from "@/lib/actions/blog.actions";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
 
 type BlogFormData = z.infer<typeof blogSchema>;
 
@@ -255,13 +256,18 @@ const AddBlog = () => {
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              className="primary-btn px-6 mt-5"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Submitting..." : "Submit"}
-            </Button>
+            <div className="flex flex-row mt-2 gap-2">
+              <Button
+                type="submit"
+                className="primary-btn "
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Submit"}
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/vendor/blogs">Cancel</Link>
+              </Button>
+            </div>
           </form>
         </Form>
       </div>

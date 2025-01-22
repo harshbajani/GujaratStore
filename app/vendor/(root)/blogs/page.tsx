@@ -49,17 +49,20 @@ const BlogsPage = () => {
     pageSize: 10,
   });
 
-  // *hooks
   const router = useRouter();
   const { toast } = useToast();
 
-  // * functions
   const fetchBlogPosts = async () => {
     try {
       const response = await getAllBlogs();
       setData(response);
     } catch (error) {
       console.error("Failed to fetch blog posts:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch blog posts",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -70,23 +73,20 @@ const BlogsPage = () => {
       await deleteBlog(id);
       await fetchBlogPosts();
       toast({
-        title: "Deleted",
+        title: "Success",
         description: "Blog post deleted successfully!",
         variant: "default",
-        className: "text-black z-20 bg-white",
       });
     } catch (error) {
       console.error("Failed to delete blog post:", error);
       toast({
-        title: "Error submitting form",
-        description: "Failed to delete blog post.",
+        title: "Error",
+        description: "Failed to delete blog post",
         variant: "destructive",
-        className: "text-white",
       });
     }
   };
 
-  // * useEffects
   useEffect(() => {
     fetchBlogPosts();
   }, []);
@@ -95,50 +95,61 @@ const BlogsPage = () => {
     {
       accessorKey: "heading",
       header: "Title",
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("heading")}</div>
+      ),
     },
     {
       accessorKey: "user",
       header: "Author",
+      cell: ({ row }) => <div>{row.getValue("user")}</div>,
     },
     {
       accessorKey: "date",
       header: "Date",
+      cell: ({ row }) => <div>{row.getValue("date")}</div>,
     },
     {
       accessorKey: "category",
       header: "Category",
+      cell: ({ row }) => <div>{row.getValue("category")}</div>,
     },
     {
       accessorKey: "description",
       header: "Description",
       cell: ({ row }) => {
         const description = row.getValue("description") as string;
-        return description.length > 100
-          ? description.slice(0, 100) + "..."
-          : description;
+        return (
+          <div className="max-w-md">
+            {description.length > 100
+              ? description.slice(0, 100) + "..."
+              : description}
+          </div>
+        );
       },
     },
     {
-      accessorKey: "actions",
-      header: "Actions",
       id: "actions",
+      header: "Actions",
       cell: ({ row }) => {
         const post = row.original;
         return (
-          <div className="flex space-x-2">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
+              className="hover:bg-gray-100"
               onClick={() => router.push(`/vendor/blogs/edit/${post.id}`)}
             >
-              <Pencil className="h-4 w-4" />
+              <Pencil className="h-4 w-4 text-gray-600" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
+              className="hover:bg-red-100"
               onClick={() => handleDelete(post.id)}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4 text-red-600" />
             </Button>
           </div>
         );
@@ -163,27 +174,24 @@ const BlogsPage = () => {
     },
   });
 
-  // * Generate page numbers
   const pageCount = table.getPageCount();
   const currentPage = table.getState().pagination.pageIndex + 1;
   const pageNumbers = Array.from({ length: pageCount }, (_, i) => i + 1);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <Loader />
-      </div>
-    );
+    return <Loader />;
   }
+
   return (
-    <div className="p-2 ">
-      <div className="flex items-center gap-2">
-        <PencilLine className="text-brand" size={30} />
-        <h1 className="h1">Blogs</h1>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center gap-3">
+        <PencilLine className="text-brand h-8 w-8" />
+        <h1 className="text-2xl font-semibold">Blogs</h1>
       </div>
-      <div>
-        <div className="bg-white border border-gray-300 rounded-xl p-6">
-          <div className="flex items-center py-4 justify-between sm:gap-0 gap-2">
+
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
             <Input
               placeholder="Filter by title..."
               value={
@@ -195,58 +203,60 @@ const BlogsPage = () => {
               className="max-w-sm"
             />
             <Link href="/vendor/blogs/add">
-              <Button className="primary-btn">Add Blog</Button>
+              <Button className="bg-brand hover:bg-brand/90 text-white">
+                Add Blog
+              </Button>
             </Link>
           </div>
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="text-black">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
+
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id} className="bg-gray-50">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-          <div className="flex items-center justify-between space-x-2 py-4">
-            {/* Page Size Selector */}
-            <div className="flex items-center space-x-2">
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id} className="hover:bg-gray-50">
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center text-gray-500"
+                    >
+                      No blogs found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Rows per page:</span>
               <Select
                 value={pagination.pageSize.toString()}
@@ -270,31 +280,28 @@ const BlogsPage = () => {
               </Select>
             </div>
 
-            {/* Pagination Controls */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
-                className="text-black"
               >
                 Previous
               </Button>
 
-              {/* Page Numbers */}
-              <div className="flex space-x-1">
+              <div className="flex gap-1">
                 {pageNumbers.map((pageNumber) => (
                   <Button
                     key={pageNumber}
                     variant={currentPage === pageNumber ? "default" : "outline"}
                     size="sm"
                     onClick={() => table.setPageIndex(pageNumber - 1)}
-                    className={`text-black ${
+                    className={
                       currentPage === pageNumber
-                        ? "bg-brand hover:bg-brand-100 text-white"
+                        ? "bg-brand hover:bg-brand/90 text-white"
                         : ""
-                    }`}
+                    }
                   >
                     {pageNumber}
                   </Button>
@@ -306,7 +313,6 @@ const BlogsPage = () => {
                 size="sm"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
-                className="text-black"
               >
                 Next
               </Button>
