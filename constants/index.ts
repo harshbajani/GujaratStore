@@ -580,7 +580,20 @@ export const vendorSidebarLinks = [
   },
   {
     label: "Category",
-    route: "/vendor/category",
+    route: [
+      {
+        route: "/vendor/category/parentCategory",
+        label: "Parent Category",
+      },
+      {
+        route: "/vendor/category/primaryCategory",
+        label: "Primary Category",
+      },
+      {
+        route: "/vendor/category/secondaryCategory",
+        label: "Secondary Category",
+      },
+    ],
     icon: LayoutPanelLeft,
   },
   {
