@@ -176,3 +176,27 @@ export interface ParentCategoryFormData {
   name: string;
   isActive: boolean;
 }
+
+export interface IPrimaryCategory {
+  id?: string;
+  name: string;
+  parentCategory: string;
+  attributes: string[];
+  description?: string;
+  metaTitle?: string;
+  metaKeywords?: string[];
+  metaDescription?: string;
+  isActive: boolean;
+}
+
+export type PrimaryCategoryWithPopulatedFields = IPrimaryCategory & {
+  id: string; // Ensure you have an id field
+  parentCategory: {
+    _id: string;
+    name: string;
+  };
+  attributes: {
+    _id: string;
+    name: string;
+  }[];
+};

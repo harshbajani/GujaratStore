@@ -196,10 +196,10 @@ const ParentCategoryPage = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-2 space-y-6">
       <div className="flex items-center gap-3">
-        <LayoutPanelLeft className="text-brand h-8 w-8" />
-        <h1 className="text-2xl font-semibold">Parent Category</h1>
+        <LayoutPanelLeft className="text-brand " size={30} />
+        <h1 className="h1">Parent Category</h1>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
