@@ -127,3 +127,16 @@ export const parentCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
   isActive: z.boolean().default(true),
 });
+
+export const primaryCategorySchema = z.object({
+  name: z.string().nonempty("Name is required"),
+  parentCategory: z.string().nonempty("Parent category is required"),
+  attributes: z
+    .array(z.string())
+    .nonempty("At least one attribute is required"),
+  description: z.string().optional(),
+  metaTitle: z.string().optional(),
+  metaKeywords: z.array(z.string()).optional(),
+  metaDescription: z.string().optional(),
+  isActive: z.boolean().default(true),
+});

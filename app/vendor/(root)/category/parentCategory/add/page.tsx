@@ -3,7 +3,7 @@ import AddParentCategoryForm from "@/lib/forms/parentCategory/addParentCategoryF
 
 const AddParentCategory = () => {
   return (
-    <div className="p-2 ">
+    <div className="p-2 space-y-6">
       <div className="flex items-center gap-2">
         <LayoutPanelLeft className="text-brand" size={30} />
         <h1 className="h1">Add Parent Category</h1>
