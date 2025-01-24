@@ -1,6 +1,6 @@
 "use server";
 
-import mongoose from "mongoose";
+import mongoose, { HydratedDocument } from "mongoose";
 import { revalidatePath } from "next/cache";
 import { parentCategorySchema } from "../validations";
 import ParentCategory from "../models/parentCategory.model";
@@ -13,7 +13,7 @@ export interface IParentCategory {
 }
 
 // Helper function to serialize MongoDB documents
-const serializeDocument = (doc: mongoose.Document): IParentCategory | null => {
+const serializeDocument = (doc: HydratedDocument<IParentCategory>) => {
   if (!doc) return null;
   const serialized = doc.toJSON ? doc.toJSON() : doc;
   return {

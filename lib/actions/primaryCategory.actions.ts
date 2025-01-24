@@ -9,6 +9,7 @@ import { IPrimaryCategory } from "@/types";
 import { primaryCategorySchema } from "../validations";
 import Attributes from "@/lib/models/attribute.model";
 import ParentCategory from "@/lib/models/parentCategory.model";
+import { parseStringify } from "../utils";
 
 // Define TypeScript interface for PrimaryCategory
 export type PrimaryCategoryData = z.infer<typeof primaryCategorySchema>;
@@ -17,10 +18,10 @@ export type PrimaryCategoryData = z.infer<typeof primaryCategorySchema>;
 export const serializeDocument = async (
   doc: HydratedDocument<IPrimaryCategory>
 ) => {
-  return JSON.parse(JSON.stringify(doc));
+  return parseStringify(doc);
 };
 
-// 1. Create Primary Category
+// * 1. Create Primary Category
 export const createPrimaryCategory = async (data: PrimaryCategoryData) => {
   // Ensure database connection
   await connectToDB();
@@ -47,7 +48,7 @@ export const createPrimaryCategory = async (data: PrimaryCategoryData) => {
   return serializeDocument(savedCategory);
 };
 
-// 2. Get All Primary Categories
+// * 2. Get All Primary Categories
 export const getAllPrimaryCategories = async () => {
   await connectToDB();
 
@@ -63,12 +64,12 @@ export const getAllPrimaryCategories = async () => {
 
   // Ensure proper serialization
   return primaryCategories.map((category) => ({
-    ...JSON.parse(JSON.stringify(category)), // Serialize
+    ...parseStringify(category), // Serialize
     id: category._id.toString(), // Ensure id is a string
   }));
 };
 
-// 3. Get Primary Category by ID
+// * 3. Get Primary Category by ID
 export const getPrimaryCategoryById = async (id: string) => {
   // Ensure database connection
   await connectToDB();
@@ -82,7 +83,7 @@ export const getPrimaryCategoryById = async (id: string) => {
   return serializeDocument(primaryCategory);
 };
 
-// 4. Update Primary Category by ID
+// * 4. Update Primary Category by ID
 export const updatePrimaryCategoryById = async (
   id: string,
   data: Partial<PrimaryCategoryData>
@@ -125,7 +126,7 @@ export const updatePrimaryCategoryById = async (
   return serializeDocument(updatedCategory);
 };
 
-// 5. Delete Primary Category by ID
+// * 5. Delete Primary Category by ID
 export const deletePrimaryCategoryById = async (id: string) => {
   // Ensure database connection
   await connectToDB();
