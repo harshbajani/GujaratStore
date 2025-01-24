@@ -189,6 +189,32 @@ export interface IPrimaryCategory {
   isActive: boolean;
 }
 
+export interface ISecondaryCategory {
+  id?: string;
+  name: string;
+  parentCategory: string;
+  primaryCategory: string;
+  attributes: string[];
+  description?: string;
+  isActive: boolean;
+}
+
+export type SecondaryCategoryWithPopulatedFields = ISecondaryCategory & {
+  id: string; // Ensure you have an id field
+  parentCategory: {
+    _id: string;
+    name: string;
+  };
+  primaryCategory: {
+    _id: string;
+    name: string;
+  };
+  attributes: {
+    _id: string;
+    name: string;
+  }[];
+};
+
 export type PrimaryCategoryWithPopulatedFields = IPrimaryCategory & {
   id: string; // Ensure you have an id field
   parentCategory: {
