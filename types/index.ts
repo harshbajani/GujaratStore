@@ -226,3 +226,13 @@ export type PrimaryCategoryWithPopulatedFields = IPrimaryCategory & {
     name: string;
   }[];
 };
+
+export interface IBrand {
+  _id?: string;
+  name: string;
+  imageId: string;
+  metaTitle?: string;
+  metaKeywords?: string;
+  metaDescription?: string;
+  __v?: number;
+}
