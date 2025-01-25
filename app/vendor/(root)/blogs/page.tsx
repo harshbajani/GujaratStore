@@ -183,10 +183,10 @@ const BlogsPage = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-2 space-y-6">
       <div className="flex items-center gap-3">
         <PencilLine className="text-brand h-8 w-8" />
-        <h1 className="text-2xl font-semibold">Blogs</h1>
+        <h1 className="h1">Blogs</h1>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">

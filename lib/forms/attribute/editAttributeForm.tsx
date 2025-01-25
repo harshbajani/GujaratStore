@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,13 +29,10 @@ const attributeSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-interface EditAttributeFormProps {
-  attributeId: string;
-}
-
-const EditAttributeForm = ({ attributeId }: EditAttributeFormProps) => {
+const EditAttributeForm = () => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { id } = useParams();
   const { toast } = useToast();
 
   const form = useForm<AttributeFormData>({
@@ -49,7 +46,7 @@ const EditAttributeForm = ({ attributeId }: EditAttributeFormProps) => {
   useEffect(() => {
     const fetchAttribute = async () => {
       try {
-        const response = await getAttributeById(attributeId);
+        const response = await getAttributeById(id as string);
         if (response.success && response.data) {
           form.reset({
             name: Array.isArray(response.data) ? "" : response.data.name,
@@ -77,11 +74,11 @@ const EditAttributeForm = ({ attributeId }: EditAttributeFormProps) => {
     };
 
     fetchAttribute();
-  }, [attributeId, form, toast]);
+  }, [id, form, toast]);
 
   const onSubmit = async (data: AttributeFormData) => {
     try {
-      const response = await updateAttribute(attributeId, data);
+      const response = await updateAttribute(id as string, data);
       if (response.success) {
         toast({
           title: "Success",
