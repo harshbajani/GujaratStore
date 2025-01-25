@@ -151,3 +151,11 @@ export const secondaryCategorySchema = z.object({
   description: z.string().optional(),
   isActive: z.boolean().default(true),
 });
+
+export const brandSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  imageId: z.string().min(1, "Image is required."),
+  metaTitle: z.string().optional(),
+  metaKeywords: z.string().optional(),
+  metaDescription: z.string().optional(),
+});
