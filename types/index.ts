@@ -92,7 +92,7 @@ export interface IBlog extends Document {
 
 export interface TransformedBlog {
   id: string;
-  image: string;
+  imageId: string;
   user: string;
   date: string;
   heading: string;

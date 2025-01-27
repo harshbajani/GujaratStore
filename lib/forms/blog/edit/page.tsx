@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { blogSchema } from "@/lib/validations";
 import Image from "next/image";
-import { createBlog, getBlogById } from "@/lib/actions/blog.actions";
+import { updateBlog, getBlogById } from "@/lib/actions/blog.actions";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
@@ -30,6 +31,8 @@ const EditBlog = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [postImage, setPostImage] = useState<string | null>(null);
+  const [existingImageId, setExistingImageId] = useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
   const { id } = useParams();
 
   const form = useForm<BlogFormData>({
@@ -66,14 +69,10 @@ const EditBlog = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Create a base64 string from the uploaded file
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result as string;
-          setPostImage(base64String);
-        };
-        reader.readAsDataURL(file);
+        // Set the preview image using URL.createObjectURL
+        setPostImage(URL.createObjectURL(file));
 
+        // Set the imageId directly
         onChange(data.fileId);
       }
     } catch (error) {
@@ -84,19 +83,26 @@ const EditBlog = () => {
   const handleSubmit = async (data: BlogFormData) => {
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          formData.append(key, value);
-        }
-      });
+      // If no new image is uploaded, use the existing image ID
+      if (!data.imageId && existingImageId) {
+        data.imageId = existingImageId;
+      }
+      console.log("imageId", data.imageId);
+      console.log("existingImageId", existingImageId);
 
-      const result = await createBlog(formData);
+      // If the imageId is a base64 string, extract just the file ID
+      if (data.imageId && data.imageId.startsWith("/")) {
+        // If it starts with '/', it's likely the base64 string
+        // You might want to use the existingImageId instead
+        data.imageId = existingImageId || "";
+        console.log("updated image id", data.imageId);
+      }
 
-      if (result.success) {
+      const result = await updateBlog(id as string, data);
+      console.log("data", id as string, data);
+
+      if (result) {
         form.reset();
-        setPostImage(null);
-        // Add success notification or redirect here
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -116,13 +122,20 @@ const EditBlog = () => {
       try {
         const blog = await getBlogById(id as string);
         if (blog) {
-          // Set the base64 image directly
-          if (blog.image) {
-            setPostImage(`data:image/jpeg;base64,${blog.image}`);
+          // Set the original imageId
+          setExistingImageId(blog.imageId);
+
+          // Fetch and set image preview
+          if (blog.imageId) {
+            const response = await fetch(`/api/files/${blog.imageId}`);
+            const blob = await response.blob();
+            const imageUrl = URL.createObjectURL(blob);
+            setPostImage(imageUrl);
+            setImagePreviewUrl(URL.createObjectURL(blob));
           }
 
           form.reset({
-            imageId: blog.image || "",
+            imageId: blog.imageId,
             user: blog.user || "",
             date: blog.date || "",
             heading: blog.heading || "",
@@ -141,6 +154,13 @@ const EditBlog = () => {
     };
 
     fetchBlog();
+
+    // Cleanup function to revoke object URLs
+    return () => {
+      if (postImage) {
+        URL.revokeObjectURL(postImage);
+      }
+    };
   }, [id, form]);
 
   if (isLoading) {
@@ -159,7 +179,6 @@ const EditBlog = () => {
             <FormField
               control={form.control}
               name="imageId"
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
               render={({ field: { onChange, ...field } }) => (
                 <FormItem>
                   <FormLabel>Image</FormLabel>

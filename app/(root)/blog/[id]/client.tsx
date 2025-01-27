@@ -22,6 +22,8 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const getImageUrl = (imageId: string) => `/api/files/${imageId}`;
+
   useEffect(() => {
     const fetchBlogData = async () => {
       try {
@@ -85,13 +87,15 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
         {/* Hero Section */}
         <div className="relative w-full h-[400px] rounded-xl overflow-hidden mb-8">
           {/* If the blog image is a base64 string, use it directly in the Image src */}
-          <Image
-            src={`data:image/jpeg;base64,${blog.image}`} // Assuming the image is base64-encoded
-            alt={blog.heading}
-            fill
-            className="object-cover"
-            priority
-          />
+          {blog.imageId && (
+            <Image
+              src={getImageUrl(blog.imageId)}
+              alt={blog.heading}
+              fill
+              className="object-cover"
+              priority
+            />
+          )}
           <div className="absolute inset-0 bg-black/50" />
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
@@ -146,12 +150,14 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
                   className="group"
                 >
                   <div className="relative h-48 rounded-lg overflow-hidden mb-3">
-                    <Image
-                      src={`data:image/jpeg;base64,${relatedBlog.image}`} // Using base64 for related blogs as well
-                      alt={relatedBlog.heading}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
+                    {relatedBlog.imageId && (
+                      <Image
+                        src={getImageUrl(relatedBlog.imageId)}
+                        alt={relatedBlog.heading}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    )}
                   </div>
                   <h3 className="font-semibold text-gray-900 group-hover:text-brand transition-colors">
                     {relatedBlog.heading}

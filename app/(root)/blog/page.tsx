@@ -30,14 +30,14 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: "Our Blog - Latest Posts and Updates",
       description: descriptions.substring(0, 160),
-      images: blogs.length > 0 ? [blogs[0].image] : [],
+      images: blogs.length > 0 ? [blogs[0].imageId] : [],
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
       title: "Our Blog - Latest Posts and Updates",
       description: descriptions.substring(0, 160),
-      images: blogs.length > 0 ? [blogs[0].image] : [],
+      images: blogs.length > 0 ? [blogs[0].imageId] : [],
     },
   };
 }

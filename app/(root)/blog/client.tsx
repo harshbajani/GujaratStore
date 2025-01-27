@@ -177,7 +177,7 @@ const BlogCard = ({
         className={`relative rounded-lg overflow-hidden ${cardHeight} cursor-pointer`}
       >
         <Image
-          src={`data:image/jpeg;base64,${blog.image}`} // Render the base64 image here
+          src={`data:image/jpeg;base64,${blog.imageId}`} // Render the base64 image here
           alt={blog.heading}
           width={500}
           height={500}

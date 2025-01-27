@@ -25,10 +25,10 @@ export async function generateMetadata({
       openGraph: {
         title: post.metaTitle || post.heading,
         description: post.metaDescription,
-        images: post.image
+        images: post.imageId
           ? [
               {
-                url: `data:image/jpeg;base64,${post.image}`,
+                url: `data:image/jpeg;base64,${post.imageId}`,
                 width: 1200,
                 height: 630,
                 alt: post.heading,
@@ -41,7 +41,7 @@ export async function generateMetadata({
         card: "summary_large_image",
         title: post.metaTitle || post.heading,
         description: post.metaDescription,
-        images: post.image ? [`data:image/jpeg;base64,${post.image}`] : [],
+        images: post.imageId ? [`data:image/jpeg;base64,${post.imageId}`] : [],
       },
     };
   } catch (error) {

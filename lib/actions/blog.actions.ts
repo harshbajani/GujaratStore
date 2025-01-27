@@ -47,7 +47,7 @@ export async function getAllBlogs() {
           date: blog.date,
           description: blog.description,
           category: blog.category,
-          image: image.buffer.toString("base64"), // Return the image as base64 for frontend use
+          imageId: image.buffer.toString("base64"), // Return the image as base64 for frontend use
           metaTitle: blog.metaTitle,
           metaDescription: blog.metaDescription,
           metaKeywords: blog.metaKeywords,
@@ -67,20 +67,17 @@ export async function getBlogById(id: string): Promise<TransformedBlog | null> {
     await connectToDB();
 
     // Check if the ObjectId is valid
-    if (!Types.ObjectId.isValid(id)) {
-      return null;
-    }
+    if (!Types.ObjectId.isValid(id)) return null;
 
     // Fetch the blog post from the database
     const blog = (await Blog.findById(id)) as IBlog | null;
 
     // If the blog doesn't exist, return null
-    if (!blog) {
-      return null;
-    }
+    if (!blog) return null;
 
     // Fetch the image using the getFileById function
-    const image = await getFileById(blog.imageId);
+    // const image = await getFileById(blog.imageId);
+    // console.log(image);
 
     // Transform the blog data to include the image as base64
     const transformedBlog = {
@@ -90,7 +87,7 @@ export async function getBlogById(id: string): Promise<TransformedBlog | null> {
       date: blog.date, // Convert date to string
       description: blog.description,
       category: blog.category,
-      image: image.buffer.toString("base64"), // Return the image as base64 for frontend use
+      imageId: blog.imageId, // Return the image as base64 for frontend use
       metaTitle: blog.metaTitle,
       metaDescription: blog.metaDescription,
       metaKeywords: blog.metaKeywords,
@@ -100,6 +97,39 @@ export async function getBlogById(id: string): Promise<TransformedBlog | null> {
   } catch (error) {
     console.error("Error fetching blog:", error);
     throw new Error("Failed to fetch blog");
+  }
+}
+
+//* Update a blog post
+export async function updateBlog(
+  id: string,
+  updateData: Partial<TransformedBlog>
+) {
+  try {
+    // Find the existing blog
+    const existingBlog = await Blog.findById(id);
+
+    if (!existingBlog) {
+      throw new Error("Blog not found");
+    }
+
+    // Retain the existing imageId if no new imageId is provided
+    if (!updateData.imageId) {
+      updateData.imageId = existingBlog.imageId;
+    }
+
+    const updatedBlog = await Blog.findByIdAndUpdate(id, updateData, {
+      new: true,
+      lean: true,
+    });
+
+    return { success: true, data: updatedBlog };
+  } catch (error) {
+    console.error(`Failed to update blog with id ${id}:`, error);
+    return {
+      success: false,
+      error: "Failed to update blog",
+    };
   }
 }
 
@@ -130,6 +160,7 @@ export async function getFileById(id: string) {
     // Return file details and buffer
     return {
       buffer,
+      _id: file._id,
       contentType: file.contentType || "application/octet-stream",
       filename: file.filename,
     };
