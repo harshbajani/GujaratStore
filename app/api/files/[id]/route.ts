@@ -3,10 +3,11 @@ import { getFileById } from "@/lib/actions/blog.actions";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const id = (await params).id;
   try {
-    const file = await getFileById(params.id);
+    const file = await getFileById(id);
 
     return new NextResponse(file.buffer, {
       headers: {
