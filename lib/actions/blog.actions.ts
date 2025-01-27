@@ -75,10 +75,6 @@ export async function getBlogById(id: string): Promise<TransformedBlog | null> {
     // If the blog doesn't exist, return null
     if (!blog) return null;
 
-    // Fetch the image using the getFileById function
-    // const image = await getFileById(blog.imageId);
-    // console.log(image);
-
     // Transform the blog data to include the image as base64
     const transformedBlog = {
       id: blog._id.toString(), // Ensure id is a string

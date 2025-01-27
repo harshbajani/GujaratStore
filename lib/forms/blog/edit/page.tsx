@@ -22,8 +22,9 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 import { Textarea } from "@/components/ui/textarea";
 import Loader from "@/components/Loader";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "@/hooks/use-toast";
 
 type BlogFormData = z.infer<typeof blogSchema>;
 
@@ -34,6 +35,7 @@ const EditBlog = () => {
   const [existingImageId, setExistingImageId] = useState<string | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
   const { id } = useParams();
+  const router = useRouter();
 
   const form = useForm<BlogFormData>({
     resolver: zodResolver(blogSchema),
@@ -83,30 +85,30 @@ const EditBlog = () => {
   const handleSubmit = async (data: BlogFormData) => {
     setIsSubmitting(true);
     try {
-      // If no new image is uploaded, use the existing image ID
       if (!data.imageId && existingImageId) {
         data.imageId = existingImageId;
       }
-      console.log("imageId", data.imageId);
-      console.log("existingImageId", existingImageId);
-
-      // If the imageId is a base64 string, extract just the file ID
       if (data.imageId && data.imageId.startsWith("/")) {
-        // If it starts with '/', it's likely the base64 string
-        // You might want to use the existingImageId instead
         data.imageId = existingImageId || "";
-        console.log("updated image id", data.imageId);
       }
 
       const result = await updateBlog(id as string, data);
-      console.log("data", id as string, data);
+      router.push("/vendor/blogs"); // Redirect after success
+      toast({
+        title: "Success",
+        description: "Blog edited successfully.",
+      });
 
       if (result) {
         form.reset();
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      // Add error notification here
+      toast({
+        title: "Error",
+        description: "Failed to edit blog.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
