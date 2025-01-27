@@ -127,7 +127,6 @@ const BrandPage = () => {
       header: "Actions",
       cell: ({ row }) => {
         const brand = row.original;
-        console.log(brand._id);
         return (
           <div className="flex items-center gap-2">
             <Button

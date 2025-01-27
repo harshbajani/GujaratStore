@@ -23,6 +23,8 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
+import { toast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 type BlogFormData = z.infer<typeof blogSchema>;
 
@@ -33,7 +35,7 @@ const AddBlog = () => {
   const [imageId, setImageId] = useState("");
 
   // * hooks
-
+  const router = useRouter();
   const form = useForm<BlogFormData>({
     resolver: zodResolver(blogSchema),
   });
@@ -91,9 +93,18 @@ const AddBlog = () => {
         });
         setPostImage("");
         setImageId("");
+        router.push("/vendor/blogs"); // Redirect after success
+        toast({
+          title: "Success",
+          description: "Blog added successfully.",
+        });
       }
     } catch (error) {
       console.error("Error submitting form:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add blog.",
+      });
     } finally {
       setIsSubmitting(false);
     }
