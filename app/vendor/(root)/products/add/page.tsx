@@ -1,13 +1,12 @@
-"use client";
-
 import { ShoppingCart } from "lucide-react";
+import React from "react";
 
-const ProductsPage = () => {
+const AddProductsPage = () => {
   return (
     <div className="p-2 space-y-6">
       <div className="flex items-center gap-2">
         <ShoppingCart className="text-brand" size={30} />
-        <h1 className="h1">Products</h1>
+        <h1 className="h1">Add Products</h1>
       </div>
       <div className="p-2 bg-white border rounded-md">
         dashboard componenets and functions to calculate and display data
@@ -16,4 +15,4 @@ const ProductsPage = () => {
   );
 };
 
-export default ProductsPage;
+export default AddProductsPage;
