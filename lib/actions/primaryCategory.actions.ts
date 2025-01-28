@@ -7,7 +7,6 @@ import PrimaryCategory from "@/lib/models/primaryCategory.model";
 // Import referenced models for population
 import { IPrimaryCategory } from "@/types";
 import { primaryCategorySchema } from "../validations";
-import Attributes from "@/lib/models/attribute.model";
 import ParentCategory from "@/lib/models/parentCategory.model";
 import { parseStringify } from "../utils";
 
@@ -35,13 +34,6 @@ export const createPrimaryCategory = async (data: PrimaryCategoryData) => {
   );
   if (!parentCategoryExists) throw new Error("Parent category not found");
 
-  const attributesExist = await Attributes.find({
-    _id: { $in: validatedData.attributes },
-  });
-  if (attributesExist.length !== validatedData.attributes.length) {
-    throw new Error("One or more attributes not found");
-  }
-
   const primaryCategory = new PrimaryCategory(validatedData);
   const savedCategory = await primaryCategory.save();
 
@@ -52,15 +44,10 @@ export const createPrimaryCategory = async (data: PrimaryCategoryData) => {
 export const getAllPrimaryCategories = async () => {
   await connectToDB();
 
-  const primaryCategories = await PrimaryCategory.find()
-    .populate({
-      path: "parentCategory",
-      select: "name", // Explicitly select name field
-    })
-    .populate({
-      path: "attributes",
-      select: "name", // Explicitly select name field
-    });
+  const primaryCategories = await PrimaryCategory.find().populate({
+    path: "parentCategory",
+    select: "name", // Explicitly select name field
+  });
 
   // Ensure proper serialization
   return primaryCategories.map((category) => ({
@@ -74,9 +61,9 @@ export const getPrimaryCategoryById = async (id: string) => {
   // Ensure database connection
   await connectToDB();
 
-  const primaryCategory = await PrimaryCategory.findById(id)
-    .populate("parentCategory")
-    .populate("attributes");
+  const primaryCategory = await PrimaryCategory.findById(id).populate(
+    "parentCategory"
+  );
 
   if (!primaryCategory) throw new Error("Primary category not found");
 
@@ -101,25 +88,13 @@ export const updatePrimaryCategoryById = async (
     if (!parentCategoryExists) throw new Error("Parent category not found");
   }
 
-  // Check if attributes exist, if provided
-  if (validatedData.attributes) {
-    const attributesExist = await Attributes.find({
-      _id: { $in: validatedData.attributes },
-    });
-    if (attributesExist.length !== validatedData.attributes.length) {
-      throw new Error("One or more attributes not found");
-    }
-  }
-
   const updatedCategory = await PrimaryCategory.findByIdAndUpdate(
     id,
     validatedData,
     {
       new: true, // Return the updated document
     }
-  )
-    .populate("parentCategory")
-    .populate("attributes");
+  ).populate("parentCategory");
 
   if (!updatedCategory) throw new Error("Primary category not found");
 

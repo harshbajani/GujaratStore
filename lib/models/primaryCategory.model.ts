@@ -7,11 +7,6 @@ const primaryCategorySchema = new Schema({
     ref: "ParentCategory", // Reference to ParentCategory
     required: true,
   },
-  attributes: {
-    type: [Schema.Types.ObjectId], // Array of Attributes
-    ref: "Attributes", // Reference to Attributes
-    required: true,
-  },
   description: { type: String, default: "" },
   metaTitle: { type: String, default: "" },
   metaKeywords: { type: [String], default: [] },
