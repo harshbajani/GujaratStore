@@ -112,17 +112,6 @@ const PrimaryCategoryPage = () => {
       ),
     },
     {
-      accessorKey: "attributes",
-      header: "Attributes",
-      cell: ({ row }) => (
-        <div>
-          {row.original.attributes
-            ?.map((attr: { name: string }) => attr.name)
-            .join(", ") || "N/A"}
-        </div>
-      ),
-    },
-    {
       accessorKey: "description",
       header: "Description",
       cell: ({ row }) => (

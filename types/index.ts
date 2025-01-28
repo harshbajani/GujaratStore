@@ -181,7 +181,6 @@ export interface IPrimaryCategory {
   id?: string;
   name: string;
   parentCategory: string;
-  attributes: string[];
   description?: string;
   metaTitle?: string;
   metaKeywords?: string[];
@@ -221,10 +220,6 @@ export type PrimaryCategoryWithPopulatedFields = IPrimaryCategory & {
     _id: string;
     name: string;
   };
-  attributes: {
-    _id: string;
-    name: string;
-  }[];
 };
 
 export interface IBrand {

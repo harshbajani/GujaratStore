@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { primaryCategorySchema } from "@/lib/validations";
-import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
 import { toast } from "@/hooks/use-toast";
 import { IPrimaryCategory } from "@/types";
 import {
@@ -30,7 +29,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
-import { MultiSelect } from "@/components/ui/multi-select";
 import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
@@ -39,7 +37,6 @@ const AddPrimaryCategoryForm = () => {
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
   );
-  const [attributes, setAttributes] = useState<IAttribute[]>([]);
   const router = useRouter();
 
   const form = useForm<IPrimaryCategory>({
@@ -47,7 +44,6 @@ const AddPrimaryCategoryForm = () => {
     defaultValues: {
       name: "",
       parentCategory: "",
-      attributes: [],
       description: "",
       metaTitle: "",
       metaKeywords: [],
@@ -60,14 +56,9 @@ const AddPrimaryCategoryForm = () => {
     const fetchData = async () => {
       try {
         const parentCategoryResponse = await getAllParentCategory();
-        const attributeResponse = await getAllAttributes();
 
         if (parentCategoryResponse.success) {
           setParentCategories(parentCategoryResponse.data as IParentCategory[]);
-        }
-
-        if (attributeResponse.success) {
-          setAttributes(attributeResponse.data as IAttribute[]);
         }
       } catch {
         toast({
@@ -85,10 +76,6 @@ const AddPrimaryCategoryForm = () => {
     try {
       await createPrimaryCategory({
         ...data,
-        attributes:
-          data.attributes.length > 0
-            ? [data.attributes[0], ...data.attributes.slice(1)]
-            : ["default"],
       });
 
       toast({
@@ -152,29 +139,7 @@ const AddPrimaryCategoryForm = () => {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="attributes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Attributes</FormLabel>
-                <FormControl>
-                  <MultiSelect
-                    options={attributes.map((attr) => ({
-                      value: attr._id,
-                      label: attr.name,
-                    }))}
-                    onValueChange={(values) => {
-                      field.onChange(values); // Update the form state
-                    }}
-                    defaultValue={field.value} // Ensure this is set correctly
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <div className="w-full">
           <FormField
             control={form.control}
             name="description"
