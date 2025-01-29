@@ -12,27 +12,48 @@ const productSchema = new Schema({
     ref: "PrimaryCategory",
     required: true,
   },
-  SecondaryCategory: {
+  secondaryCategory: {
     type: Schema.Types.ObjectId,
     ref: "SecondaryCategory",
     required: true,
   },
-  Attributes: {
-    type: [Schema.Types.ObjectId],
-    ref: "Attributes",
+  attributes: [
+    {
+      attributeId: {
+        type: Schema.Types.ObjectId,
+        ref: "Attributes",
+        required: true,
+      },
+      value: { type: String, required: true },
+    },
+  ],
+  brands: {
+    type: Schema.Types.ObjectId,
+    ref: "Brand",
     required: true,
   },
   productSKU: { type: String, required: true },
   productDescription: { type: String, required: true },
-  productImage: { type: [String], required: true },
+  productImages: { type: [String], required: true },
   productCoverImage: { type: String, required: true },
-  productPrice: { type: Number, required: true },
-  productQuantity: { type: Number, required: true },
-  productStatus: { type: Boolean, required: true },
-  productRating: { type: Number, required: true },
-  productReviews: [{ type: Schema.Types.ObjectId, ref: "ProductReviews" }],
-  productWarranty: { type: String, required: true },
-  productReturnPolicy: { type: String, required: true },
+  mrp: { type: Number, required: true }, // Maximum Retail Price
+  basePrice: { type: Number, required: true }, // Base Price
+  discountType: {
+    type: String,
+    enum: ["percentage", "amount"],
+    required: true,
+  }, // Discount Type
+  discountValue: { type: Number, required: true }, // Discount Value
+  gstRate: { type: Number, required: true }, // GST Rate
+  gstAmount: { type: Number, required: true }, // GST Amount
+  netPrice: { type: Number, required: true },
+  productStatus: { type: Boolean, default: true },
+  productRating: { type: Number, required: false },
+  productReviews: [
+    { type: Schema.Types.ObjectId, ref: "ProductReviews", required: false },
+  ],
+  productWarranty: { type: String, required: false },
+  productReturnPolicy: { type: String, required: false },
   metaTitle: { type: String, default: "" },
   metaKeywords: { type: String, default: "" },
   metaDescription: { type: String, default: "" },

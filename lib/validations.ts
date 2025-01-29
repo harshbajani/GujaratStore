@@ -156,3 +156,48 @@ export const brandSchema = z.object({
   metaKeywords: z.string().optional(),
   metaDescription: z.string().optional(),
 });
+
+// Define the Zod schema for product validation
+export const productSchema = z.object({
+  productName: z.string().min(1, "Product name is required"),
+  parentCategory: z.string().length(24, "Invalid parent category ID"),
+  primaryCategory: z.string().length(24, "Invalid primary category ID"),
+  secondaryCategory: z.string().length(24, "Invalid secondary category ID"),
+  attributes: z
+    .array(
+      z.object({
+        attributeId: z.string().length(24, "Invalid attribute ID"),
+        value: z.string().min(1, "Value is required"),
+      })
+    )
+    .nonempty("At least one attribute is required"),
+  brands: z.string().length(24, "Invalid brand ID"),
+  productSKU: z.string().min(1, "Product SKU is required"),
+  productColor: z.string().min(1, "Product color is required"),
+  productDescription: z.string().min(1, "Product description is required"),
+  productImages: z
+    .array(z.union([z.string(), z.instanceof(File)]))
+    .min(1, "At least one product image is required"),
+  productCoverImage: z
+    .union([z.string(), z.instanceof(File)])
+    .refine(
+      (val) => val !== null && val !== undefined && val !== "",
+      "Cover image is required"
+    ),
+  mrp: z.number().positive("MRP must be a positive number"),
+  basePrice: z.number().positive("Base price must be a positive number"),
+  discountType: z.enum(["percentage", "amount"]),
+  discountValue: z
+    .number()
+    .nonnegative("Discount value must be a non-negative number"),
+  gstRate: z.number().nonnegative("GST rate must be a non-negative number"),
+  gstAmount: z.number().nonnegative("GST amount must be a non-negative number"),
+  netPrice: z.number().nonnegative("Net price must be a non-negative number"),
+  productStatus: z.boolean().default(true),
+  productRating: z.number().optional(),
+  productWarranty: z.string().optional(),
+  productReturnPolicy: z.string().optional(),
+  metaTitle: z.string().optional(),
+  metaKeywords: z.string().optional(),
+  metaDescription: z.string().optional(),
+});

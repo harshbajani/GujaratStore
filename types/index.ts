@@ -1,5 +1,7 @@
+import { IAttribute } from "@/lib/actions/attribute.actions";
 import { Address } from "@/lib/validations";
 import { Document, Types } from "mongoose";
+import { Control } from "react-hook-form";
 import { z } from "zod";
 
 export interface IOTPDocument {
@@ -198,6 +200,16 @@ export interface ISecondaryCategory {
   isActive: boolean;
 }
 
+export interface IProductSecondaryCategory {
+  id?: string;
+  name: string;
+  parentCategory: string;
+  primaryCategory: string;
+  attributes: IAttribute[];
+  description?: string;
+  isActive: boolean;
+}
+
 export type SecondaryCategoryWithPopulatedFields = ISecondaryCategory & {
   id: string; // Ensure you have an id field
   parentCategory: {
@@ -230,4 +242,37 @@ export interface IBrand {
   metaKeywords?: string;
   metaDescription?: string;
   __v?: number;
+}
+
+export interface IProduct {
+  productName: string;
+  parentCategory: string; // MongoDB ObjectId as string
+  primaryCategory: string; // MongoDB ObjectId as string
+  secondaryCategory: string; // MongoDB ObjectId as string
+  attributes: Array<{ attributeId: string; value: string }>;
+  brands: string; // MongoDB ObjectId as string
+  productSKU: string;
+  productColor: string;
+  productDescription: string;
+  productImages: (string | File)[];
+  productCoverImage: string | File;
+  mrp: number;
+  basePrice: number;
+  discountType: "percentage" | "amount";
+  discountValue: number;
+  gstRate: number;
+  gstAmount: number;
+  netPrice: number;
+  productStatus?: boolean;
+  productRating?: number;
+  productReviews?: string[]; // Optional array of MongoDB ObjectIds as strings
+  productWarranty?: string;
+  productReturnPolicy?: string;
+  metaTitle?: string;
+  metaKeywords?: string;
+  metaDescription?: string;
+}
+
+export interface IPriceCalculatorProps {
+  control: Control<IProduct>;
 }

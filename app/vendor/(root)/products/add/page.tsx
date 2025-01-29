@@ -1,3 +1,4 @@
+import AddProductsForm from "@/lib/forms/product/addProductsForm";
 import { ShoppingCart } from "lucide-react";
 import React from "react";
 
@@ -9,7 +10,7 @@ const AddProductsPage = () => {
         <h1 className="h1">Add Products</h1>
       </div>
       <div className="p-2 bg-white border rounded-md">
-        dashboard componenets and functions to calculate and display data
+        <AddProductsForm />
       </div>
     </div>
   );
