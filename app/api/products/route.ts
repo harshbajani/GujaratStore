@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     if (id) {
       const product = await Products.findById(id)
-        .populate({ path: "parentCategory", select: "name" })
+        .populate({ path: "ParentCategory", select: "name" })
         .populate({ path: "primaryCategory", select: "name" })
         .populate({ path: "secondaryCategory", select: "name" })
         .populate({ path: "brands", select: "name" })
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     const products = await Products.find()
-      .populate({ path: "parentCategory", select: "name" })
+      .populate({ path: "ParentCategory", select: "name" })
       .populate({ path: "primaryCategory", select: "name" })
       .populate({ path: "secondaryCategory", select: "name" })
       .populate({ path: "brands", select: "name", model: "Brand" })
