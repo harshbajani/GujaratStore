@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         .populate({
           path: "ParentCategory",
           select: "name",
-          strictPopulate: true,
+          strictPopulate: false,
         })
         .populate({
           path: "primaryCategory",
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       .populate({
         path: "ParentCategory",
         select: "name",
-        strictPopulate: true,
+        strictPopulate: false,
       })
       .populate({
         path: "primaryCategory",
