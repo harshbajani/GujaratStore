@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
 
     const products = await Products.find()
       .populate({
-        path: "parentCategory",
+        path: "ParentCategory",
         select: "name",
         strictPopulate: true,
       })
