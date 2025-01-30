@@ -30,11 +30,27 @@ export async function GET(request: NextRequest) {
 
     if (id) {
       const product = await Products.findById(id)
-        .populate({ path: "ParentCategory", select: "name" })
-        .populate({ path: "primaryCategory", select: "name" })
-        .populate({ path: "secondaryCategory", select: "name" })
-        .populate({ path: "brands", select: "name" })
-        .populate({ path: "attributes.attributeId", select: "name" });
+        .populate({
+          path: "ParentCategory",
+          select: "name",
+          strictPopulate: true,
+        })
+        .populate({
+          path: "primaryCategory",
+          select: "name",
+          strictPopulate: true,
+        })
+        .populate({
+          path: "secondaryCategory",
+          select: "name",
+          strictPopulate: true,
+        })
+        .populate({ path: "brands", select: "name", strictPopulate: true })
+        .populate({
+          path: "attributes.attributeId",
+          select: "name",
+          strictPopulate: true,
+        });
 
       if (!product) {
         return NextResponse.json(
@@ -46,17 +62,37 @@ export async function GET(request: NextRequest) {
     }
 
     const products = await Products.find()
-      .populate({ path: "ParentCategory", select: "name" })
-      .populate({ path: "primaryCategory", select: "name" })
-      .populate({ path: "secondaryCategory", select: "name" })
-      .populate({ path: "brands", select: "name", model: "Brand" })
-      .populate({ path: "attributes.attributeId", select: "name" });
+      .populate({
+        path: "ParentCategory",
+        select: "name",
+        strictPopulate: true,
+      })
+      .populate({
+        path: "primaryCategory",
+        select: "name",
+        strictPopulate: true,
+      })
+      .populate({
+        path: "secondaryCategory",
+        select: "name",
+        strictPopulate: true,
+      })
+      .populate({
+        path: "brands",
+        select: "name",
+        model: "Brand",
+        strictPopulate: true,
+      })
+      .populate({
+        path: "attributes.attributeId",
+        select: "name",
+        strictPopulate: true,
+      });
 
     return NextResponse.json({ success: true, data: products });
   } catch (error: unknown) {
     return NextResponse.json(
       { success: false, error: (error as Error).message },
-
       { status: 500 }
     );
   }
