@@ -273,6 +273,14 @@ export interface IProduct {
   metaDescription?: string;
 }
 
+export interface IProductAttributes {
+  _id: string;
+  attributeId: {
+    _id: string;
+  };
+  value: string;
+}
+
 export interface IPriceCalculatorProps {
   control: Control<IProduct>;
 }

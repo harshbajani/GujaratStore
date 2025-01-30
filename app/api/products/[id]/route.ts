@@ -10,11 +10,11 @@ export async function GET(request: NextRequest) {
 
     if (id) {
       const product = await Products.findById(id)
-        .populate({ path: "parentCategory", select: "name" })
-        .populate({ path: "primaryCategory", select: "name" })
-        .populate({ path: "secondaryCategory", select: "name" })
-        .populate({ path: "brands", select: "name" })
-        .populate({ path: "attributes.attributeId", select: "name" });
+        .populate({ path: "parentCategory", select: "name _id" }) // Add _id to select
+        .populate({ path: "primaryCategory", select: "name _id" })
+        .populate({ path: "secondaryCategory", select: "name _id" })
+        .populate({ path: "brands", select: "name _id" })
+        .populate({ path: "attributes.attributeId", select: "value" });
 
       if (!product) {
         return NextResponse.json(
@@ -25,18 +25,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: product });
     }
 
-    const products = await Products.find()
-      .populate({ path: "parentCategory", select: "name" })
-      .populate({ path: "primaryCategory", select: "name" })
-      .populate({ path: "secondaryCategory", select: "name" })
-      .populate({ path: "brands", select: "name", model: "Brand" })
-      .populate({ path: "attributes.attributeId", select: "name" });
-
-    return NextResponse.json({ success: true, data: products });
+    // ... rest of the code
   } catch (error: unknown) {
     return NextResponse.json(
       { success: false, error: (error as Error).message },
-
       { status: 500 }
     );
   }

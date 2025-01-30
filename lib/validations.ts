@@ -168,6 +168,7 @@ export const productSchema = z.object({
       z.object({
         attributeId: z.string().length(24, "Invalid attribute ID"),
         value: z.string().min(1, "Value is required"),
+        _id: z.string().optional(),
       })
     )
     .nonempty("At least one attribute is required"),
