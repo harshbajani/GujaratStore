@@ -736,7 +736,8 @@ const EditProductsForm = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => router.push("/vendor/category/secondaryCategory")}
+            type="button"
+            onClick={() => router.push("/vendor/products")}
           >
             Cancel
           </Button>
