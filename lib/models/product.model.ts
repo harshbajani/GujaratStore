@@ -33,6 +33,7 @@ const productSchema = new Schema({
     required: true,
   },
   productSKU: { type: String, required: true },
+  productColor: { type: String, required: true },
   productDescription: { type: String, required: true },
   productImages: { type: [String], required: true },
   productCoverImage: { type: String, required: true },
