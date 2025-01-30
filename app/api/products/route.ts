@@ -1,4 +1,3 @@
-// app/api/products/route.ts
 import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";

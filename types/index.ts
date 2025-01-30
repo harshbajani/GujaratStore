@@ -245,6 +245,7 @@ export interface IBrand {
 }
 
 export interface IProduct {
+  _id?: string;
   productName: string;
   parentCategory: string; // MongoDB ObjectId as string
   primaryCategory: string; // MongoDB ObjectId as string
@@ -280,6 +281,26 @@ export interface IProductAttributes {
   };
   value: string;
 }
+
+export type ProductWithPopulatedFields = IProduct & {
+  id: string; // Ensure you have an id field
+  parentCategory: {
+    _id: string;
+    name: string;
+  };
+  primaryCategory: {
+    _id: string;
+    name: string;
+  };
+  secondaryCategory: {
+    _id: string;
+    name: string;
+  };
+  brands: {
+    _id: string;
+    name: string;
+  };
+};
 
 export interface IPriceCalculatorProps {
   control: Control<IProduct>;
