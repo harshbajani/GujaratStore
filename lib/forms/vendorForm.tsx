@@ -31,6 +31,7 @@ import { signIn } from "next-auth/react";
 import OtpModal from "@/components/OTPModal";
 
 const VendorForm = ({ type }: { type: FormType }) => {
+  // * useState and hooks
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -57,7 +58,7 @@ const VendorForm = ({ type }: { type: FormType }) => {
             password: "",
           },
   });
-
+  // * user data submission
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     setErrorMessage("");
