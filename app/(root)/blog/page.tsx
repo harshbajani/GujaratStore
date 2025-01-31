@@ -3,13 +3,13 @@ import { getAllBlogs } from "@/lib/actions/blog.actions";
 import ClientFeaturesAndBlogs from "./client";
 export const dynamic = "force-dynamic";
 
+// * Generate metadata for the blogs
 export async function generateMetadata(): Promise<Metadata> {
   const blogs = await getAllBlogs();
-
   const titles = blogs.map((blog) => blog.metaTitle).join(", ");
   const descriptions = blogs.map((blog) => blog.metaDescription).join(". ");
 
-  // Create a consolidated keywords string from all blog posts
+  // * Create a consolidated keywords string from all blog posts
   const keywordsSet = new Set<string>();
   blogs.forEach((blog) => {
     if (blog.metaKeywords) {

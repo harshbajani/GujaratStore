@@ -2,7 +2,7 @@ import { getBlogById } from "@/lib/actions/blog.actions";
 import { Metadata } from "next";
 import ClientBlogPage from "./client";
 
-// Metadata generation
+// * Metadata generation
 export async function generateMetadata({
   params,
 }: {
@@ -53,7 +53,6 @@ export async function generateMetadata({
   }
 }
 
-// The page component with correct type annotations
 export default async function BlogPage({
   params,
 }: {
