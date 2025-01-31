@@ -37,6 +37,7 @@ const vendorProfileSchema = z.object({
 type ProfileFormValues = z.infer<typeof vendorProfileSchema>;
 
 const VendorProfileForm = () => {
+  // * useStates and hooks
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user, refetch } = useVendorDetails();
@@ -61,6 +62,7 @@ const VendorProfileForm = () => {
     }
   }, [user, form]);
 
+  // * Submit form for vendor
   const onSubmit = async (values: ProfileFormValues) => {
     setIsLoading(true);
     try {
