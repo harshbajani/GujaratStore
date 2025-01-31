@@ -28,6 +28,7 @@ import Coupons from "./components/Coupons";
 import Loader from "@/components/Loader";
 
 const ProfilePage = () => {
+  // * useStates and hooks
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -38,6 +39,7 @@ const ProfilePage = () => {
   const [userData, setUserData] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // * Fetch the user data
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -65,8 +67,8 @@ const ProfilePage = () => {
     fetchUserData();
   }, [toast]);
 
+  // * Update URL when activeSection changes
   useEffect(() => {
-    // Update URL when activeSection changes
     router.replace(`/profile?section=${activeSection}`);
   }, [activeSection, router]);
 

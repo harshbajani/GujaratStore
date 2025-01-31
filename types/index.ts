@@ -30,6 +30,11 @@ export interface IUser {
   __v: number;
 }
 
+export interface ProfileProps {
+  initialData: UserResponse;
+  onProfileUpdate: (updatedUser: UserResponse) => void;
+}
+
 export interface IVendor {
   _id: Types.ObjectId | string;
   name: string;
