@@ -15,23 +15,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { UserResponse } from "@/types";
+import { ProfileProps } from "@/types";
 import { signOut } from "next-auth/react";
-
-const profileSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 characters"),
-});
+import { profileSchema } from "@/lib/validations";
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
-interface ProfileProps {
-  initialData: UserResponse;
-  onProfileUpdate: (updatedUser: UserResponse) => void;
-}
-
 const Profile = ({ initialData, onProfileUpdate }: ProfileProps) => {
+  // * useStates and hooks
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -44,6 +35,7 @@ const Profile = ({ initialData, onProfileUpdate }: ProfileProps) => {
     },
   });
 
+  //  * Profile data submission
   const onSubmit = async (values: ProfileFormValues) => {
     setIsLoading(true);
     try {
@@ -73,7 +65,7 @@ const Profile = ({ initialData, onProfileUpdate }: ProfileProps) => {
 
         onProfileUpdate(result.data);
 
-        // If email was changed, sign out the user and redirect to login
+        // ! If email was changed, sign out the user and redirect to login
         if (isEmailChanged) {
           toast({
             title: "Email Updated",
