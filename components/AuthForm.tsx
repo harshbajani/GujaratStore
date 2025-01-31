@@ -31,6 +31,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 const AuthForm = ({ type }: { type: FormType }) => {
+  // * useStates and hooks
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -58,6 +59,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
           },
   });
 
+  // * user data submission
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     setErrorMessage("");
