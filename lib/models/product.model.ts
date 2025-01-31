@@ -42,16 +42,16 @@ const productSchema = new Schema({
   productDescription: { type: String, required: true },
   productImages: { type: [String], required: true },
   productCoverImage: { type: String, required: true },
-  mrp: { type: Number, required: true }, // Maximum Retail Price
-  basePrice: { type: Number, required: true }, // Base Price
+  mrp: { type: Number, required: true },
+  basePrice: { type: Number, required: true },
   discountType: {
     type: String,
     enum: ["percentage", "amount"],
     required: true,
-  }, // Discount Type
-  discountValue: { type: Number, required: true }, // Discount Value
-  gstRate: { type: Number, required: true }, // GST Rate
-  gstAmount: { type: Number, required: true }, // GST Amount
+  },
+  discountValue: { type: Number, required: true },
+  gstRate: { type: Number, required: true },
+  gstAmount: { type: Number, required: true },
   netPrice: { type: Number, required: true },
   productStatus: { type: Boolean, default: true },
   productRating: { type: Number, required: false },
@@ -64,6 +64,23 @@ const productSchema = new Schema({
   metaKeywords: { type: String, default: "" },
   metaDescription: { type: String, default: "" },
 });
+
+// Add indexes for frequently queried fields
+productSchema.index({ productName: 1 });
+productSchema.index({ productSKU: 1 });
+productSchema.index({ productStatus: 1 });
+productSchema.index({ parentCategory: 1 });
+productSchema.index({ primaryCategory: 1 });
+productSchema.index({ secondaryCategory: 1 });
+productSchema.index({ brands: 1 });
+productSchema.index({ netPrice: 1 });
+productSchema.index({ productRating: 1 });
+
+// Add compound indexes for common query combinations
+productSchema.index({ parentCategory: 1, productStatus: 1 });
+productSchema.index({ primaryCategory: 1, productStatus: 1 });
+productSchema.index({ secondaryCategory: 1, productStatus: 1 });
+productSchema.index({ brands: 1, productStatus: 1 });
 
 const Products =
   mongoose.models.Product || mongoose.model("Product", productSchema);

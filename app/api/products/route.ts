@@ -2,6 +2,19 @@ import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
+// Commonly needed fields that we always want to retrieve
+const commonFields =
+  "productName parentCategory primaryCategory secondaryCategory brands attributes productStatus productSKU productColor productDescription productImages productCoverImage mrp basePrice discountType discountValue gstRate gstAmount netPrice metaTitle metaKeywords metaDescription";
+
+// Populate configuration for reuse
+const populateConfig = [
+  { path: "parentCategory", select: "name" },
+  { path: "primaryCategory", select: "name" },
+  { path: "secondaryCategory", select: "name" },
+  { path: "brands", select: "name" },
+  { path: "attributes.attributeId", select: "name" },
+];
+
 export async function POST(request: Request) {
   try {
     await connectToDB();
@@ -27,14 +40,17 @@ export async function GET(request: NextRequest) {
     await connectToDB();
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get("id");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const skip = (page - 1) * limit;
 
     if (id) {
+      // For single product fetch
       const product = await Products.findById(id)
-        .populate({ path: "parentCategory", select: "name" })
-        .populate({ path: "primaryCategory", select: "name" })
-        .populate({ path: "secondaryCategory", select: "name" })
-        .populate({ path: "brands", select: "name" })
-        .populate({ path: "attributes.attributeId", select: "name" });
+        .select(commonFields)
+        .populate(populateConfig)
+        .lean()
+        .exec();
 
       if (!product) {
         return NextResponse.json(
@@ -45,18 +61,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: product });
     }
 
-    const products = await Products.find()
-      .populate({ path: "parentCategory", select: "name" })
-      .populate({ path: "primaryCategory", select: "name" })
-      .populate({ path: "secondaryCategory", select: "name" })
-      .populate({ path: "brands", select: "name", model: "Brand" })
-      .populate({ path: "attributes.attributeId", select: "name" });
+    // For product listing with pagination
+    const [products, total] = await Promise.all([
+      Products.find()
+        .select(commonFields)
+        .populate(populateConfig)
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      Products.countDocuments(),
+    ]);
 
-    return NextResponse.json({ success: true, data: products });
+    return NextResponse.json({
+      success: true,
+      data: products,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error: unknown) {
+    console.error("Error in GET products:", error);
     return NextResponse.json(
       { success: false, error: (error as Error).message },
-
       { status: 500 }
     );
   }
@@ -69,7 +99,12 @@ export async function PUT(request: Request) {
 
     const updatedProduct = await Products.findByIdAndUpdate(body._id, body, {
       new: true,
-    });
+      runValidators: true, // Ensure update validates against schema
+    })
+      .select(commonFields)
+      .populate(populateConfig)
+      .lean()
+      .exec();
 
     if (!updatedProduct) {
       return NextResponse.json(
@@ -80,6 +115,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ success: true, data: updatedProduct });
   } catch (error: unknown) {
+    console.error("Error in PUT products:", error);
     return NextResponse.json(
       { success: false, error: (error as Error).message },
       { status: 400 }
@@ -100,7 +136,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const deletedProduct = await Products.findByIdAndDelete(id);
+    const deletedProduct = await Products.findByIdAndDelete(id).lean().exec();
 
     if (!deletedProduct) {
       return NextResponse.json(
@@ -114,6 +150,7 @@ export async function DELETE(request: NextRequest) {
       { status: 200 }
     );
   } catch (error: unknown) {
+    console.error("Error in DELETE products:", error);
     return NextResponse.json(
       { success: false, error: (error as Error).message },
       { status: 500 }

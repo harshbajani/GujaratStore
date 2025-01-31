@@ -226,12 +226,15 @@ const ProductsPage = () => {
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <Input
-              placeholder="Filter by name..."
+              placeholder="Filter by product name..."
               value={
-                (table.getColumn("name")?.getFilterValue() as string) ?? ""
+                (table.getColumn("productName")?.getFilterValue() as string) ??
+                ""
               }
               onChange={(event) =>
-                table.getColumn("name")?.setFilterValue(event.target.value)
+                table
+                  .getColumn("productName")
+                  ?.setFilterValue(event.target.value)
               }
               className="max-w-sm"
             />
