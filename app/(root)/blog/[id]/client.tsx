@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useParams } from "next/navigation";
 import { getAllBlogs, getBlogById } from "@/lib/actions/blog.actions";
 import Loader from "@/components/Loader";
 import { TransformedBlog } from "@/types/index";
@@ -16,7 +15,7 @@ interface ClientBlogPageProps {
 }
 
 const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
-  const { id } = useParams();
+  // * useStates
   const [blog, setBlog] = useState<TransformedBlog | null>(initialBlog);
   const [relatedBlogs, setRelatedBlogs] = useState<TransformedBlog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,13 +23,16 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
 
   const getImageUrl = (imageId: string) => `/api/files/${imageId}`;
 
+  // * Fetching the data of the blog
   useEffect(() => {
     const fetchBlogData = async () => {
       try {
-        const blogData = await getBlogById(id as string);
+        const blogData = await getBlogById(initialBlog?.id as string);
         setBlog(blogData);
         const allBlogs = await getAllBlogs();
-        const filtered = allBlogs.filter((b) => b.id !== id).slice(0, 2);
+        const filtered = allBlogs
+          .filter((b) => b.id !== initialBlog?.id)
+          .slice(0, 2);
         setRelatedBlogs(filtered);
       } catch {
         setError("Failed to load blog post");
@@ -39,10 +41,10 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
       }
     };
 
-    if (id) {
+    if (initialBlog?.id) {
       fetchBlogData();
     }
-  }, [id]);
+  }, [initialBlog?.id]);
 
   if (loading) {
     return (
