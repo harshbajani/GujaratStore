@@ -24,6 +24,7 @@ import { createInquiry } from "@/lib/actions/inquiry.actions";
 import { useToast } from "@/hooks/use-toast";
 
 const ContactPage = () => {
+  // * useStates and hooks
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -38,6 +39,7 @@ const ContactPage = () => {
     },
   });
 
+  // * handlers and onSubmit to submit data
   const onSubmit = async (data: InquiryData) => {
     setIsSubmitting(true);
     try {
