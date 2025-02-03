@@ -49,6 +49,7 @@ type Attribute = {
 };
 
 const AttributePage = () => {
+  // * useStates and hooks
   const [data, setData] = useState<Attribute[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -61,6 +62,7 @@ const AttributePage = () => {
   const router = useRouter();
   const { toast } = useToast();
 
+  // * attribute fetching function
   const fetchAllAttributes = async () => {
     try {
       setLoading(true);
@@ -80,7 +82,7 @@ const AttributePage = () => {
       setLoading(false);
     }
   };
-
+  // * attribute deleting function
   const handleDelete = async (id: string) => {
     try {
       const response = await deleteAttribute(id);

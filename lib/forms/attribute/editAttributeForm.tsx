@@ -30,6 +30,7 @@ const attributeSchema = z.object({
 });
 
 const EditAttributeForm = () => {
+  // * Form hooks
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { id } = useParams();
@@ -43,6 +44,7 @@ const EditAttributeForm = () => {
     },
   });
 
+  // * Function for fetching attribute data
   useEffect(() => {
     const fetchAttribute = async () => {
       try {
@@ -75,7 +77,7 @@ const EditAttributeForm = () => {
 
     fetchAttribute();
   }, [id, form, toast]);
-
+  // * Form submission handler
   const onSubmit = async (data: AttributeFormData) => {
     try {
       const response = await updateAttribute(id as string, data);
