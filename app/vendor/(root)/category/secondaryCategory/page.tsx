@@ -44,6 +44,7 @@ import {
 } from "@/lib/actions/secondaryCategory.actions";
 
 const SecondaryCategoryPage = () => {
+  // * useStates and hooks
   const [data, setData] = useState<SecondaryCategoryWithPopulatedFields[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -55,7 +56,7 @@ const SecondaryCategoryPage = () => {
 
   const router = useRouter();
   const { toast } = useToast();
-
+  // * fetch data of secondary categories
   const fetchAllSecondaryCategories = async () => {
     try {
       setLoading(true);
@@ -72,7 +73,7 @@ const SecondaryCategoryPage = () => {
       setLoading(false);
     }
   };
-
+  // * delete secondary category
   const handleDelete = async (id: string) => {
     try {
       await deleteSecondaryCategoryById(id);
