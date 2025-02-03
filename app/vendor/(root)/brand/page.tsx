@@ -40,6 +40,7 @@ import Link from "next/link";
 import { deleteBrand, getAllBrands } from "@/lib/actions/brand.actions";
 
 const BrandPage = () => {
+  // * useStates and hooks
   const [data, setData] = useState<IBrand[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -51,7 +52,7 @@ const BrandPage = () => {
 
   const router = useRouter();
   const { toast } = useToast();
-
+  // * fetching data of brand
   const fetchBrands = async () => {
     try {
       const response = await getAllBrands();
@@ -67,7 +68,7 @@ const BrandPage = () => {
       setLoading(false);
     }
   };
-
+  // * delete brand
   const handleDelete = async (id: string) => {
     try {
       await deleteBrand(id);
