@@ -31,6 +31,7 @@ interface EditParentCategoryFormProps {
 const EditParentCategoryForm = ({
   parentCategoryId,
 }: EditParentCategoryFormProps) => {
+  // * useStates and hooks
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
@@ -42,7 +43,7 @@ const EditParentCategoryForm = ({
       isActive: true,
     },
   });
-
+  // * fetching parent category
   useEffect(() => {
     const fetchParentCategory = async () => {
       try {
@@ -75,7 +76,7 @@ const EditParentCategoryForm = ({
 
     fetchParentCategory();
   }, [parentCategoryId, form, toast]);
-
+  // * form submission
   const onSubmit = async (data: ParentCategoryFormData) => {
     try {
       const response = await updateParentCategory(parentCategoryId, data);

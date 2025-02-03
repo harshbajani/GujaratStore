@@ -46,6 +46,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 
 const AddProductsForm = () => {
+  // * useStates and hooks
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
   );
@@ -96,7 +97,7 @@ const AddProductsForm = () => {
   const discountType = form.watch("discountType");
   const discountValue = form.watch("discountValue");
   const gstRate = form.watch("gstRate");
-
+  // * function for handling prices
   useEffect(() => {
     const basePriceAfterDiscount =
       discountType === "percentage"
@@ -109,11 +110,14 @@ const AddProductsForm = () => {
     form.setValue("netPrice", basePriceAfterDiscount + calculatedGstAmount);
   }, [basePrice, discountType, discountValue, gstRate, form]);
 
+  // * function to look out for attributes based on secondary category
   const { fields } = useFieldArray({
     control: form.control,
     name: "attributes",
   });
+
   const selectedSecondaryCategoryId = form.watch("secondaryCategory");
+
   useEffect(() => {
     if (selectedSecondaryCategoryId) {
       const selectedCategory = secondaryCategory.find(
@@ -129,7 +133,7 @@ const AddProductsForm = () => {
     }
   }, [selectedSecondaryCategoryId, secondaryCategory, form]);
 
-  // Handle cover image selection
+  // * Handle cover image selection
   const handleCoverImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -139,7 +143,7 @@ const AddProductsForm = () => {
     }
   };
 
-  // Product images handler
+  // * Product images handler
   const handleProductImagesSelect = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -155,7 +159,7 @@ const AddProductsForm = () => {
     }
   };
 
-  // Remove product image preview
+  // * Remove product image preview
   const removeProductPreview = (index: number) => {
     const newFiles = productImageFiles.filter((_, i) => i !== index);
     setProductImageFiles(newFiles);
@@ -166,7 +170,7 @@ const AddProductsForm = () => {
     });
   };
 
-  // Remove cover image preview
+  // * Remove cover image preview
   const removeCoverPreview = () => {
     if (coverPreview) {
       URL.revokeObjectURL(coverPreview);
@@ -174,6 +178,8 @@ const AddProductsForm = () => {
       setCoverImageFile(null);
     }
   };
+
+  // * form submision
   const onSubmit = async (data: IProduct) => {
     try {
       console.log("Starting form submission with data:", data);
@@ -257,11 +263,10 @@ const AddProductsForm = () => {
         description: "Error adding product",
         variant: "destructive",
       });
-      // You might want to show an error message to the user here
     }
   };
 
-  // Updated upload helper function with better error handling
+  // * upload helper function with better error handling
   const uploadFile = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
@@ -281,7 +286,7 @@ const AddProductsForm = () => {
     const result = await response.json();
     return result.fileId;
   };
-
+  // * fetching the data for the select components
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -319,7 +324,7 @@ const AddProductsForm = () => {
     fetchData();
   }, []);
 
-  // Add cleanup for object URLs
+  // * Add cleanup for object URLs
   useEffect(() => {
     return () => {
       URL.revokeObjectURL(coverPreview);

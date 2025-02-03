@@ -7,6 +7,7 @@ import { useInView } from "react-intersection-observer";
 import TestimonialSlider from "./Slider";
 
 const Testimonials = () => {
+  // * IntersectionObserver
   const [ref, inView] = useInView({
     threshold: 0.2,
     triggerOnce: true,

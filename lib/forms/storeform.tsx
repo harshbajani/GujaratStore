@@ -44,6 +44,7 @@ import { useRouter } from "next/navigation";
 type StoreInfo = z.infer<typeof storeSchema>;
 
 const Storeform = () => {
+  // * useStates and hooks
   const [country] = useState("India");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -65,7 +66,7 @@ const Storeform = () => {
       alternativeContact: "",
     },
   });
-
+  // * data submission of store
   const onSubmit = async (data: StoreInfo) => {
     setIsLoading(true);
     try {
@@ -104,7 +105,7 @@ const Storeform = () => {
       setIsLoading(false);
     }
   };
-
+  // * fetch store data
   useEffect(() => {
     const fetchStoreData = async () => {
       try {
@@ -138,7 +139,7 @@ const Storeform = () => {
       <div>
         <Loader />
       </div>
-    ); // You might want to use a proper loading component
+    );
   }
 
   return (

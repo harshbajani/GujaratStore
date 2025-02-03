@@ -33,7 +33,7 @@ const AddBrandForm = () => {
     resolver: zodResolver(brandSchema),
   });
 
-  // * functions
+  // * image upload
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     onChange: (value: string) => void
@@ -61,7 +61,7 @@ const AddBrandForm = () => {
       }
     }
   };
-
+  // * brand submission
   const handleSubmit = async (data: IBrand) => {
     setIsSubmitting(true);
     try {

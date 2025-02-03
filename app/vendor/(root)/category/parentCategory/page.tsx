@@ -49,6 +49,7 @@ type ParentCategory = {
 };
 
 const ParentCategoryPage = () => {
+  // * useStates and hooks
   const [data, setData] = useState<ParentCategory[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -60,7 +61,7 @@ const ParentCategoryPage = () => {
 
   const router = useRouter();
   const { toast } = useToast();
-
+  // * data fetching of parentCategory
   const fetchAllParentCategory = async () => {
     try {
       setLoading(true);
@@ -80,7 +81,7 @@ const ParentCategoryPage = () => {
       setLoading(false);
     }
   };
-
+  // * delete parent category
   const handleDelete = async (id: string) => {
     try {
       const response = await deleteParentCategory(id);

@@ -29,6 +29,7 @@ import { toast } from "@/hooks/use-toast";
 type BlogFormData = z.infer<typeof blogSchema>;
 
 const EditBlog = () => {
+  // * useStates and hooks
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [postImage, setPostImage] = useState<string | null>(null);
@@ -51,7 +52,7 @@ const EditBlog = () => {
       metaKeywords: "",
     },
   });
-
+  // * file upload function
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     onChange: (value: string) => void
@@ -81,7 +82,7 @@ const EditBlog = () => {
       console.error("Upload error:", error);
     }
   };
-
+  // * data submission
   const handleSubmit = async (data: BlogFormData) => {
     setIsSubmitting(true);
     try {
@@ -113,7 +114,7 @@ const EditBlog = () => {
       setIsSubmitting(false);
     }
   };
-
+  // * function to fetch data and populate the fields
   useEffect(() => {
     const fetchBlog = async () => {
       if (!id) {

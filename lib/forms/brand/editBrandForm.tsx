@@ -37,7 +37,7 @@ const EditBrandForm = () => {
     resolver: zodResolver(brandSchema),
   });
 
-  // * functions
+  // * image upload
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     onChange: (value: string) => void
@@ -65,7 +65,7 @@ const EditBrandForm = () => {
       }
     }
   };
-
+  // * brand update submission
   const handleSubmit = async (data: IBrand) => {
     setIsSubmitting(true);
     try {
@@ -104,7 +104,7 @@ const EditBrandForm = () => {
       setIsSubmitting(false);
     }
   };
-
+  // * fetching brand data to populate fields
   useEffect(() => {
     const fetchBrand = async () => {
       if (!id || !Types.ObjectId.isValid(id as string)) {

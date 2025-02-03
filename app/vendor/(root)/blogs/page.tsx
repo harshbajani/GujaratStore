@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
 const BlogsPage = () => {
+  // * useStates and hooks
   const [data, setData] = useState<TransformedBlog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -52,6 +53,7 @@ const BlogsPage = () => {
   const router = useRouter();
   const { toast } = useToast();
 
+  // * fetching data
   const fetchBlogPosts = async () => {
     try {
       const response = await getAllBlogs();
@@ -67,7 +69,7 @@ const BlogsPage = () => {
       setLoading(false);
     }
   };
-
+  // * deleting data
   const handleDelete = async (id: string) => {
     try {
       await deleteBlog(id);

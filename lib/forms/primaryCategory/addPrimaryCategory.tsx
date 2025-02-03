@@ -34,6 +34,7 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 
 const AddPrimaryCategoryForm = () => {
+  // * useStates and hooks
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
   );
@@ -51,7 +52,7 @@ const AddPrimaryCategoryForm = () => {
       isActive: true,
     },
   });
-
+  // * fetch parent category
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -71,7 +72,7 @@ const AddPrimaryCategoryForm = () => {
 
     fetchData();
   }, []);
-
+  // * submit primary category data
   const onSubmit = async (data: IPrimaryCategory) => {
     try {
       await createPrimaryCategory({

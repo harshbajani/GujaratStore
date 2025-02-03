@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 
 const OrganicAndFlavours = () => {
-  // Refs for different sections
+  // * Refs for different sections
   const [titleRef, titleInView] = useInView({
     threshold: 0.3,
     triggerOnce: true,
@@ -23,7 +23,7 @@ const OrganicAndFlavours = () => {
     triggerOnce: true,
   });
 
-  // Animation variants
+  // * Animation variants
   const containerVariants = {
     hidden: { opacity: 0, y: 50 },
     visible: {

@@ -25,6 +25,7 @@ const attributeSchema = z.object({
 });
 
 const AddAttributeForm = () => {
+  // * Form Hook
   const router = useRouter();
   const { toast } = useToast();
   const form = useForm<AttributeFormData>({
@@ -35,6 +36,7 @@ const AddAttributeForm = () => {
     },
   });
 
+  // * Form Submit
   const onSubmit = async (data: AttributeFormData): Promise<void> => {
     try {
       await createAttribute(data.name, data.isActive);

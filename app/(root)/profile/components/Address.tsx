@@ -25,6 +25,7 @@ import Loader from "@/components/Loader";
 type DeliveryAddress = z.infer<typeof deliveryAddress>;
 
 const Address = () => {
+  //  * useStates and hooks
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingAddress, setEditingAddress] = useState<DeliveryAddress | null>(
@@ -33,6 +34,7 @@ const Address = () => {
   const { user, isLoading, error, refetch } = useUserDetails();
   const { toast } = useToast();
 
+  // * Address Data submission
   const handleAddressSubmit = async (formData: DeliveryAddress) => {
     try {
       let response;
@@ -70,6 +72,7 @@ const Address = () => {
     }
   };
 
+  //  * Delete the address
   const handleAddressDelete = async (_id: string) => {
     try {
       const response = await deleteAddress(_id);

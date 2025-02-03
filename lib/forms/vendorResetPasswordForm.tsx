@@ -24,6 +24,7 @@ interface ResetPasswordFormProps {
 }
 
 const VendorResetPasswordForm = ({ email, token }: ResetPasswordFormProps) => {
+  // * useStates and hooks
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
@@ -35,7 +36,7 @@ const VendorResetPasswordForm = ({ email, token }: ResetPasswordFormProps) => {
       confirmPassword: "",
     },
   });
-
+  // * reset form submit handler
   const onSubmit = async (values: z.infer<typeof resetFormSchema>) => {
     setIsLoading(true);
     setErrorMessage("");

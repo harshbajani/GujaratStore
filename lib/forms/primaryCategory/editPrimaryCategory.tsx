@@ -38,6 +38,7 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 
 const EditPrimaryCategoryForm = () => {
+  // * useStates and hooks
   const { id } = useParams(); // Get the ID from the URL parameters
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
@@ -56,7 +57,7 @@ const EditPrimaryCategoryForm = () => {
       isActive: true,
     },
   });
-
+  // * fetch parent and primary category to populate fields
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -85,7 +86,7 @@ const EditPrimaryCategoryForm = () => {
 
     fetchData();
   }, [id, form]);
-
+  // * form submission
   const onSubmit = async (data: IPrimaryCategory) => {
     try {
       await updatePrimaryCategoryById(id as string, {

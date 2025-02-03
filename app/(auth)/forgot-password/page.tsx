@@ -23,6 +23,7 @@ const formSchema = z.object({
 });
 
 const ForgotPasswordForm = () => {
+  // * useStates and hooks
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -35,6 +36,7 @@ const ForgotPasswordForm = () => {
     },
   });
 
+  // * forgot password data submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setErrorMessage("");

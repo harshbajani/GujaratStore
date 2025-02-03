@@ -26,10 +26,11 @@ import { signOut as serverSignOut } from "@/lib/actions/auth.actions";
 import { useRouter } from "next/navigation";
 
 const Header = () => {
+  // * hooks
   const { isAuthenticated, isLoading } = useAuth(false);
   const router = useRouter();
   const { toast } = useToast();
-
+  // * signOut function
   const handleSignOut = async () => {
     try {
       await nextAuthSignOut({ redirect: false }); // * First, call the client-side NextAuth signOut

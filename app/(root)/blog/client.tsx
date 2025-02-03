@@ -4,12 +4,13 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
-import { getAllBlogs } from "@/lib/actions/blog.actions"; // Make sure getAllBlogs includes image handling logic
+import { getAllBlogs } from "@/lib/actions/blog.actions";
 import { features } from "@/constants";
 import { TransformedBlog } from "@/types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ClientFeaturesAndBlogs = ({ initialBlog }: any) => {
+  // * useStates and hooks
   const [blogs, setBlogs] = useState<TransformedBlog[]>(initialBlog);
   const [blogRef, blogInView] = useInView({
     triggerOnce: true,
@@ -44,6 +45,7 @@ const ClientFeaturesAndBlogs = ({ initialBlog }: any) => {
     },
   };
 
+  // * Fetching all blogs
   useEffect(() => {
     const fetchBlogs = async () => {
       try {

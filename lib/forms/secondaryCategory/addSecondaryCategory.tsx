@@ -37,6 +37,7 @@ import { createSecondaryCategory } from "@/lib/actions/secondaryCategory.actions
 import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
 
 const AddSecondaryCategoryForm = () => {
+  // * useStates and hooks
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
   );
@@ -57,7 +58,7 @@ const AddSecondaryCategoryForm = () => {
       isActive: true,
     },
   });
-
+  // * fetch the data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -87,7 +88,7 @@ const AddSecondaryCategoryForm = () => {
 
     fetchData();
   }, []);
-
+  // * form submission
   const onSubmit = async (data: ISecondaryCategory) => {
     try {
       await createSecondaryCategory({
