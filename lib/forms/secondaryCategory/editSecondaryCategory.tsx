@@ -41,6 +41,7 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 
 const EditSecondaryCategoryForm = () => {
+  // * useStates and hooks
   const { id } = useParams(); // Get the ID from the URL parameters
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
@@ -62,7 +63,7 @@ const EditSecondaryCategoryForm = () => {
       isActive: true,
     },
   });
-
+  // * fetching data to populate fields
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -104,7 +105,7 @@ const EditSecondaryCategoryForm = () => {
 
     fetchData();
   }, [id, form]);
-
+  // * form submission
   const onSubmit = async (data: ISecondaryCategory) => {
     try {
       await updateSecondaryCategoryById(id as string, {
