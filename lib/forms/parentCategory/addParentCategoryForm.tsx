@@ -20,6 +20,7 @@ import { parentCategorySchema } from "@/lib/validations";
 import { createParentCategory } from "@/lib/actions/parentCategory.actions";
 
 const AddParentCategoryForm = () => {
+  // * hooks
   const router = useRouter();
   const { toast } = useToast();
   const form = useForm<ParentCategoryFormData>({
@@ -29,7 +30,7 @@ const AddParentCategoryForm = () => {
       isActive: true,
     },
   });
-
+  // * data submission
   const onSubmit = async (data: ParentCategoryFormData): Promise<void> => {
     try {
       await createParentCategory(data.name, data.isActive);
