@@ -41,6 +41,7 @@ import Loader from "@/components/Loader";
 import { IProduct, ProductWithPopulatedFields } from "@/types";
 
 const ProductsPage = () => {
+  // * useStates and hooks
   const [data, setData] = useState<ProductWithPopulatedFields[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -52,7 +53,7 @@ const ProductsPage = () => {
 
   const router = useRouter();
   const { toast } = useToast();
-
+  // * fetch all products
   const fetchAllProducts = async () => {
     try {
       setLoading(true);
@@ -76,7 +77,7 @@ const ProductsPage = () => {
       setLoading(false);
     }
   };
-
+  // * delete products
   const handleDelete = async (id: string) => {
     try {
       await fetch(`/api/products?id=${id}`, {
