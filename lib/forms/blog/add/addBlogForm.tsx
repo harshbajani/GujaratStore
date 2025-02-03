@@ -68,7 +68,7 @@ const AddBlog = () => {
       }
     }
   };
-
+  // * form submission
   const handleSubmit = async (data: BlogFormData) => {
     setIsSubmitting(true);
     try {
