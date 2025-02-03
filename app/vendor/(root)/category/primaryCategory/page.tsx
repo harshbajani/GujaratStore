@@ -44,6 +44,7 @@ import Loader from "@/components/Loader";
 import { PrimaryCategoryWithPopulatedFields } from "@/types";
 
 const PrimaryCategoryPage = () => {
+  // * useStates and hooks
   const [data, setData] = useState<PrimaryCategoryWithPopulatedFields[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -55,7 +56,7 @@ const PrimaryCategoryPage = () => {
 
   const router = useRouter();
   const { toast } = useToast();
-
+  // * fetching primary category data
   const fetchAllPrimaryCategories = async () => {
     try {
       setLoading(true);
@@ -72,7 +73,7 @@ const PrimaryCategoryPage = () => {
       setLoading(false);
     }
   };
-
+  // * delete primary category
   const handleDelete = async (id: string) => {
     try {
       await deletePrimaryCategoryById(id);
