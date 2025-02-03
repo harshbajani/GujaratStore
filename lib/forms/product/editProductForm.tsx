@@ -48,6 +48,7 @@ import { toast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
 
 const EditProductsForm = () => {
+  // * useStates and hooks
   const params = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
@@ -91,6 +92,7 @@ const EditProductsForm = () => {
     },
   });
 
+  // * price handling
   const basePrice = form.watch("basePrice");
   const discountType = form.watch("discountType");
   const discountValue = form.watch("discountValue");
@@ -108,11 +110,14 @@ const EditProductsForm = () => {
     form.setValue("netPrice", basePriceAfterDiscount + calculatedGstAmount);
   }, [basePrice, discountType, discountValue, gstRate, form]);
 
+  // * function to look out for attributes based on secondary category
   const { fields } = useFieldArray({
     control: form.control,
     name: "attributes",
   });
+
   const selectedSecondaryCategoryId = form.watch("secondaryCategory");
+
   useEffect(() => {
     if (selectedSecondaryCategoryId) {
       const selectedCategory = secondaryCategory.find(
@@ -132,6 +137,7 @@ const EditProductsForm = () => {
     }
   }, [selectedSecondaryCategoryId, secondaryCategory, form]);
 
+  // * function to handle the product images and cover images
   const productCoverImage = form.watch("productCoverImage");
   const productImages = form.watch("productImages");
 
@@ -155,7 +161,7 @@ const EditProductsForm = () => {
     });
   }, [productImages]);
 
-  // Cover image handler
+  // * Cover image handler
   const handleCoverImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -163,7 +169,7 @@ const EditProductsForm = () => {
     }
   };
 
-  // Product images handler
+  // * Product images handler
   const handleProductImagesSelect = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -175,18 +181,18 @@ const EditProductsForm = () => {
     }
   };
 
-  // Remove product image preview
+  // * Remove product image preview
   const removeProductPreview = (index: number) => {
     const currentProductImages = form.getValues("productImages");
     const newProductImages = currentProductImages.filter((_, i) => i !== index);
     form.setValue("productImages", newProductImages);
   };
 
-  // Remove cover image preview
+  // * Remove cover image preview
   const removeCoverPreview = () => {
     form.setValue("productCoverImage", "");
   };
-
+  // * fetch the product to populate the fields
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -245,11 +251,7 @@ const EditProductsForm = () => {
     }
   }, [params.id]);
 
-  const handleButtonClick = () => {
-    console.log("Update button clicked");
-    console.log("Form values:", form.getValues());
-    console.log("Form errors:", form.formState.errors);
-  };
+  // * data submission
   const onSubmit = async (data: IProduct) => {
     console.log("Form submission triggered");
     try {
@@ -314,7 +316,7 @@ const EditProductsForm = () => {
       setIsLoading(false);
     }
   };
-
+  // * fetch the data for the select fields
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -352,7 +354,7 @@ const EditProductsForm = () => {
     fetchData();
   }, []);
 
-  // Add cleanup for object URLs
+  // * Add cleanup for object URLs
   useEffect(() => {
     return () => {
       if (coverPreview.startsWith("blob:")) {
@@ -727,11 +729,7 @@ const EditProductsForm = () => {
         />
 
         <div className="flex gap-2">
-          <Button
-            type="submit"
-            className="primary-btn"
-            onClick={handleButtonClick}
-          >
+          <Button type="submit" className="primary-btn">
             Update Product
           </Button>
           <Button
