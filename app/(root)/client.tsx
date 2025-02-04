@@ -10,7 +10,7 @@ const ClientHomePage = () => {
 
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen parallax-element">
         <Hero />
         <NewCollection />
         <OrganicAndFlavours />
