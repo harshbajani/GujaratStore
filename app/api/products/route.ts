@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Commonly needed fields that we always want to retrieve
 const commonFields =
-  "productName parentCategory primaryCategory secondaryCategory brands attributes productStatus productSKU productColor productDescription productImages productCoverImage mrp basePrice discountType discountValue gstRate gstAmount netPrice metaTitle metaKeywords metaDescription";
+  "productName parentCategory primaryCategory secondaryCategory brands gender productQuantity attributes productStatus productSKU productColor productDescription productImages productCoverImage mrp basePrice discountType discountValue gstRate gstAmount netPrice metaTitle metaKeywords metaDescription";
 
 // Populate configuration for reuse
 const populateConfig = [

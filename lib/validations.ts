@@ -194,12 +194,16 @@ export const productSchema = z.object({
   mrp: z.number().positive("MRP must be a positive number"),
   basePrice: z.number().positive("Base price must be a positive number"),
   discountType: z.enum(["percentage", "amount"]),
+  gender: z.enum(["male", "female", "unisex"]).optional(),
   discountValue: z
     .number()
     .nonnegative("Discount value must be a non-negative number"),
   gstRate: z.number().nonnegative("GST rate must be a non-negative number"),
   gstAmount: z.number().nonnegative("GST amount must be a non-negative number"),
   netPrice: z.number().nonnegative("Net price must be a non-negative number"),
+  productQuantity: z.coerce
+    .number()
+    .positive("Product quantity must be a positive number"),
   productStatus: z.boolean().default(true),
   productRating: z.number().optional(),
   productWarranty: z.string().optional(),

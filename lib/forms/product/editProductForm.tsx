@@ -30,7 +30,6 @@ import {
   IBrand,
   IPrimaryCategory,
   IProduct,
-  IProductAttributes,
   IProductSecondaryCategory,
 } from "@/types";
 import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
@@ -46,6 +45,8 @@ import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 const EditProductsForm = () => {
   // * useStates and hooks
@@ -73,6 +74,7 @@ const EditProductsForm = () => {
       secondaryCategory: "", // Note: matches the interface property name
       attributes: [],
       brands: "",
+      gender: "male",
       productColor: "",
       productSKU: "",
       productDescription: "",
@@ -85,6 +87,7 @@ const EditProductsForm = () => {
       gstRate: 0,
       gstAmount: 0,
       netPrice: 0,
+      productQuantity: 0,
       productStatus: true,
       productRating: 0,
       productWarranty: "",
@@ -199,39 +202,16 @@ const EditProductsForm = () => {
         // Make sure we're using the correct URL structure
         const response = await fetch(`/api/products?id=${params.id}`);
         const data = await response.json();
-        console.log("Received data:", data);
+
         if (data.success) {
           const product = data.data;
-          console.log("Fetched product data:", product); // Add this to debug
-
           // Set form values with null checks
           form.reset({
-            productName: product.productName || "",
+            ...product,
             parentCategory: product.parentCategory?._id || "",
             primaryCategory: product.primaryCategory?._id || "",
             secondaryCategory: product.secondaryCategory?._id || "",
             brands: product.brands?._id || "",
-            productColor: product.productColor || "",
-            productSKU: product.productSKU || "",
-            productDescription: product.productDescription || "",
-            productCoverImage: product.productCoverImage || "",
-            productImages: product.productImages || [],
-            mrp: product.mrp || 0,
-            basePrice: product.basePrice || 0,
-            discountType: product.discountType || "percentage",
-            discountValue: product.discountValue || 0,
-            gstRate: product.gstRate || 0,
-            gstAmount: product.gstAmount || 0,
-            netPrice: product.netPrice || 0,
-            productStatus: product.productStatus ?? true,
-            attributes: product.attributes.map((attr: IProductAttributes) => ({
-              attributeId: attr.attributeId._id, // Extract the _id from the nested object
-              value: attr.value,
-              _id: attr._id, // Preserve existing _id if present
-            })),
-            metaTitle: product.metaTitle || "",
-            metaKeywords: product.metaKeywords || "",
-            metaDescription: product.metaDescription || "",
           });
         }
       } catch (error) {
@@ -379,11 +359,7 @@ const EditProductsForm = () => {
   return (
     <Form {...form}>
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          console.log("Form submitted");
-          form.handleSubmit(onSubmit)(e);
-        }}
+        onSubmit={form.handleSubmit(onSubmit)} // Remove the nested call here
         className="space-y-8"
       >
         <div className="grid grid-cols-3 gap-6">
@@ -413,14 +389,29 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
-            name="productColor"
+            name="brands"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Product Color</FormLabel>
+                <FormLabel>Brand</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter product color" {...field} />
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Brand" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {brands.map((category) => (
+                        <SelectItem key={category._id} value={category._id!}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -509,35 +500,71 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
+        </div>
+        <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
-            name="brands"
+            name="productColor"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Brand</FormLabel>
+                <FormLabel>Product Color</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
+                  <Input placeholder="Enter product color" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="productQuantity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Product Quantity</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="Enter product quantity"
                     defaultValue={field.value}
+                    type="number"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Gender</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    {...field}
+                    defaultValue={field.value}
+                    onValueChange={field.onChange}
                   >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Brand" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {brands.map((category) => (
-                        <SelectItem key={category._id} value={category._id!}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="male" id="male" />
+                      <Label htmlFor="male">Male</Label>
+
+                      <RadioGroupItem value="female" id="female" />
+                      <Label htmlFor="female">Female</Label>
+
+                      <RadioGroupItem value="unisex" id="unisex" />
+                      <Label htmlFor="unisex">Unisex</Label>
+                    </div>
+                  </RadioGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        <div className="flex flex-row gap-6">
+        <div className="grid grid-cols-5 gap-6">
           {fields.map((field, index) => {
             const attribute = attributes.find(
               (attr) => attr._id === field.attributeId
