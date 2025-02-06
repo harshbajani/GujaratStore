@@ -54,6 +54,13 @@ const productSchema = new Schema({
   gstAmount: { type: Number, required: true },
   netPrice: { type: Number, required: true },
   productStatus: { type: Boolean, default: true },
+  productQuantity: { type: Number, required: true },
+  gender: {
+    type: String,
+    enum: ["male", "female", "unisex"],
+    required: false,
+    default: "male",
+  },
   productRating: { type: Number, required: false },
   productReviews: [
     { type: Schema.Types.ObjectId, ref: "ProductReviews", required: false },

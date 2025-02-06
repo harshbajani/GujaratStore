@@ -44,6 +44,8 @@ import { getAllBrands } from "@/lib/actions/brand.actions";
 import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 const AddProductsForm = () => {
   // * useStates and hooks
@@ -74,6 +76,7 @@ const AddProductsForm = () => {
       secondaryCategory: "", // Note: matches the interface property name
       attributes: [],
       brands: "",
+      gender: "male",
       productColor: "",
       productSKU: "",
       productDescription: "",
@@ -86,6 +89,7 @@ const AddProductsForm = () => {
       gstRate: 0,
       gstAmount: 0,
       netPrice: 0,
+      productQuantity: 0,
       productStatus: true,
       productRating: 0,
       productWarranty: "",
@@ -182,8 +186,6 @@ const AddProductsForm = () => {
   // * form submision
   const onSubmit = async (data: IProduct) => {
     try {
-      console.log("Starting form submission with data:", data);
-
       // Validate required fields are present
       if (!data.productCoverImage) {
         console.error("Cover image is missing");
@@ -231,8 +233,6 @@ const AddProductsForm = () => {
         productCoverImage: coverImageId,
         productImages: productImageIds,
       };
-
-      console.log("Submitting final data to API:", finalData);
 
       // Submit to API
       const response = await fetch("/api/products", {
@@ -334,10 +334,7 @@ const AddProductsForm = () => {
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)} // Remove the nested call here
-        className="space-y-8"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
@@ -365,14 +362,29 @@ const AddProductsForm = () => {
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
-            name="productColor"
+            name="brands"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Product Color</FormLabel>
+                <FormLabel>Brand</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter product color" {...field} />
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Brand" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {brands.map((category) => (
+                        <SelectItem key={category._id} value={category._id!}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -461,35 +473,66 @@ const AddProductsForm = () => {
               </FormItem>
             )}
           />
+        </div>
+        <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
-            name="brands"
+            name="productColor"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Brand</FormLabel>
+                <FormLabel>Product Color</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Brand" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {brands.map((category) => (
-                        <SelectItem key={category._id} value={category._id!}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input placeholder="Enter product color" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="productQuantity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Product Quantity</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Enter product quantity"
+                    {...field}
+                    type="number"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Gender</FormLabel>
+                <FormControl>
+                  <RadioGroup defaultValue="male" {...field}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="male" id="male" />
+                      <Label htmlFor="male">Male</Label>
+
+                      <RadioGroupItem value="female" id="female" />
+                      <Label htmlFor="female">Female</Label>
+
+                      <RadioGroupItem value="unisex" id="unisex" />
+                      <Label htmlFor="unisex">Unisex</Label>
+                    </div>
+                  </RadioGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        <div className="flex flex-row gap-6">
+        <div className="grid grid-cols-5 gap-6">
           {fields.map((field, index) => {
             const attribute = attributes.find(
               (attr) => attr._id === field.attributeId
@@ -686,7 +729,8 @@ const AddProductsForm = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => router.push("/vendor/category/secondaryCategory")}
+            type="button"
+            onClick={() => router.push("/vendor/products")}
           >
             Cancel
           </Button>

@@ -265,10 +265,12 @@ export interface IProduct {
   mrp: number;
   basePrice: number;
   discountType: "percentage" | "amount";
+  gender?: "male" | "female" | "unisex";
   discountValue: number;
   gstRate: number;
   gstAmount: number;
   netPrice: number;
+  productQuantity: number;
   productStatus?: boolean;
   productRating?: number;
   productReviews?: string[]; // Optional array of MongoDB ObjectIds as strings
@@ -277,14 +279,6 @@ export interface IProduct {
   metaTitle?: string;
   metaKeywords?: string;
   metaDescription?: string;
-}
-
-export interface IProductAttributes {
-  _id: string;
-  attributeId: {
-    _id: string;
-  };
-  value: string;
 }
 
 export type ProductWithPopulatedFields = IProduct & {
