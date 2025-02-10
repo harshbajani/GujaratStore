@@ -556,6 +556,12 @@ const EditProductsForm = () => {
 
                       <RadioGroupItem value="unisex" id="unisex" />
                       <Label htmlFor="unisex">Unisex</Label>
+
+                      <RadioGroupItem
+                        value="not-applicable"
+                        id="not-applicable"
+                      />
+                      <Label htmlFor="not-applicable">Not Applicable</Label>
                     </div>
                   </RadioGroup>
                 </FormControl>
