@@ -265,7 +265,7 @@ export interface IProduct {
   mrp: number;
   basePrice: number;
   discountType: "percentage" | "amount";
-  gender?: "male" | "female" | "unisex";
+  gender?: "male" | "female" | "unisex" | "not-applicable";
   discountValue: number;
   gstRate: number;
   gstAmount: number;

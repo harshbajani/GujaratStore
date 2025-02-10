@@ -194,7 +194,7 @@ export const productSchema = z.object({
   mrp: z.number().positive("MRP must be a positive number"),
   basePrice: z.number().positive("Base price must be a positive number"),
   discountType: z.enum(["percentage", "amount"]),
-  gender: z.enum(["male", "female", "unisex"]).optional(),
+  gender: z.enum(["male", "female", "unisex", "not-applicable"]).optional(),
   discountValue: z
     .number()
     .nonnegative("Discount value must be a non-negative number"),

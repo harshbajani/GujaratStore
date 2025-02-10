@@ -251,7 +251,7 @@ const AddProductsForm = () => {
 
       const result = await response.json();
       toast({
-        title: "Sucsess",
+        title: "Success",
         description: "Product added successfully",
       });
       router.push("/vendor/products");
@@ -514,7 +514,11 @@ const AddProductsForm = () => {
               <FormItem>
                 <FormLabel>Gender</FormLabel>
                 <FormControl>
-                  <RadioGroup defaultValue="male" {...field}>
+                  <RadioGroup
+                    {...field}
+                    defaultValue={field.value}
+                    onValueChange={field.onChange}
+                  >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="male" id="male" />
                       <Label htmlFor="male">Male</Label>
@@ -524,6 +528,12 @@ const AddProductsForm = () => {
 
                       <RadioGroupItem value="unisex" id="unisex" />
                       <Label htmlFor="unisex">Unisex</Label>
+
+                      <RadioGroupItem
+                        value="not-applicable"
+                        id="not-applicable"
+                      />
+                      <Label htmlFor="not-applicable">Not Applicable</Label>
                     </div>
                   </RadioGroup>
                 </FormControl>
