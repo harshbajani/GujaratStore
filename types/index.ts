@@ -258,7 +258,7 @@ export interface IProduct {
   attributes: Array<{ attributeId: string; value: string }>;
   brands: string; // MongoDB ObjectId as string
   productSKU: string;
-  productColor: string;
+  productColor?: string;
   productDescription: string;
   productImages: (string | File)[];
   productCoverImage: string | File;

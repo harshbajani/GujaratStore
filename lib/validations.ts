@@ -180,7 +180,7 @@ export const productSchema = z.object({
     .nonempty("At least one attribute is required"),
   brands: z.string().length(24, "Invalid brand ID"),
   productSKU: z.string().min(1, "Product SKU is required"),
-  productColor: z.string().min(1, "Product color is required"),
+  productColor: z.string().optional(),
   productDescription: z.string().min(1, "Product description is required"),
   productImages: z
     .array(z.union([z.string(), z.instanceof(File)]))
