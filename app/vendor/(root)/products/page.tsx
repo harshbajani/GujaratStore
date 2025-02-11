@@ -33,6 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -108,7 +114,18 @@ const ProductsPage = () => {
       accessorKey: "productName",
       header: "Name",
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("productName")}</div>
+        <div className="font-medium">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger className="truncate max-w-[300px]">
+                {row.getValue("productName")}
+              </TooltipTrigger>
+              <TooltipContent align="start">
+                <p>{row.getValue("productName")}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       ),
     },
     {
