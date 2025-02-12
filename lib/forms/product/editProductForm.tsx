@@ -233,7 +233,7 @@ const EditProductsForm = () => {
 
   // * data submission
   const onSubmit = async (data: IProduct) => {
-    console.log("Form submission triggered");
+    console.log("Form submission triggered with data:", data);
     try {
       setIsLoading(true);
 
@@ -246,6 +246,13 @@ const EditProductsForm = () => {
           method: "POST",
           body: coverFormData,
         });
+
+        if (!uploadResponse.ok) {
+          throw new Error(
+            `Cover image upload failed: ${await uploadResponse.text()}`
+          );
+        }
+
         const { fileId } = await uploadResponse.json();
         coverImageId = fileId;
       }
@@ -260,10 +267,17 @@ const EditProductsForm = () => {
               method: "POST",
               body: formData,
             });
+
+            if (!uploadResponse.ok) {
+              throw new Error(
+                `Product image upload failed: ${await uploadResponse.text()}`
+              );
+            }
+
             const { fileId } = await uploadResponse.json();
             return fileId;
           }
-          return image; // Keep existing ID
+          return image;
         })
       );
 
@@ -275,21 +289,34 @@ const EditProductsForm = () => {
         productImages: productImageIds,
       };
 
-      // Send update request
+      console.log("Sending PUT request to:", `/api/products/${params.id}`);
+      console.log("With data:", finalData);
+
       const response = await fetch(`/api/products/${params.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(finalData),
       });
 
-      // Handle response
-      if (!response.ok) throw new Error("Update failed");
-      toast({ title: "Success", description: "Product updated" });
+      const responseData = await response.json();
+      console.log("API response:", responseData);
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Update failed");
+      }
+
+      toast({
+        title: "Success",
+        description: "Product updated successfully",
+      });
       router.push("/vendor/products");
-    } catch {
+    } catch (error) {
+      console.error("Error during update:", error);
       toast({
         title: "Error",
-        description: "Update failed",
+        description: error instanceof Error ? error.message : "Update failed",
         variant: "destructive",
       });
     } finally {
@@ -359,7 +386,18 @@ const EditProductsForm = () => {
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)} // Remove the nested call here
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!params.id) {
+            toast({
+              title: "Error",
+              description: "Product ID is missing",
+              variant: "destructive",
+            });
+            return;
+          }
+          form.handleSubmit(onSubmit)(e);
+        }}
         className="space-y-8"
       >
         <div className="grid grid-cols-3 gap-6">
@@ -762,8 +800,17 @@ const EditProductsForm = () => {
         />
 
         <div className="flex gap-2">
-          <Button type="submit" className="primary-btn">
-            Update Product
+          <Button
+            type="submit"
+            className="primary-btn"
+            disabled={isLoading}
+            onClick={() => {
+              console.log("Manual submission attempt");
+              const data = form.getValues();
+              onSubmit(data);
+            }}
+          >
+            {isLoading ? "Updating..." : "Update Product"}
           </Button>
           <Button
             variant="outline"

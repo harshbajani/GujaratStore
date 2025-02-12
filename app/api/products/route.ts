@@ -40,9 +40,6 @@ export async function GET(request: NextRequest) {
     await connectToDB();
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get("id");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const skip = (page - 1) * limit;
 
     if (id) {
       // For single product fetch
@@ -62,12 +59,10 @@ export async function GET(request: NextRequest) {
     }
 
     // For product listing with pagination
-    const [products, total] = await Promise.all([
+    const [products] = await Promise.all([
       Products.find()
         .select(commonFields)
         .populate(populateConfig)
-        .skip(skip)
-        .limit(limit)
         .lean()
         .exec(),
       Products.countDocuments(),
@@ -76,12 +71,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: products,
-      pagination: {
-        total,
-        page,
-        limit,
-        pages: Math.ceil(total / limit),
-      },
     });
   } catch (error: unknown) {
     console.error("Error in GET products:", error);
