@@ -2,6 +2,18 @@ import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
+const commonFields =
+  "productName parentCategory primaryCategory secondaryCategory brands gender productQuantity attributes productStatus productSKU productColor productDescription productImages productCoverImage mrp basePrice discountType discountValue gstRate gstAmount netPrice metaTitle metaKeywords metaDescription";
+
+// Populate configuration for reuse
+const populateConfig = [
+  { path: "parentCategory", select: "name" },
+  { path: "primaryCategory", select: "name" },
+  { path: "secondaryCategory", select: "name" },
+  { path: "brands", select: "name" },
+  { path: "attributes.attributeId", select: "name" },
+];
+
 export async function GET(request: NextRequest) {
   try {
     await connectToDB();
@@ -9,12 +21,12 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get("id");
 
     if (id) {
+      // For single product fetch
       const product = await Products.findById(id)
-        .populate({ path: "parentCategory", select: "name _id" }) // Add _id to select
-        .populate({ path: "primaryCategory", select: "name _id" })
-        .populate({ path: "secondaryCategory", select: "name _id" })
-        .populate({ path: "brands", select: "name _id" })
-        .populate({ path: "attributes.attributeId", select: "value" });
+        .select(commonFields)
+        .populate(populateConfig)
+        .lean()
+        .exec();
 
       if (!product) {
         return NextResponse.json(
@@ -25,8 +37,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: product });
     }
 
-    // ... rest of the code
+    // For product listing with pagination
+    const [products] = await Promise.all([
+      Products.find()
+        .select(commonFields)
+        .populate(populateConfig)
+        .lean()
+        .exec(),
+      Products.countDocuments(),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      data: products,
+    });
   } catch (error: unknown) {
+    console.error("Error in GET products:", error);
     return NextResponse.json(
       { success: false, error: (error as Error).message },
       { status: 500 }

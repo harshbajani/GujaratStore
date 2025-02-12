@@ -35,10 +35,6 @@ export const NavLinks = [
     label: "Home Decor",
   },
   {
-    route: "/stationery",
-    label: "Stationery",
-  },
-  {
     route: "/farsan",
     label: "Farsan",
   },
