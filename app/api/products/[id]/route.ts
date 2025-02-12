@@ -41,7 +41,12 @@ export async function PUT(request: Request) {
 
     const updatedProduct = await Products.findByIdAndUpdate(body._id, body, {
       new: true,
-    });
+    })
+      .populate({ path: "parentCategory", select: "name _id" })
+      .populate({ path: "primaryCategory", select: "name _id" })
+      .populate({ path: "secondaryCategory", select: "name _id" })
+      .populate({ path: "brands", select: "name _id" })
+      .populate({ path: "attributes.attributeId", select: "value" });
 
     if (!updatedProduct) {
       return NextResponse.json(
@@ -52,6 +57,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ success: true, data: updatedProduct });
   } catch (error: unknown) {
+    console.error("Update error:", error);
     return NextResponse.json(
       { success: false, error: (error as Error).message },
       { status: 400 }
