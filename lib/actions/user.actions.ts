@@ -16,6 +16,7 @@ const sanitizeUser = (user: IUser): UserResponse => {
     ...safeUser,
     _id: safeUser._id.toString(),
     wishlist: safeUser.wishlist?.map((id) => id.toString()),
+    cart: safeUser.cart?.map((id) => id.toString()),
   };
 };
 
@@ -259,6 +260,83 @@ export async function removeFromWishlist(
     return {
       success: false,
       message: "Failed to remove from wishlist",
+    };
+  }
+}
+
+export async function addToCart(
+  productId: string
+): Promise<ActionResponse<UserResponse>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated",
+      };
+    }
+    await connectToDB();
+    const updatedUser = await User.findOneAndUpdate(
+      { email: session.user.email },
+      { $addToSet: { cart: productId } }, // Prevent duplicates
+      { new: true }
+    ).lean();
+    if (!updatedUser) {
+      return {
+        success: false,
+        message: "User not found",
+      };
+    }
+    revalidatePath("/cart");
+    return {
+      success: true,
+      message: "Added to cart successfully",
+      data: sanitizeUser(updatedUser as IUser),
+    };
+  } catch (error) {
+    console.error("Error adding to cart:", error);
+    return {
+      success: false,
+      message: "Failed to add to cart",
+    };
+  }
+}
+
+// Remove from Cart
+export async function removeFromCart(
+  productId: string
+): Promise<ActionResponse<UserResponse>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated",
+      };
+    }
+    await connectToDB();
+    const updatedUser = await User.findOneAndUpdate(
+      { email: session.user.email },
+      { $pull: { cart: productId } },
+      { new: true }
+    ).lean();
+    if (!updatedUser) {
+      return {
+        success: false,
+        message: "User not found",
+      };
+    }
+    revalidatePath("/cart");
+    return {
+      success: true,
+      message: "Removed from cart successfully",
+      data: sanitizeUser(updatedUser as IUser),
+    };
+  } catch (error) {
+    console.error("Error removing from cart:", error);
+    return {
+      success: false,
+      message: "Failed to remove from cart",
     };
   }
 }

@@ -27,6 +27,7 @@ export interface IUser {
   verificationToken?: string;
   verificationTokenExpiry?: Date;
   wishlist?: (Types.ObjectId | string)[];
+  cart?: (Types.ObjectId | string)[];
   __v: number;
 }
 
