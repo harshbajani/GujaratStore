@@ -16,6 +16,12 @@ import { Heart, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useInView } from "react-intersection-observer";
 import Link from "next/link";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Product {
   _id: string;
@@ -54,6 +60,9 @@ const ClothingPage = () => {
 
   // Helper function to construct image URL from GridFS ID
   const getImageUrl = (imageId: string) => `/api/files/${imageId}`;
+
+  const handleWishlistClick = () => {};
+  const handleAddToCartClick = () => {};
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -157,13 +166,14 @@ const ClothingPage = () => {
           className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           {products.map((product) => (
-            <Link href={`/clothing/${product._id}`} key={product._id}>
-              <motion.div
-                variants={containerVariants}
-                className="flex flex-col items-center justify-between rounded-lg bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-              >
-                {/* Image Container */}
-                <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
+            <motion.div
+              variants={containerVariants}
+              className="flex flex-col items-center justify-between rounded-lg bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+              key={product._id}
+            >
+              {/* Image Container */}
+              <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
+                <Link href={`/clothing/${product._id}`}>
                   <Image
                     src={getImageUrl(product.productCoverImage)}
                     alt={product.productName}
@@ -171,61 +181,76 @@ const ClothingPage = () => {
                     height={250}
                     className="h-full w-full object-cover object-top transition-transform duration-300 hover:scale-105"
                   />
-                </div>
+                </Link>
+              </div>
 
-                {/* Product Info */}
+              {/* Product Info */}
+              <Link href={`/clothing/${product._id}`}>
                 <div className="flex w-full flex-1 flex-col items-center">
-                  <h3 className="mb-2 text-center text-sm font-semibold text-brand line-clamp-2">
-                    {product.productName}
-                  </h3>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <h3 className="mb-2 text-center text-sm font-semibold text-brand h-5 overflow-hidden">
+                          {product.productName}
+                        </h3>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-wrap">
+                        {product.productName}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <div className="mb-4 flex items-center gap-2">
                     <span className="text-lg font-bold text-gray-900">
-                      ₹{product.netPrice.toLocaleString("en-IN")}
+                      ₹{Math.floor(product.netPrice).toLocaleString("en-IN")}
                     </span>
                     {product.mrp > product.netPrice && (
                       <span className="text-sm text-gray-500 line-through">
-                        ₹{product.mrp.toLocaleString("en-IN")}
+                        ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
                       </span>
                     )}
                   </div>
                 </div>
+              </Link>
 
-                {/* Buttons Container */}
-                <div className="flex w-full items-center justify-center gap-2">
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex flex-1"
+              {/* Buttons Container */}
+              <div className="flex w-full items-center justify-center gap-2">
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex flex-1"
+                >
+                  <Button
+                    variant="secondary"
+                    className="shadow-md flex items-center gap-2"
+                    onClick={() => {
+                      handleAddToCartClick();
+                    }}
                   >
-                    <Button
-                      variant="secondary"
-                      className="shadow-md flex items-center gap-2"
-                    >
-                      <div className="bg-brand p-2 rounded -ml-3">
-                        <ShoppingCart className="size-5 text-white" />
-                      </div>
-                      Add to cart
-                    </Button>
-                  </motion.div>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    <div className="bg-brand p-2 rounded -ml-3">
+                      <ShoppingCart className="size-5 text-white" />
+                    </div>
+                    Add to cart
+                  </Button>
+                </motion.div>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    variant="secondary"
+                    className="aspect-square p-2 shadow-sm hover:shadow-md"
+                    onClick={() => handleWishlistClick()}
                   >
-                    <Button
-                      variant="secondary"
-                      className="aspect-square p-2 shadow-sm hover:shadow-md"
-                    >
-                      <Heart
-                        className={cn(
-                          "h-5 w-5 text-red-600",
-                          product.wishlist && "fill-red-600"
-                        )}
-                      />
-                    </Button>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </Link>
+                    <Heart
+                      className={cn(
+                        "h-5 w-5 text-red-600",
+                        product.wishlist && "fill-red-600"
+                      )}
+                    />
+                  </Button>
+                </motion.div>
+              </div>
+            </motion.div>
           ))}
         </motion.div>
       </div>
