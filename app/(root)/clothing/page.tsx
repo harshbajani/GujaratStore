@@ -1,14 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -26,11 +18,12 @@ import {
 interface Product {
   _id: string;
   productName: string;
-  productCoverImage: string; // This will be the GridFS ID
+  productCoverImage: string;
   mrp: number;
   netPrice: number;
-  productImages: string[]; // These will be GridFS IDs
+  productImages: string[];
   wishlist?: boolean;
+  inCart?: boolean;
   parentCategory?: {
     name?: string;
   };
@@ -61,21 +54,89 @@ const ClothingPage = () => {
   // Helper function to construct image URL from GridFS ID
   const getImageUrl = (imageId: string) => `/api/files/${imageId}`;
 
-  const handleWishlistClick = () => {};
-  const handleAddToCartClick = () => {};
+  // Toggle wishlist status.
+  const handleToggleWishlist = async (product: Product) => {
+    try {
+      let response;
+      if (product.wishlist) {
+        response = await fetch("/api/user/wishlist", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product._id }),
+        });
+      } else {
+        response = await fetch("/api/user/wishlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product._id }),
+        });
+      }
+      const data = await response.json();
+      console.log("Wishlist response:", data);
+      setProducts((prev) =>
+        prev.map((p) =>
+          p._id === product._id ? { ...p, wishlist: !p.wishlist } : p
+        )
+      );
+    } catch (err) {
+      console.error("Error toggling wishlist:", err);
+    }
+  };
+
+  // Toggle cart: add if not in cart, remove if already in cart.
+  const handleToggleCart = async (product: Product) => {
+    try {
+      let response;
+      if (product.inCart) {
+        // Remove from cart
+        response = await fetch("/api/user/cart", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product._id }),
+        });
+      } else {
+        // Add to cart
+        response = await fetch("/api/user/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product._id }),
+        });
+      }
+      const data = await response.json();
+      console.log("Cart toggle response:", data);
+      setProducts((prev) =>
+        prev.map((p) =>
+          p._id === product._id ? { ...p, inCart: !p.inCart } : p
+        )
+      );
+    } catch (err) {
+      console.error("Error toggling cart:", err);
+    }
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProductsAndUser = async () => {
       try {
-        const response = await fetch("/api/products");
-        const data = await response.json();
-
-        if (data.success) {
-          // Filter products where parentCategory.name is "clothing"
-          const clothingProducts = data.data.filter(
+        // Fetch products.
+        const prodResponse = await fetch("/api/products");
+        const prodData = await prodResponse.json();
+        if (prodData.success) {
+          let clothingProducts = prodData.data.filter(
             (product: Product) =>
               product.parentCategory?.name?.toLowerCase() === "clothing"
           );
+          // Fetch current user data to mark wishlist and cart.
+          const userResponse = await fetch("/api/user/current");
+          const userData = await userResponse.json();
+          if (userData.success && userData.data) {
+            const wishlistIds: string[] = userData.data.wishlist || [];
+            const cartIds: string[] = userData.data.cart || [];
+            clothingProducts = clothingProducts.map((product: Product) => ({
+              ...product,
+              wishlist: wishlistIds.includes(product._id),
+              inCart: cartIds.includes(product._id),
+            }));
+          }
           setProducts(clothingProducts);
         } else {
           setError("Failed to fetch products");
@@ -88,7 +149,7 @@ const ClothingPage = () => {
       }
     };
 
-    fetchProducts();
+    fetchProductsAndUser();
   }, []);
 
   if (loading) {
@@ -109,54 +170,7 @@ const ClothingPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <motion.div
-        className="relative h-[273px] w-full"
-        initial={{ opacity: 0, scale: 1.1 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-      >
-        <div className="absolute inset-0 bg-[url('/bg/bg1.png')] bg-cover bg-center sm:bg-contain md:bg-[top_50%_right_200px] h-[273px]" />
-        <div className="absolute inset-0 bg-brand-200/30 h-[273px]" />
-        <motion.div
-          className="relative z-10 flex h-full flex-col items-center justify-center p-4 text-center"
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.8 }}
-        >
-          <motion.h1
-            className="mb-2 text-2xl font-bold sm:text-3xl md:text-4xl mt-10"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-          >
-            નમસ્તે જી
-          </motion.h1>
-          <motion.p
-            className="text-sm sm:text-base md:text-lg mb-5"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.7, duration: 0.5 }}
-          >
-            Let&apos;s Discover The World Of Gujarat Art & Crafts
-          </motion.p>
-          <div className="">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Clothings</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {/* Products Grid */}
+      {/* ...Hero Section... */}
       <div className="container mx-auto px-4 py-16">
         <motion.div
           ref={organicRef}
@@ -222,14 +236,12 @@ const ClothingPage = () => {
                   <Button
                     variant="secondary"
                     className="shadow-md flex items-center gap-2"
-                    onClick={() => {
-                      handleAddToCartClick();
-                    }}
+                    onClick={() => handleToggleCart(product)}
                   >
                     <div className="bg-brand p-2 rounded -ml-3">
                       <ShoppingCart className="size-5 text-white" />
                     </div>
-                    Add to cart
+                    {product.inCart ? "Remove from Cart" : "Add to Cart"}
                   </Button>
                 </motion.div>
                 <motion.div
@@ -239,12 +251,12 @@ const ClothingPage = () => {
                   <Button
                     variant="secondary"
                     className="aspect-square p-2 shadow-sm hover:shadow-md"
-                    onClick={() => handleWishlistClick()}
+                    onClick={() => handleToggleWishlist(product)}
                   >
                     <Heart
                       className={cn(
-                        "h-5 w-5 text-red-600",
-                        product.wishlist && "fill-red-600"
+                        "h-5 w-5",
+                        product.wishlist ? "fill-red-500" : "text-red-600"
                       )}
                     />
                   </Button>
