@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Check, Heart, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useInView } from "react-intersection-observer";
 import Link from "next/link";
@@ -22,6 +22,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Loader from "@/components/Loader";
 
 interface Product {
   _id: string;
@@ -163,7 +164,7 @@ const ClothingPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        Loading...
+        <Loader />
       </div>
     );
   }
@@ -290,8 +291,17 @@ const ClothingPage = () => {
                     className="shadow-md flex items-center gap-2"
                     onClick={() => handleToggleCart(product)}
                   >
-                    <div className="bg-brand p-2 rounded -ml-3">
-                      <ShoppingCart className="size-5 text-white" />
+                    <div
+                      className={cn(
+                        product.inCart ? "bg-secondary/90" : "bg-brand",
+                        "p-2 rounded -ml-3 transition-all duration-300"
+                      )}
+                    >
+                      {product.inCart ? (
+                        <Check className="size-5 text-green-500" />
+                      ) : (
+                        <ShoppingCart className="size-5 text-white" />
+                      )}
                     </div>
                     {product.inCart ? "Remove from Cart" : "Add to Cart"}
                   </Button>
