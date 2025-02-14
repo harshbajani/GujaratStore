@@ -9,13 +9,20 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Check, Heart, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useInView } from "react-intersection-observer";
 import Link from "next/link";
+import Loader from "@/components/Loader";
 
 interface Product {
   _id: string;
@@ -25,6 +32,7 @@ interface Product {
   netPrice: number;
   productImages: string[]; // These will be GridFS IDs
   wishlist?: boolean;
+  inCart?: boolean;
   parentCategory?: {
     name?: string;
   };
@@ -55,17 +63,87 @@ const ArtisansPage = () => {
   // Helper function to construct image URL from GridFS ID
   const getImageUrl = (imageId: string) => `/api/files/${imageId}`;
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch("/api/products");
-        const data = await response.json();
+  const handleToggleWishlist = async (product: Product) => {
+    try {
+      let response;
+      if (product.wishlist) {
+        response = await fetch("/api/user/wishlist", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product._id }),
+        });
+      } else {
+        response = await fetch("/api/user/wishlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product._id }),
+        });
+      }
+      const data = await response.json();
+      console.log("Wishlist response:", data);
+      setProducts((prev) =>
+        prev.map((p) =>
+          p._id === product._id ? { ...p, wishlist: !p.wishlist } : p
+        )
+      );
+    } catch (err) {
+      console.error("Error toggling wishlist:", err);
+    }
+  };
 
-        if (data.success) {
-          const artisansProducts = data.data.filter(
+  // Toggle cart: add if not in cart, remove if already in cart.
+  const handleToggleCart = async (product: Product) => {
+    try {
+      let response;
+      if (product.inCart) {
+        // Remove from cart
+        response = await fetch("/api/user/cart", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product._id }),
+        });
+      } else {
+        // Add to cart
+        response = await fetch("/api/user/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: product._id }),
+        });
+      }
+      const data = await response.json();
+      console.log("Cart toggle response:", data);
+      setProducts((prev) =>
+        prev.map((p) =>
+          p._id === product._id ? { ...p, inCart: !p.inCart } : p
+        )
+      );
+    } catch (err) {
+      console.error("Error toggling cart:", err);
+    }
+  };
+
+  useEffect(() => {
+    const fetchProductsAndUser = async () => {
+      try {
+        const prodResponse = await fetch("/api/products");
+        const prodData = await prodResponse.json();
+
+        if (prodData.success) {
+          let artisansProducts = prodData.data.filter(
             (product: Product) =>
               product.parentCategory?.name?.toLowerCase() === "artisan's"
           );
+          const userResponse = await fetch("/api/user/current");
+          const userData = await userResponse.json();
+          if (userData.success && userData.data) {
+            const wishlistIds: string[] = userData.data.wishlist || [];
+            const cartIds: string[] = userData.data.cart || [];
+            artisansProducts = artisansProducts.map((product: Product) => ({
+              ...product,
+              wishlist: wishlistIds.includes(product._id),
+              inCart: cartIds.includes(product._id),
+            }));
+          }
           setProducts(artisansProducts);
         } else {
           setError("Failed to fetch products");
@@ -78,13 +156,13 @@ const ArtisansPage = () => {
       }
     };
 
-    fetchProducts();
+    fetchProductsAndUser();
   }, []);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        Loading...
+        <Loader />
       </div>
     );
   }
@@ -156,13 +234,14 @@ const ArtisansPage = () => {
           className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           {products.map((product) => (
-            <Link href={`/artisans/${product._id}`} key={product._id}>
-              <motion.div
-                variants={containerVariants}
-                className="flex flex-col items-center justify-between rounded-lg bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-              >
-                {/* Image Container */}
-                <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
+            <motion.div
+              variants={containerVariants}
+              className="flex flex-col items-center justify-between rounded-lg bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+              key={product._id}
+            >
+              {/* Image Container */}
+              <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
+                <Link href={`/clothing/${product._id}`}>
                   <Image
                     src={getImageUrl(product.productCoverImage)}
                     alt={product.productName}
@@ -170,61 +249,83 @@ const ArtisansPage = () => {
                     height={250}
                     className="h-full w-full object-cover object-top transition-transform duration-300 hover:scale-105"
                   />
-                </div>
+                </Link>
+              </div>
 
-                {/* Product Info */}
+              {/* Product Info */}
+              <Link href={`/clothing/${product._id}`}>
                 <div className="flex w-full flex-1 flex-col items-center">
-                  <h3 className="mb-2 text-center text-sm font-semibold text-brand line-clamp-2">
-                    {product.productName}
-                  </h3>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <h3 className="mb-2 text-center text-sm font-semibold text-brand h-5 overflow-hidden">
+                          {product.productName}
+                        </h3>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-wrap">
+                        {product.productName}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <div className="mb-4 flex items-center gap-2">
                     <span className="text-lg font-bold text-gray-900">
-                      ₹{product.netPrice.toLocaleString("en-IN")}
+                      ₹{Math.floor(product.netPrice).toLocaleString("en-IN")}
                     </span>
                     {product.mrp > product.netPrice && (
                       <span className="text-sm text-gray-500 line-through">
-                        ₹{product.mrp.toLocaleString("en-IN")}
+                        ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
                       </span>
                     )}
                   </div>
                 </div>
+              </Link>
 
-                {/* Buttons Container */}
-                <div className="flex w-full items-center justify-center gap-2">
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex flex-1"
+              {/* Buttons Container */}
+              <div className="flex w-full items-center justify-center gap-2">
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex flex-1"
+                >
+                  <Button
+                    variant="secondary"
+                    className="shadow-md flex items-center gap-2"
+                    onClick={() => handleToggleCart(product)}
                   >
-                    <Button
-                      variant="secondary"
-                      className="shadow-md flex items-center gap-2"
+                    <div
+                      className={cn(
+                        product.inCart ? "bg-secondary/90" : "bg-brand",
+                        "p-2 rounded -ml-3 transition-all duration-300"
+                      )}
                     >
-                      <div className="bg-brand p-2 rounded -ml-3">
+                      {product.inCart ? (
+                        <Check className="size-5 text-green-500" />
+                      ) : (
                         <ShoppingCart className="size-5 text-white" />
-                      </div>
-                      Add to cart
-                    </Button>
-                  </motion.div>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                      )}
+                    </div>
+                    {product.inCart ? "Remove from Cart" : "Add to Cart"}
+                  </Button>
+                </motion.div>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    variant="secondary"
+                    className="aspect-square p-2 shadow-sm hover:shadow-md"
+                    onClick={() => handleToggleWishlist(product)}
                   >
-                    <Button
-                      variant="secondary"
-                      className="aspect-square p-2 shadow-sm hover:shadow-md"
-                    >
-                      <Heart
-                        className={cn(
-                          "h-5 w-5 text-red-600",
-                          product.wishlist && "fill-red-600"
-                        )}
-                      />
-                    </Button>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </Link>
+                    <Heart
+                      className={cn(
+                        "h-5 w-5",
+                        product.wishlist ? "fill-red-500" : "text-red-600"
+                      )}
+                    />
+                  </Button>
+                </motion.div>
+              </div>
+            </motion.div>
           ))}
         </motion.div>
       </div>
