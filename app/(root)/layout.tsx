@@ -21,7 +21,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <body className="flex min-h-screen flex-col overflow-x-hidden">
         <SessionProvider basePath="/api/auth">
           <ParallaxProvider>
-            <SmoothScrollProvider>
+            {/* <SmoothScrollProvider> */}
               <div className="smooth-scroll-container">
                 <Header />
                 <main className="pt-[16px] md:pt-[52px] flex-grow">
@@ -30,7 +30,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <Toaster />
                 <Footer />
               </div>
-            </SmoothScrollProvider>
+            {/* </SmoothScrollProvider> */}
           </ParallaxProvider>
         </SessionProvider>
       </body>
