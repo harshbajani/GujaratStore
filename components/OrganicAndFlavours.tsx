@@ -115,56 +115,58 @@ const OrganicAndFlavours = () => {
                 className="flex flex-col items-center"
                 whileHover={{ y: -10, transition: { duration: 0.3 } }}
               >
-                <motion.div
-                  className="mb-4 rounded-full overflow-hidden w-[250px] h-[250px]"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Image
-                    src={item.src}
-                    alt={item.title}
-                    width={250}
-                    height={250}
-                    className="object-cover w-full h-full"
-                  />
-                </motion.div>
-
-                <div className="text-center mb-4">
-                  <h3 className="text-sm mb-2 px-4 leading-tight min-h-[40px]">
-                    {item.title}
-                  </h3>
-                  <p className="font-bold text-lg">{item.price}</p>
-                </div>
-
-                <div className="flex items-center gap-2">
+                <Link href="/organic">
                   <motion.div
+                    className="mb-4 rounded-full overflow-hidden w-[250px] h-[250px]"
                     whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <Button
-                      variant="secondary"
-                      className="shadow-md flex items-center gap-2"
+                    <Image
+                      src={item.src}
+                      alt={item.title}
+                      width={250}
+                      height={250}
+                      className="object-cover w-full h-full"
+                    />
+                  </motion.div>
+
+                  <div className="text-center mb-4">
+                    <h3 className="text-sm mb-2 px-4 leading-tight min-h-[40px]">
+                      {item.title}
+                    </h3>
+                    <p className="font-bold text-lg">{item.price}</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      <div className="bg-brand p-2 rounded -ml-3">
-                        <ShoppingCart className="size-5 text-white" />
-                      </div>
-                      Add to cart
-                    </Button>
-                  </motion.div>
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button variant="secondary" className="shadow-md">
-                      <Heart
-                        className={cn(
-                          "text-red-600",
-                          item.wishlist && "fill-red-600"
-                        )}
-                      />
-                    </Button>
-                  </motion.div>
-                </div>
+                      <Button
+                        variant="secondary"
+                        className="shadow-md flex items-center gap-2"
+                      >
+                        <div className="bg-brand p-2 rounded -ml-3">
+                          <ShoppingCart className="size-5 text-white" />
+                        </div>
+                        Add to cart
+                      </Button>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button variant="secondary" className="shadow-md">
+                        <Heart
+                          className={cn(
+                            "text-red-600",
+                            item.wishlist && "fill-red-600"
+                          )}
+                        />
+                      </Button>
+                    </motion.div>
+                  </div>
+                </Link>
               </motion.div>
             ))}
           </motion.div>
