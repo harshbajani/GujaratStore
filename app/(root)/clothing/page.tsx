@@ -23,6 +23,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import Loader from "@/components/Loader";
+import { toast } from "@/hooks/use-toast";
 
 interface Product {
   _id: string;
@@ -82,6 +83,14 @@ const ClothingPage = () => {
       }
       const data = await response.json();
       console.log("Wishlist response:", data);
+      if (!data.success && data.message === "Not authenticated") {
+        toast({
+          title: "Error",
+          description: "Please log in to add to wishlist!",
+          variant: "destructive",
+        });
+        return;
+      }
       setProducts((prev) =>
         prev.map((p) =>
           p._id === product._id ? { ...p, wishlist: !p.wishlist } : p
@@ -113,6 +122,14 @@ const ClothingPage = () => {
       }
       const data = await response.json();
       console.log("Cart toggle response:", data);
+      if (!data.success && data.message === "Not authenticated") {
+        toast({
+          title: "Error",
+          description: "Please log in to add to cart!",
+          variant: "destructive",
+        });
+        return;
+      }
       setProducts((prev) =>
         prev.map((p) =>
           p._id === product._id ? { ...p, inCart: !p.inCart } : p

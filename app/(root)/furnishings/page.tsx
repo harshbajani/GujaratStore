@@ -22,6 +22,8 @@ import { Check, Heart, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useInView } from "react-intersection-observer";
 import Link from "next/link";
+import { toast } from "@/hooks/use-toast";
+import Loader from "@/components/Loader";
 
 interface Product {
   _id: string;
@@ -62,6 +64,7 @@ const FurnishingsPage = () => {
   // Helper function to construct image URL from GridFS ID
   const getImageUrl = (imageId: string) => `/api/files/${imageId}`;
 
+  // Toggle wishlist status.
   const handleToggleWishlist = async (product: Product) => {
     try {
       let response;
@@ -80,6 +83,14 @@ const FurnishingsPage = () => {
       }
       const data = await response.json();
       console.log("Wishlist response:", data);
+      if (!data.success && data.message === "Not authenticated") {
+        toast({
+          title: "Error",
+          description: "Please log in to add to wishlist!",
+          variant: "destructive",
+        });
+        return;
+      }
       setProducts((prev) =>
         prev.map((p) =>
           p._id === product._id ? { ...p, wishlist: !p.wishlist } : p
@@ -111,6 +122,14 @@ const FurnishingsPage = () => {
       }
       const data = await response.json();
       console.log("Cart toggle response:", data);
+      if (!data.success && data.message === "Not authenticated") {
+        toast({
+          title: "Error",
+          description: "Please log in to add to cart!",
+          variant: "destructive",
+        });
+        return;
+      }
       setProducts((prev) =>
         prev.map((p) =>
           p._id === product._id ? { ...p, inCart: !p.inCart } : p
@@ -164,7 +183,7 @@ const FurnishingsPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        Loading...
+        <Loader />
       </div>
     );
   }
