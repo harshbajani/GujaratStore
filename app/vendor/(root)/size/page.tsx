@@ -146,7 +146,7 @@ const SizePage = () => {
               variant="ghost"
               size="icon"
               className="hover:bg-gray-100"
-              onClick={() => router.push(`/vendor/size/edit/${size.id}`)}
+              onClick={() => router.push(`/vendor/size/edit/${size._id}`)}
             >
               <Pencil className="h-4 w-4 text-gray-600" />
             </Button>
@@ -155,7 +155,7 @@ const SizePage = () => {
               variant="ghost"
               size="icon"
               className="hover:bg-red-100"
-              onClick={() => handleDelete(size.id!)}
+              onClick={() => handleDelete(size._id!)}
             >
               <Trash2 className="h-4 w-4 text-red-600" />
             </Button>
