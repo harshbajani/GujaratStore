@@ -339,7 +339,7 @@ export interface IProductResponse {
     name: string;
   };
   productSKU: string;
-  productSize: {
+  productSize?: {
     _id: string;
     label: string;
   }[];
@@ -366,4 +366,14 @@ export interface IProductResponse {
   metaTitle?: string;
   metaKeywords?: string;
   metaDescription?: string;
+}
+
+export interface IProductReview {
+  _id?: string;
+  userId: string;
+  productId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  date: string;
 }

@@ -33,7 +33,7 @@ import QuantitySelector from "@/components/ui/quantity-selector";
 import Loader from "@/components/Loader";
 import ReviewSection from "@/components/Review";
 
-const ClothingDetailPage = () => {
+const HomeDecorDetailPage = () => {
   const { id } = useParams();
   const [product, setProduct] = useState<IProductResponse | null>(null);
   const [quantity, setQuantity] = useState(0);
@@ -402,4 +402,4 @@ const ClothingDetailPage = () => {
   );
 };
 
-export default ClothingDetailPage;
+export default HomeDecorDetailPage;
