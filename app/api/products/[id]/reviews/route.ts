@@ -56,11 +56,11 @@ export async function GET(
 // Add a new review
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDB();
-    const productId = params.id;
+    const productId = (await params).id;
     const session = await mongoose.startSession();
 
     session.startTransaction();
