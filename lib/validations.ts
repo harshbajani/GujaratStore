@@ -179,6 +179,7 @@ export const productSchema = z.object({
     )
     .nonempty("At least one attribute is required"),
   brands: z.string().length(24, "Invalid brand ID"),
+  productSize: z.array(z.string().optional()),
   productSKU: z.string().min(1, "Product SKU is required"),
   productColor: z.string().optional(),
   productDescription: z.string().min(1, "Product description is required"),
@@ -205,9 +206,10 @@ export const productSchema = z.object({
     .number()
     .positive("Product quantity must be a positive number"),
   productStatus: z.boolean().default(true),
-  productRating: z.number().optional(),
   productWarranty: z.string().optional(),
   productReturnPolicy: z.string().optional(),
+  productRating: z.number().optional(),
+  productReviews: z.array(z.string()).optional(),
   metaTitle: z.string().optional(),
   metaKeywords: z.string().optional(),
   metaDescription: z.string().optional(),

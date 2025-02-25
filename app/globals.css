@@ -124,6 +124,37 @@ body {
   /* Remove the transition property to prevent additional animation */
 }
 
+.swiper-slide {
+  height: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.thumbs-gallery .swiper-slide {
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
+.thumbs-gallery .swiper-slide-thumb-active {
+  opacity: 1;
+}
+
+.product-main-swiper .swiper-button-next,
+.product-main-swiper .swiper-button-prev {
+  color: #C93326;
+  width: 30px;
+  height: 30px;
+}
+
+.product-main-swiper .swiper-button-next:after,
+.product-main-swiper .swiper-button-prev:after {
+  font-size: 20px;
+}
+
+.thumbs-gallery {
+  padding: 0 20px;
+}
+
 @layer utilities {
   .h1 {
     @apply text-[34px] leading-[42px] font-bold;
@@ -211,5 +242,16 @@ body {
   }
   .no-border {
     @apply focus-visible:ring-0 focus-visible:outline-none focus-visible:border-none
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }

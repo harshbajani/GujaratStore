@@ -2,9 +2,6 @@ import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
-const commonFields =
-  "productName parentCategory primaryCategory secondaryCategory brands gender productQuantity attributes productStatus productSKU productColor productDescription productImages productCoverImage mrp basePrice discountType discountValue gstRate gstAmount netPrice metaTitle metaKeywords metaDescription";
-
 // Populate configuration for reuse
 const populateConfig = [
   { path: "parentCategory", select: "name" },
@@ -12,45 +9,29 @@ const populateConfig = [
   { path: "secondaryCategory", select: "name" },
   { path: "brands", select: "name" },
   { path: "attributes.attributeId", select: "name" },
+  { path: "productSize", select: "label" },
 ];
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await connectToDB();
-    const searchParams = request.nextUrl.searchParams;
-    const id = searchParams.get("id");
+    const id = (await params).id;
 
-    if (id) {
-      // For single product fetch
-      const product = await Products.findById(id)
-        .select(commonFields)
-        .populate(populateConfig)
-        .lean()
-        .exec();
+    const product = await Products.findById(id)
+      .populate(populateConfig)
+      .lean()
+      .exec();
 
-      if (!product) {
-        return NextResponse.json(
-          { success: false, error: "Product not found" },
-          { status: 404 }
-        );
-      }
-      return NextResponse.json({ success: true, data: product });
+    if (!product) {
+      return NextResponse.json(
+        { success: false, error: "Product not found" },
+        { status: 404 }
+      );
     }
-
-    // For product listing with pagination
-    const [products] = await Promise.all([
-      Products.find()
-        .select(commonFields)
-        .populate(populateConfig)
-        .lean()
-        .exec(),
-      Products.countDocuments(),
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      data: products,
-    });
+    return NextResponse.json({ success: true, data: product });
   } catch (error: unknown) {
     console.error("Error in GET products:", error);
     return NextResponse.json(
@@ -72,7 +53,8 @@ export async function PUT(request: Request) {
       .populate({ path: "primaryCategory", select: "name _id" })
       .populate({ path: "secondaryCategory", select: "name _id" })
       .populate({ path: "brands", select: "name _id" })
-      .populate({ path: "attributes.attributeId", select: "value" });
+      .populate({ path: "attributes.attributeId", select: "value" })
+      .populate({ path: "productSize", select: "label" });
 
     if (!updatedProduct) {
       return NextResponse.json(

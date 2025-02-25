@@ -250,6 +250,13 @@ export interface IBrand {
   __v?: number;
 }
 
+export interface ISizes {
+  _id?: string;
+  label: string;
+  value: string;
+  isActive: boolean;
+}
+
 export interface IProduct {
   _id?: string;
   productName: string;
@@ -260,6 +267,7 @@ export interface IProduct {
   brands: string; // MongoDB ObjectId as string
   productSKU: string;
   productColor?: string;
+  productSize?: string[];
   productDescription: string;
   productImages: (string | File)[];
   productCoverImage: string | File;
@@ -304,4 +312,58 @@ export type ProductWithPopulatedFields = IProduct & {
 
 export interface IPriceCalculatorProps {
   control: Control<IProduct>;
+}
+
+export interface IProductResponse {
+  _id?: string;
+  productName: string;
+  parentCategory: {
+    _id: string;
+    name: string;
+  };
+  primaryCategory: {
+    _id: string;
+    name: string;
+  };
+  secondaryCategory: {
+    _id: string;
+    name: string;
+  };
+  attributes: {
+    attributeId: { _id: string; name: string };
+    _id: string;
+    value: string;
+  }[];
+  brands: {
+    _id: string;
+    name: string;
+  };
+  productSKU: string;
+  productSize: {
+    _id: string;
+    label: string;
+  }[];
+  productColor?: string;
+  productDescription: string;
+  productImages: (string | File)[];
+  productCoverImage: string | File;
+  mrp: number;
+  basePrice: number;
+  discountType: "percentage" | "amount";
+  gender?: "male" | "female" | "unisex" | "not-applicable";
+  discountValue: number;
+  gstRate: number;
+  gstAmount: number;
+  netPrice: number;
+  productQuantity: number;
+  productStatus?: boolean;
+  productRating?: number;
+  productReviews?: string[]; // Optional array of MongoDB ObjectIds as strings
+  productWarranty?: string;
+  productReturnPolicy?: string;
+  wishlist?: boolean;
+  inCart?: boolean;
+  metaTitle?: string;
+  metaKeywords?: string;
+  metaDescription?: string;
 }

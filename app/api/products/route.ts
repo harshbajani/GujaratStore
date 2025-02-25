@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Commonly needed fields that we always want to retrieve
 const commonFields =
-  "productName parentCategory primaryCategory secondaryCategory brands gender productQuantity attributes productStatus productSKU productColor productDescription productImages productCoverImage mrp basePrice discountType discountValue gstRate gstAmount netPrice metaTitle metaKeywords metaDescription";
+  "productName parentCategory primaryCategory secondaryCategory brands productSize gender productQuantity attributes productStatus productSKU productColor productDescription productImages productCoverImage mrp basePrice discountType discountValue gstRate gstAmount netPrice productWarranty productReturnPolicy metaTitle metaKeywords metaDescription";
 
 // Populate configuration for reuse
 const populateConfig = [
@@ -13,6 +13,7 @@ const populateConfig = [
   { path: "secondaryCategory", select: "name" },
   { path: "brands", select: "name" },
   { path: "attributes.attributeId", select: "name" },
+  { path: "productSize", select: "label" },
 ];
 
 export async function POST(request: Request) {
