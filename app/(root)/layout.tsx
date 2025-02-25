@@ -18,9 +18,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <main className="pt-[16px] md:pt-[52px] flex-grow">
                 {children}
               </main>
-              <Toaster />
               <Footer />
             </div>
+            <Toaster />
             {/* </SmoothScrollProvider> */}
           </ParallaxProvider>
         </SessionProvider>

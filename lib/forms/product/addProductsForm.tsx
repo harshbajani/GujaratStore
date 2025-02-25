@@ -31,6 +31,7 @@ import {
   IPrimaryCategory,
   IProduct,
   IProductSecondaryCategory,
+  ISizes,
 } from "@/types";
 import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
 import { useRouter } from "next/navigation";
@@ -46,6 +47,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { getAllSizes } from "@/lib/actions/size.actions";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 const AddProductsForm = () => {
   // * useStates and hooks
@@ -60,6 +63,7 @@ const AddProductsForm = () => {
   >([]);
   const [attributes, setAttributes] = useState<IAttribute[]>([]);
   const [brands, setBrands] = useState<IBrand[]>([]);
+  const [sizes, setSizes] = useState<ISizes[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [productImageFiles, setProductImageFiles] = useState<File[]>([]);
@@ -78,6 +82,7 @@ const AddProductsForm = () => {
       brands: "",
       gender: "male",
       productColor: "",
+      productSize: [],
       productSKU: "",
       productDescription: "",
       productImages: [],
@@ -295,6 +300,7 @@ const AddProductsForm = () => {
         const secondaryCategoryResponse = await getAllSecondaryCategories();
         const attributeResponse = await getAllAttributes();
         const brandResponse = await getAllBrands();
+        const sizesResponse = await getAllSizes();
 
         if (parentCategoryResponse.success) {
           setParentCategories(parentCategoryResponse.data as IParentCategory[]);
@@ -315,6 +321,9 @@ const AddProductsForm = () => {
         }
         if (brandResponse.length > 0) {
           setBrands(brandResponse as IBrand[]);
+        }
+        if (sizesResponse.success) {
+          setSizes(sizesResponse.data as ISizes[]);
         }
       } catch {
         console.log("error");
@@ -506,7 +515,28 @@ const AddProductsForm = () => {
               </FormItem>
             )}
           />
-
+          <FormField
+            control={form.control}
+            name="productSize"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Product Size</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    options={sizes.map((size) => ({
+                      value: size._id || "",
+                      label: size.label,
+                    }))}
+                    onValueChange={(values) => {
+                      field.onChange(values); // Update the form state
+                    }}
+                    defaultValue={Array.isArray(field.value) ? field.value : []} // Ensure this is set correctly
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="gender"
@@ -666,6 +696,35 @@ const AddProductsForm = () => {
                     value={value || ""}
                     onChange={onChange}
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="productReturnPolicy"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Product Return Policy</FormLabel>
+                <FormControl>
+                  <Textarea {...field} placeholder="Return policy" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="productWarranty"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Product Warranty</FormLabel>
+                <FormControl>
+                  <Textarea {...field} placeholder="Product Warranty" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Poppins } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -53,7 +52,6 @@ export default function RootLayout({
       >
         {children}
       </body>
-      <Toaster />
     </html>
   );
 }

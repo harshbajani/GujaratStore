@@ -37,6 +37,12 @@ const productSchema = new Schema({
     ref: "Brand",
     required: true,
   },
+  productSize: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Size",
+    },
+  ],
   productSKU: { type: String, required: true },
   productColor: { type: String, required: false },
   productDescription: { type: String, required: true },
@@ -88,6 +94,7 @@ productSchema.index({ parentCategory: 1, productStatus: 1 });
 productSchema.index({ primaryCategory: 1, productStatus: 1 });
 productSchema.index({ secondaryCategory: 1, productStatus: 1 });
 productSchema.index({ brands: 1, productStatus: 1 });
+productSchema.index({ size: 1, productStatus: 1 });
 
 const Products =
   mongoose.models.Product || mongoose.model("Product", productSchema);

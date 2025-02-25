@@ -16,6 +16,7 @@ import {
   Star,
   LayoutPanelLeft,
   PencilLine,
+  Ruler,
 } from "lucide-react";
 export const NavLinks = [
   {
@@ -621,5 +622,10 @@ export const vendorSidebarLinks = [
     label: "Discount",
     route: "/vendor/discounts",
     icon: Percent,
+  },
+  {
+    label: "Sizes",
+    route: "/vendor/size",
+    icon: Ruler,
   },
 ];
