@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import QuantitySelector from "@/components/ui/quantity-selector";
+import Loader from "@/components/Loader";
 
 const ClothingDetailPage = () => {
   const { id } = useParams();
@@ -152,11 +153,7 @@ const ClothingDetailPage = () => {
   }, [id]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
+    return <Loader />;
   }
   if (error || !product) {
     return (
@@ -329,15 +326,25 @@ const ClothingDetailPage = () => {
               </h1>
 
               <div className="border-b">
-                <h1 className="text-base sm:text-xl font-bold ">Attributes</h1>
-                {product.attributes.map((attr) => (
-                  <p key={attr._id} className="mb-2">
-                    <span className="font-semibold">
-                      {attr.attributeId?.name}:{" "}
-                    </span>
-                    {attr.value}
-                  </p>
-                ))}
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="productDescription">
+                    <AccordionTrigger>
+                      <h1 className="text-base sm:text-xl font-bold ">
+                        Attributes
+                      </h1>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {product.attributes.map((attr) => (
+                        <p key={attr._id} className="mb-2">
+                          <span className="font-semibold">
+                            {attr.attributeId?.name}:{" "}
+                          </span>
+                          {attr.value}
+                        </p>
+                      ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
               <div>
                 <Accordion type="single" collapsible>
