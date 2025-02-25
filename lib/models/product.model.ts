@@ -4,6 +4,7 @@ import "@/lib/models/primaryCategory.model";
 import "@/lib/models/secondaryCategory.model";
 import "@/lib/models/brand.model";
 import "@/lib/models/attribute.model";
+import "@/lib/models/size.model";
 
 const productSchema = new Schema({
   productName: { type: String, required: true },
@@ -94,7 +95,7 @@ productSchema.index({ parentCategory: 1, productStatus: 1 });
 productSchema.index({ primaryCategory: 1, productStatus: 1 });
 productSchema.index({ secondaryCategory: 1, productStatus: 1 });
 productSchema.index({ brands: 1, productStatus: 1 });
-productSchema.index({ size: 1, productStatus: 1 });
+productSchema.index({ productSize: 1, productStatus: 1 });
 
 const Products =
   mongoose.models.Product || mongoose.model("Product", productSchema);
