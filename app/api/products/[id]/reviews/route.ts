@@ -8,11 +8,11 @@ import mongoose from "mongoose";
 // Get all reviews for a product
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDB();
-    const productId = params.id;
+    const productId = (await params).id;
 
     const reviews = await ProductReviews.find({ productId })
       .sort({ date: -1 })
