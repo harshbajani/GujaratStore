@@ -259,7 +259,7 @@ const ArtisansPage = () => {
             >
               {/* Image Container */}
               <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
-                <Link href={`/clothing/${product._id}`}>
+                <Link href={`/artisans/${product._id}`}>
                   <Image
                     src={getImageUrl(product.productCoverImage)}
                     alt={product.productName}
@@ -271,7 +271,7 @@ const ArtisansPage = () => {
               </div>
 
               {/* Product Info */}
-              <Link href={`/clothing/${product._id}`}>
+              <Link href={`/artisans/${product._id}`}>
                 <div className="flex w-full flex-1 flex-col items-center">
                   <TooltipProvider>
                     <Tooltip>
