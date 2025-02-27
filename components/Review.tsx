@@ -63,11 +63,16 @@ function getAverageRating(distribution: RatingDistribution): number {
 interface ReviewSectionProps {
   productId?: string;
   initialRating?: number;
+  onStatsLoaded?: (stats: {
+    totalReviews: number;
+    averageRating: number;
+  }) => void;
 }
 
 export default function ReviewSection({
   productId,
   initialRating = 0,
+  onStatsLoaded,
 }: ReviewSectionProps) {
   const { data: session, status } = useSession();
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -101,6 +106,15 @@ export default function ReviewSection({
       fetchReviews();
     }
   }, [productId]);
+
+  useEffect(() => {
+    if (!loading && onStatsLoaded) {
+      onStatsLoaded({
+        totalReviews: totalReviewsFromDistribution,
+        averageRating: averageRating,
+      });
+    }
+  }, [loading, totalReviewsFromDistribution, averageRating, onStatsLoaded]);
 
   const fetchReviews = async () => {
     try {
