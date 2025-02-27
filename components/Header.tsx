@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { LogOut, Menu, Search, ShoppingCart, User } from "lucide-react";
@@ -26,10 +26,13 @@ import { signOut as serverSignOut } from "@/lib/actions/auth.actions";
 import { useRouter } from "next/navigation";
 
 const Header = () => {
+  const [isOpen, setOpen] = useState(false);
+  // * hooks
+  const sheetContentRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, isLoading } = useAuth(false);
   const router = useRouter();
   const { toast } = useToast();
-
+  // * signOut function
   const handleSignOut = async () => {
     try {
       await nextAuthSignOut({ redirect: false }); // * First, call the client-side NextAuth signOut
@@ -50,6 +53,23 @@ const Header = () => {
       });
     }
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isOpen &&
+        sheetContentRef.current &&
+        !sheetContentRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, sheetContentRef]);
 
   return (
     <nav className="fixed top-0 w-full z-50">
@@ -108,14 +128,13 @@ const Header = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="center">
                     {UserNavLinks.map((link) => (
-                      <DropdownMenuItem key={link.route} asChild>
-                        <Link
-                          href={link.route}
-                          className="flex items-center space-x-2"
-                        >
-                          <link.icon className="h-4 w-4" />
-                          <span>{link.label}</span>
-                        </Link>
+                      <DropdownMenuItem
+                        key={link.route}
+                        onClick={() => router.push(link.route)} // Explicitly trigger the navigation
+                        className="cursor-pointer flex items-center space-x-2"
+                      >
+                        <link.icon className="h-4 w-4" />
+                        <span>{link.label}</span>
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
@@ -133,13 +152,18 @@ const Header = () => {
 
         {/* Mobile Header */}
         <div className="h-[72px] w-full md:hidden flex items-center justify-between px-4">
-          <Sheet>
+          <Sheet open={isOpen} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="text-white">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">
+            {/* Mobile Header - Sheet Content */}
+            <SheetContent
+              ref={sheetContentRef}
+              side="left"
+              className="w-[300px] sm:w-[400px] p-0"
+            >
               <SheetHeader className="p-4 bg-brand text-white">
                 <SheetTitle className="flex justify-between items-center">
                   <Image src="/logo.png" height={40} width={80} alt="logo" />
@@ -152,6 +176,7 @@ const Header = () => {
                       key={link.route}
                       href={link.route}
                       className="block px-4 py-3 text-gray-600 hover:bg-gray-100"
+                      onClick={() => setOpen(false)} // Close sheet on click
                     >
                       {link.label}
                     </Link>
@@ -165,21 +190,34 @@ const Header = () => {
                     className="flex-1 border border-brand text-brand hover:bg-brand hover:text-white"
                     asChild
                   >
-                    <Link href="/sign-in">Login</Link>
+                    <Link
+                      href="/sign-in"
+                      onClick={() => setOpen(false)} // Close sheet on click
+                    >
+                      Login
+                    </Link>
                   </Button>
                   <Button
                     variant="default"
                     className="flex-1 bg-brand hover:bg-brand-300 text-white"
                     asChild
                   >
-                    <Link href="/sign-up">Sign Up</Link>
+                    <Link
+                      href="/sign-up"
+                      onClick={() => setOpen(false)} // Close sheet on click
+                    >
+                      Sign Up
+                    </Link>
                   </Button>
                 </div>
               ) : (
                 <div className="px-4 py-3">
                   <Button
                     className="w-full bg-brand text-white hover:bg-brand-300"
-                    onClick={handleSignOut}
+                    onClick={() => {
+                      setOpen(false); // Close sheet immediately
+                      handleSignOut(); // Then trigger sign-out
+                    }}
                   >
                     Sign Out
                   </Button>

@@ -1,43 +1,49 @@
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { connectToDB } from "@/lib/mongodb";
 import User from "@/lib/models/user.model";
-import { AuthOptions } from "next-auth";
+import Vendor from "@/lib/models/vendor.model";
+import { connectToDB } from "@/lib/mongodb";
+import { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 
-export const authOptions: AuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
+        role: { label: "Role", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email and password required");
-        }
+        if (!credentials) return null;
+
+        const { email, password, role } = credentials;
 
         try {
           await connectToDB();
 
-          const user = await User.findOne({ email: credentials.email });
+          const Model = role === "vendor" ? Vendor : User;
+          const account = await Model.findOne({
+            email,
+            role,
+          });
 
-          if (!user) {
-            throw new Error("No user found with this email");
-          }
-
-          if (!user.isVerified) {
-            throw new Error("Email not verified");
-          }
-
-          if (credentials.password !== user.password) {
+          if (!account) {
             throw new Error("Invalid credentials");
           }
 
+          if (account.password !== password) {
+            throw new Error("Invalid credentials");
+          }
+
+          if (role === "vendor" && !account.isVerified) {
+            throw new Error("Please verify your email before signing in");
+          }
+
           return {
-            id: user._id.toString(),
-            name: user.name,
-            email: user.email,
+            id: account._id.toString(),
+            email: account.email,
+            name: account.name,
+            role: account.role as "user" | "vendor",
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -46,35 +52,28 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
-  pages: {
-    signIn: "/sign-in",
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.id as string,
+          role: token.role as "user" | "vendor" | undefined,
+        },
+      };
+    },
   },
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-      }
-      return session;
-    },
-  },
   secret: process.env.NEXTAUTH_SECRET,
 };
-
-// Create route handler
-const handler = NextAuth(authOptions);
-
-// Export route handler with proper type declarations
-export { handler as GET, handler as POST };
-export type AuthOptionsType = typeof authOptions;

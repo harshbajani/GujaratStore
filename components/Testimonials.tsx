@@ -1,4 +1,4 @@
-import React from "react";
+"use client";
 import Image from "next/image";
 import { Button } from "./ui/button";
 import Link from "next/link";
@@ -7,6 +7,7 @@ import { useInView } from "react-intersection-observer";
 import TestimonialSlider from "./Slider";
 
 const Testimonials = () => {
+  // * IntersectionObserver
   const [ref, inView] = useInView({
     threshold: 0.2,
     triggerOnce: true,

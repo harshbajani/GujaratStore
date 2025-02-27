@@ -17,6 +17,8 @@ import { Button } from "./ui/button";
 
 interface OtpModalProps {
   email: string;
+  type?: "verification" | "password-reset";
+  role: "user" | "vendor";
   onVerified: (
     email: string,
     otp: string
@@ -26,7 +28,13 @@ interface OtpModalProps {
   ) => Promise<{ success: boolean; message: string }>;
 }
 
-const OtpModal = ({ email, onVerified, onResendOTP }: OtpModalProps) => {
+const OtpModal = ({
+  email,
+  type = "verification",
+  role = "user",
+  onVerified,
+  onResendOTP,
+}: OtpModalProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -56,10 +64,20 @@ const OtpModal = ({ email, onVerified, onResendOTP }: OtpModalProps) => {
     setErrorMessage("");
 
     try {
-      const result = await onVerified(email, otp); // Pass both email and otp
+      const result = await onVerified(email, otp);
 
       if (result.success) {
-        router.push("/sign-in");
+        if (type === "password-reset" && role === "vendor") {
+          router.push(`/vendor/reset-password?email=${email}&token=${otp}`);
+        } else if (type === "password-reset" && role === "user") {
+          router.push(`/reset-password?email=${email}&token=${otp}`);
+        } else {
+          if (role === "user") {
+            router.push("/sign-in");
+          } else {
+            router.push("/vendor/sign-in");
+          }
+        }
       } else {
         setErrorMessage(result.message || "Invalid OTP. Please try again.");
       }

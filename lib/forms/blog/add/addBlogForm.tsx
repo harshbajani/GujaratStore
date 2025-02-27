@@ -22,6 +22,9 @@ import { createBlog } from "@/lib/actions/blog.actions";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
+import { toast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 type BlogFormData = z.infer<typeof blogSchema>;
 
@@ -32,7 +35,7 @@ const AddBlog = () => {
   const [imageId, setImageId] = useState("");
 
   // * hooks
-
+  const router = useRouter();
   const form = useForm<BlogFormData>({
     resolver: zodResolver(blogSchema),
   });
@@ -65,7 +68,7 @@ const AddBlog = () => {
       }
     }
   };
-
+  // * form submission
   const handleSubmit = async (data: BlogFormData) => {
     setIsSubmitting(true);
     try {
@@ -78,8 +81,6 @@ const AddBlog = () => {
       const result = await createBlog(formData);
 
       if (result.success) {
-        // Handle success (e.g., show message, redirect)
-        console.log("Blog created successfully");
         form.reset({
           heading: "",
           user: "",
@@ -92,9 +93,18 @@ const AddBlog = () => {
         });
         setPostImage("");
         setImageId("");
+        router.push("/vendor/blogs"); // Redirect after success
+        toast({
+          title: "Success",
+          description: "Blog added successfully.",
+        });
       }
     } catch (error) {
       console.error("Error submitting form:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add blog.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -102,10 +112,7 @@ const AddBlog = () => {
 
   return (
     <section className="sm:px-5 md:px-1 lg:px-2">
-      <h1 className="text-black text-2xl font-semibold sm:mb-5 md:mb-2">
-        Add Blogs
-      </h1>
-      <div className="bg-white border border-gray-300 rounded-xl p-6 text-black">
+      <div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -151,15 +158,15 @@ const AddBlog = () => {
                 )}
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <FormField
                 control={form.control}
-                name="date"
+                name="heading"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>Heading</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" />
+                      <Input {...field} placeholder="Heading" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -179,22 +186,21 @@ const AddBlog = () => {
                   </FormItem>
                 )}
               />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <FormField
                 control={form.control}
-                name="heading"
+                name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Heading</FormLabel>
+                    <FormLabel>Date</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Heading" />
+                      <Input {...field} type="date" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+            </div>
+            <div className="grid grid-cols-1  gap-2">
               <FormField
                 control={form.control}
                 name="description"
@@ -261,13 +267,18 @@ const AddBlog = () => {
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              className="text-white px-6 mt-5"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Submitting..." : "Submit"}
-            </Button>
+            <div className="flex flex-row mt-2 gap-2">
+              <Button
+                type="submit"
+                className="primary-btn "
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Submit"}
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/vendor/blogs">Cancel</Link>
+              </Button>
+            </div>
           </form>
         </Form>
       </div>

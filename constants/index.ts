@@ -5,6 +5,18 @@ import {
   Bell,
   Ticket,
   HeadphonesIcon,
+  PhoneIcon,
+  ChartPie,
+  Tag,
+  ShoppingCart,
+  ClipboardList,
+  Users,
+  Building,
+  Percent,
+  Star,
+  LayoutPanelLeft,
+  PencilLine,
+  Ruler,
 } from "lucide-react";
 export const NavLinks = [
   {
@@ -22,10 +34,6 @@ export const NavLinks = [
   {
     route: "/home-decor",
     label: "Home Decor",
-  },
-  {
-    route: "/stationery",
-    label: "Stationery",
   },
   {
     route: "/farsan",
@@ -76,35 +84,24 @@ export const SocialLinks = [
 ];
 
 export const UserNavLinks = [
+  { route: "/profile?section=profile", label: "My Profile", icon: User },
+  { route: "/profile?section=wishlist", label: "Wishlist", icon: Heart },
+  { route: "/profile?section=orders", label: "Orders", icon: Package },
   {
-    route: "/profile",
-    label: "My Profile",
-    icon: User,
-  },
-  {
-    route: "/wishlist",
-    label: "Wishlist",
-    icon: Heart,
-  },
-  {
-    route: "/orders",
-    label: "Orders",
-    icon: Package,
-  },
-  {
-    route: "/notifications",
+    route: "/profile?section=notifications",
     label: "Notifications",
     icon: Bell,
   },
+  { route: "/profile?section=coupons", label: "Coupons", icon: Ticket },
   {
-    route: "/coupons",
-    label: "Coupon's",
-    icon: Ticket,
-  },
-  {
-    route: "/customer-care",
+    route: "/profile?section=customer-care",
     label: "Customer Care",
     icon: HeadphonesIcon,
+  },
+  {
+    route: "/contact-us",
+    label: "Contact Us",
+    icon: PhoneIcon,
   },
 ];
 
@@ -227,8 +224,6 @@ export const flavoursOfGujarat = [
     label: "Sing Bhujiya(સિંગ ભુજિયા)",
   },
 ];
-
-// constants/testimonials.ts
 
 export const testimonials = [
   {
@@ -456,5 +451,181 @@ export const artisan = [
   {
     src: "/artisan/pottery.png",
     label: "Pottery",
+  },
+];
+
+export const furnishings = [
+  {
+    src: "/furnishings/bambooChair.jpg",
+    label: "Bamboo Chair",
+  },
+  {
+    src: "/furnishings/caneChair.jpg",
+    label: "Cane Chair",
+  },
+  {
+    src: "/furnishings/handmadeMonochords.jpg",
+    label: "Handmade Monochords",
+  },
+  {
+    src: "/furnishings/tissueBox.jpg",
+    label: "Tissue Box",
+  },
+  {
+    src: "/furnishings/wickerBaskets.jpg",
+    label: "Wicker Baskets",
+  },
+  {
+    src: "/furnishings/woodenSwing.jpg",
+    label: "Wooden Swing",
+  },
+];
+
+export const homeDecor = [
+  {
+    src: "/homeDecor/Lippan-Art-Wall-Hanging.webp",
+    label: "Lippan Art Wall Hanging",
+  },
+  {
+    src: "/homeDecor/madhubaniArtPaintings.jpg",
+    label: "Madhubani Art Paintings",
+  },
+  {
+    src: "/homeDecor/madhubaniWallPlates.jpg",
+    label: "Madhubani Wall Plates",
+  },
+  {
+    src: "/homeDecor/traditionalToran.jpg",
+    label: "Traditional Toran",
+  },
+  {
+    src: "/homeDecor/wallArt.jpg",
+    label: "Wall Art",
+  },
+  {
+    src: "/homeDecor/woodenWallHanging.jpg",
+    label: "Wooden Wall Hanging",
+  },
+  {
+    src: "/homeDecor/brassPrabhavali.webp",
+    label: "Brass Prabhavali",
+  },
+  {
+    src: "/homeDecor/dhoopDani.webp",
+    label: "Dhoop Dani",
+  },
+  {
+    src: "/homeDecor/decorativeCushion.jpg",
+    label: "Decorative Cushion",
+  },
+  {
+    src: "/homeDecor/candleHolder.jpg",
+    label: "Candle Holder",
+  },
+  {
+    src: "/homeDecor/kalighatPaintings.jpg",
+    label: "Kalighat Paintngs",
+  },
+  {
+    src: "/homeDecor/rangoliMats.jpg",
+    label: "Rangoli Mats",
+  },
+];
+
+export const organic = [
+  {
+    src: "/organicBucket/roseSoap.png",
+    label: "Natural Handmade Olive Rose Soap ",
+  },
+  {
+    src: "/organicBucket/oil.jpg",
+    label: "Natural Handmade Nalpamaradi Thailam Oil",
+  },
+  {
+    src: "/organicBucket/sandalSoap.jpg",
+    label: "Sandal - Natural Flora Soap ",
+  },
+  {
+    src: "/organicBucket/roomDiffuser.jpg",
+    label: "Grapefruit Oil Room Diffuser",
+  },
+  {
+    src: "/organicBucket/teaTreeOil.jpg",
+    label: "Tea Tree Oil",
+  },
+  {
+    src: "/organicBucket/cedarSoap.jpg",
+    label: "Cedar Soap",
+  },
+];
+
+export const vendorSidebarLinks = [
+  {
+    label: "Dashboard",
+    route: "/vendor/dashboard",
+    icon: ChartPie,
+  },
+  {
+    label: "Attribute",
+    route: "/vendor/attribute",
+    icon: Tag,
+  },
+  {
+    label: "Brand",
+    route: "/vendor/brand",
+    icon: Star,
+  },
+  {
+    label: "Category",
+    route: [
+      {
+        route: "/vendor/category/parentCategory",
+        label: "Parent Category",
+      },
+      {
+        route: "/vendor/category/primaryCategory",
+        label: "Primary Category",
+      },
+      {
+        route: "/vendor/category/secondaryCategory",
+        label: "Secondary Category",
+      },
+    ],
+    icon: LayoutPanelLeft,
+  },
+  {
+    label: "Products",
+    route: "/vendor/products",
+    icon: ShoppingCart,
+  },
+  {
+    label: "Orders",
+    route: "/vendor/orders",
+    icon: ClipboardList,
+  },
+  {
+    label: "Blogs",
+    route: "/vendor/blogs",
+    icon: PencilLine,
+  },
+  {
+    label: "Customers",
+    route: "/vendor/customers",
+    icon: Users,
+  },
+  {
+    label: "Industries",
+    route: "/vendor/industry",
+    icon: Building,
+  },
+  {
+    label: "Discount",
+    route: "/vendor/discounts",
+    icon: Percent,
+  },
+  {
+    label: "Sizes",
+    route: "/vendor/size",
+    icon: Ruler,
   },
 ];

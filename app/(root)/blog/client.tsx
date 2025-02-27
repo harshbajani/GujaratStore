@@ -4,11 +4,14 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
-import { getAllBlogs } from "@/lib/actions/blog.actions"; // Make sure getAllBlogs includes image handling logic
+import { getAllBlogs } from "@/lib/actions/blog.actions";
 import { features } from "@/constants";
+import { TransformedBlog } from "@/types";
 
-const ClientFeaturesAndBlogs = () => {
-  const [blogs, setBlogs] = useState<Blog[]>([]);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ClientFeaturesAndBlogs = ({ initialBlog }: any) => {
+  // * useStates and hooks
+  const [blogs, setBlogs] = useState<TransformedBlog[]>(initialBlog);
   const [blogRef, blogInView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
@@ -42,11 +45,11 @@ const ClientFeaturesAndBlogs = () => {
     },
   };
 
+  // * Fetching all blogs
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         const data = await getAllBlogs(); // Ensure this fetches images as base64
-        console.log(data);
         setBlogs(data);
       } catch (err) {
         console.error("Error fetching blogs:", err);
@@ -156,21 +159,11 @@ const ClientFeaturesAndBlogs = () => {
   );
 };
 
-interface Blog {
-  id: string;
-  image: string; // Base64 string or image path
-  heading: string;
-  user: string;
-  date: string;
-  description: string;
-  category: string;
-}
-
 const BlogCard = ({
   blog,
   featured = false,
 }: {
-  blog: Blog;
+  blog: TransformedBlog;
   featured?: boolean;
 }) => {
   if (!blog) return null;
@@ -185,7 +178,7 @@ const BlogCard = ({
         className={`relative rounded-lg overflow-hidden ${cardHeight} cursor-pointer`}
       >
         <Image
-          src={`data:image/jpeg;base64,${blog.image}`} // Render the base64 image here
+          src={`data:image/jpeg;base64,${blog.imageId}`} // Render the base64 image here
           alt={blog.heading}
           width={500}
           height={500}

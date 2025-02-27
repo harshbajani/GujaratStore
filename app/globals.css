@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -33,6 +37,14 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -59,6 +71,14 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -91,6 +111,50 @@ body {
   background: transparent;
 }
 
+.smooth-scroll-container {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Remove or update the parallax-element transition */
+.parallax-element {
+  will-change: transform;
+  /* Remove the transition property to prevent additional animation */
+}
+
+.swiper-slide {
+  height: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.thumbs-gallery .swiper-slide {
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
+.thumbs-gallery .swiper-slide-thumb-active {
+  opacity: 1;
+}
+
+.product-main-swiper .swiper-button-next,
+.product-main-swiper .swiper-button-prev {
+  color: #C93326;
+  width: 30px;
+  height: 30px;
+}
+
+.product-main-swiper .swiper-button-next:after,
+.product-main-swiper .swiper-button-prev:after {
+  font-size: 20px;
+}
+
+.thumbs-gallery {
+  padding: 0 20px;
+}
+
 @layer utilities {
   .h1 {
     @apply text-[34px] leading-[42px] font-bold;
@@ -102,7 +166,7 @@ body {
     @apply text-[20px] leading-[28px] font-semibold;
   }
   .h4 {
-    @apply text-[18px] leading-[20px] font-medium;
+    @apply text-[18px] leading-[20px] font-semibold;
   }
   .h5 {
     @apply text-[16px] leading-[24px] font-semibold;
@@ -175,5 +239,19 @@ body {
 
   .error-message {
     @apply body-2 mx-auto w-fit rounded-xl bg-error/5 px-8 py-4 text-center text-error !important;
+  }
+  .no-border {
+    @apply focus-visible:ring-0 focus-visible:outline-none focus-visible:border-none
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }

@@ -1,26 +1,22 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { connectToDB } from "@/lib/mongodb";
 import User from "@/lib/models/user.model";
 import { getServerSession } from "next-auth";
 
-import { ActionResponse, UserResponse } from "@/types/index";
+import { ActionResponse, IUser, UserResponse } from "@/types/index";
 import { revalidatePath } from "next/cache";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
+import { authOptions } from "../nextAuthConfig";
 
 // Helper function to convert MongoDB user to safe user response
-const sanitizeUser = (user: any): UserResponse => {
+const sanitizeUser = (user: IUser): UserResponse => {
   const { ...safeUser } = user;
 
   return {
     ...safeUser,
     _id: safeUser._id.toString(),
-    shippingAddresses: safeUser.shippingAddresses?.map((addr: any) => ({
-      ...addr,
-      _id: addr._id.toString(),
-    })),
-    wishlist: safeUser.wishlist?.map((id: any) => id.toString()),
+    wishlist: safeUser.wishlist?.map((id) => id.toString()),
+    cart: safeUser.cart?.map((id) => id.toString()),
   };
 };
 
@@ -29,7 +25,7 @@ export async function getCurrentUser(): Promise<ActionResponse<UserResponse>> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.email && session?.user.role !== "user") {
       return {
         success: false,
         message: "Not authenticated",
@@ -50,7 +46,7 @@ export async function getCurrentUser(): Promise<ActionResponse<UserResponse>> {
     return {
       success: true,
       message: "User details fetched successfully",
-      data: sanitizeUser(user),
+      data: sanitizeUser(user as IUser),
     };
   } catch (error) {
     console.error("Error fetching user details:", error);
@@ -68,7 +64,7 @@ export async function getUserById(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.email && session?.user.role !== "user") {
       return {
         success: false,
         message: "Not authenticated",
@@ -89,7 +85,7 @@ export async function getUserById(
     return {
       success: true,
       message: "User details fetched successfully",
-      data: sanitizeUser(user),
+      data: sanitizeUser(user as IUser),
     };
   } catch (error) {
     console.error("Error fetching user:", error);
@@ -101,21 +97,13 @@ export async function getUserById(
 }
 
 // Update user profile
-interface UpdateUserData {
-  name?: string;
-  phone?: string;
-  gender?: "male" | "female" | "other";
-  dateOfBirth?: Date;
-  profileImage?: string;
-}
-
 export async function updateUserProfile(
-  data: UpdateUserData
+  data: Partial<Pick<IUser, "name" | "email" | "phone">>
 ): Promise<ActionResponse<UserResponse>> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.email && session?.user.role !== "user") {
       return {
         success: false,
         message: "Not authenticated",
@@ -123,11 +111,41 @@ export async function updateUserProfile(
     }
 
     await connectToDB();
+
+    // If email is being updated, check if it's already in use
+    if (data.email && data.email !== session.user.email) {
+      const existingUser = await User.findOne({
+        email: data.email,
+        _id: { $ne: session.user.id },
+      });
+
+      if (existingUser) {
+        return {
+          success: false,
+          message: "Email already in use",
+        };
+      }
+    }
+
+    // If phone is being updated, check if it's already in use
+    if (data.phone) {
+      const existingUser = await User.findOne({
+        phone: data.phone,
+        _id: { $ne: session.user.id },
+      });
+
+      if (existingUser) {
+        return {
+          success: false,
+          message: "Phone number already in use",
+        };
+      }
+    }
 
     const updatedUser = await User.findOneAndUpdate(
       { email: session.user.email },
       { $set: data },
-      { new: true, runValidators: true }
+      { new: true }
     ).lean();
 
     if (!updatedUser) {
@@ -137,124 +155,21 @@ export async function updateUserProfile(
       };
     }
 
+    // Revalidate relevant paths
     revalidatePath("/profile");
+    revalidatePath("/account");
+    revalidatePath("/wishlist"); // Since user has wishlist field
 
     return {
       success: true,
       message: "Profile updated successfully",
-      data: sanitizeUser(updatedUser),
+      data: sanitizeUser(updatedUser as IUser),
     };
   } catch (error) {
-    console.error("Error updating profile:", error);
+    console.error("Error updating user profile:", error);
     return {
       success: false,
       message: "Failed to update profile",
-    };
-  }
-}
-
-// Add shipping address
-interface ShippingAddress {
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  isDefault?: boolean;
-}
-
-export async function addShippingAddress(
-  address: ShippingAddress
-): Promise<ActionResponse<UserResponse>> {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return {
-        success: false,
-        message: "Not authenticated",
-      };
-    }
-
-    await connectToDB();
-
-    // If the new address is default, unset other default addresses
-    if (address.isDefault) {
-      await User.updateOne(
-        { email: session.user.email },
-        { $set: { "shippingAddresses.$[].isDefault": false } }
-      );
-    }
-
-    const updatedUser = await User.findOneAndUpdate(
-      { email: session.user.email },
-      { $push: { shippingAddresses: address } },
-      { new: true }
-    ).lean();
-
-    if (!updatedUser) {
-      return {
-        success: false,
-        message: "User not found",
-      };
-    }
-
-    revalidatePath("/profile/addresses");
-
-    return {
-      success: true,
-      message: "Address added successfully",
-      data: sanitizeUser(updatedUser),
-    };
-  } catch (error) {
-    console.error("Error adding address:", error);
-    return {
-      success: false,
-      message: "Failed to add address",
-    };
-  }
-}
-
-// Delete shipping address
-export async function deleteShippingAddress(
-  addressId: string
-): Promise<ActionResponse<UserResponse>> {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return {
-        success: false,
-        message: "Not authenticated",
-      };
-    }
-
-    await connectToDB();
-
-    const updatedUser = await User.findOneAndUpdate(
-      { email: session.user.email },
-      { $pull: { shippingAddresses: { _id: addressId } } },
-      { new: true }
-    ).lean();
-
-    if (!updatedUser) {
-      return {
-        success: false,
-        message: "User not found",
-      };
-    }
-
-    revalidatePath("/profile/addresses");
-
-    return {
-      success: true,
-      message: "Address deleted successfully",
-      data: sanitizeUser(updatedUser),
-    };
-  } catch (error) {
-    console.error("Error deleting address:", error);
-    return {
-      success: false,
-      message: "Failed to delete address",
     };
   }
 }
@@ -266,7 +181,7 @@ export async function addToWishlist(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.email && session?.user.role !== "user") {
       return {
         success: false,
         message: "Not authenticated",
@@ -293,7 +208,7 @@ export async function addToWishlist(
     return {
       success: true,
       message: "Added to wishlist successfully",
-      data: sanitizeUser(updatedUser),
+      data: sanitizeUser(updatedUser as IUser),
     };
   } catch (error) {
     console.error("Error adding to wishlist:", error);
@@ -311,7 +226,7 @@ export async function removeFromWishlist(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.email && session?.user.role !== "user") {
       return {
         success: false,
         message: "Not authenticated",
@@ -338,13 +253,90 @@ export async function removeFromWishlist(
     return {
       success: true,
       message: "Removed from wishlist successfully",
-      data: sanitizeUser(updatedUser),
+      data: sanitizeUser(updatedUser as IUser),
     };
   } catch (error) {
     console.error("Error removing from wishlist:", error);
     return {
       success: false,
       message: "Failed to remove from wishlist",
+    };
+  }
+}
+
+export async function addToCart(
+  productId: string
+): Promise<ActionResponse<UserResponse>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated",
+      };
+    }
+    await connectToDB();
+    const updatedUser = await User.findOneAndUpdate(
+      { email: session.user.email },
+      { $addToSet: { cart: productId } }, // Prevent duplicates
+      { new: true }
+    ).lean();
+    if (!updatedUser) {
+      return {
+        success: false,
+        message: "User not found",
+      };
+    }
+    revalidatePath("/cart");
+    return {
+      success: true,
+      message: "Added to cart successfully",
+      data: sanitizeUser(updatedUser as IUser),
+    };
+  } catch (error) {
+    console.error("Error adding to cart:", error);
+    return {
+      success: false,
+      message: "Failed to add to cart",
+    };
+  }
+}
+
+// Remove from Cart
+export async function removeFromCart(
+  productId: string
+): Promise<ActionResponse<UserResponse>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated",
+      };
+    }
+    await connectToDB();
+    const updatedUser = await User.findOneAndUpdate(
+      { email: session.user.email },
+      { $pull: { cart: productId } },
+      { new: true }
+    ).lean();
+    if (!updatedUser) {
+      return {
+        success: false,
+        message: "User not found",
+      };
+    }
+    revalidatePath("/cart");
+    return {
+      success: true,
+      message: "Removed from cart successfully",
+      data: sanitizeUser(updatedUser as IUser),
+    };
+  } catch (error) {
+    console.error("Error removing from cart:", error);
+    return {
+      success: false,
+      message: "Failed to remove from cart",
     };
   }
 }

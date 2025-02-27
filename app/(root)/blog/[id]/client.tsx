@@ -6,37 +6,33 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useParams } from "next/navigation";
 import { getAllBlogs, getBlogById } from "@/lib/actions/blog.actions";
 import Loader from "@/components/Loader";
+import { TransformedBlog } from "@/types/index";
 
-interface Blog {
-  id: string;
-  image: string;
-  heading: string;
-  user: string;
-  date: string;
-  description: string;
-  category: string;
-  metaTitle: string;
-  metaDescription: string;
-  metaKeywords: string;
+interface ClientBlogPageProps {
+  initialBlog: TransformedBlog | null;
 }
 
-const ClientBlogPage = () => {
-  const { id } = useParams();
-  const [blog, setBlog] = useState<Blog | null>(null);
-  const [relatedBlogs, setRelatedBlogs] = useState<Blog[]>([]);
+const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
+  // * useStates
+  const [blog, setBlog] = useState<TransformedBlog | null>(initialBlog);
+  const [relatedBlogs, setRelatedBlogs] = useState<TransformedBlog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const getImageUrl = (imageId: string) => `/api/files/${imageId}`;
+
+  // * Fetching the data of the blog
   useEffect(() => {
     const fetchBlogData = async () => {
       try {
-        const blogData = await getBlogById(id as string);
+        const blogData = await getBlogById(initialBlog?.id as string);
         setBlog(blogData);
         const allBlogs = await getAllBlogs();
-        const filtered = allBlogs.filter((b) => b.id !== id).slice(0, 2);
+        const filtered = allBlogs
+          .filter((b) => b.id !== initialBlog?.id)
+          .slice(0, 2);
         setRelatedBlogs(filtered);
       } catch {
         setError("Failed to load blog post");
@@ -45,10 +41,10 @@ const ClientBlogPage = () => {
       }
     };
 
-    if (id) {
+    if (initialBlog?.id) {
       fetchBlogData();
     }
-  }, [id]);
+  }, [initialBlog?.id]);
 
   if (loading) {
     return (
@@ -93,13 +89,15 @@ const ClientBlogPage = () => {
         {/* Hero Section */}
         <div className="relative w-full h-[400px] rounded-xl overflow-hidden mb-8">
           {/* If the blog image is a base64 string, use it directly in the Image src */}
-          <Image
-            src={`data:image/jpeg;base64,${blog.image}`} // Assuming the image is base64-encoded
-            alt={blog.heading}
-            fill
-            className="object-cover"
-            priority
-          />
+          {blog.imageId && (
+            <Image
+              src={getImageUrl(blog.imageId)}
+              alt={blog.heading}
+              fill
+              className="object-cover"
+              priority
+            />
+          )}
           <div className="absolute inset-0 bg-black/50" />
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
@@ -155,7 +153,7 @@ const ClientBlogPage = () => {
                 >
                   <div className="relative h-48 rounded-lg overflow-hidden mb-3">
                     <Image
-                      src={`data:image/jpeg;base64,${relatedBlog.image}`} // Using base64 for related blogs as well
+                      src={`data:image/jpeg;base64,${relatedBlog.imageId}`} // Using base64 for related blogs as well
                       alt={relatedBlog.heading}
                       fill
                       className="object-cover transition-transform duration-300 group-hover:scale-105"

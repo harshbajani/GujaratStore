@@ -17,6 +17,7 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Gujarat Store",
   description: "Let's Discover The World Of Gujarat Art & Crafts",
+  metadataBase: new URL("https://gujarat-store.vercel.app"),
   openGraph: {
     title: "Gujarat Store",
     description: "Let's Discover The World Of Gujarat Art & Crafts",

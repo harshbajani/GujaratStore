@@ -28,12 +28,15 @@ import {
   CardFooter,
   CardHeader,
 } from "./ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 const AuthForm = ({ type }: { type: FormType }) => {
+  // * useStates and hooks
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const { toast } = useToast();
   const router = useRouter();
 
   const formSchema = authFormSchema(type);
@@ -56,6 +59,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
           },
   });
 
+  // * user data submission
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     setErrorMessage("");
@@ -67,25 +71,37 @@ const AuthForm = ({ type }: { type: FormType }) => {
           email: values.email,
           phone: values.phone!,
           password: values.password,
+          role: "user",
         });
 
         if (result.success) {
+          toast({ title: "Success", description: "Signed Up successfully" });
           setUserEmail(values.email);
 
           setShowOtpModal(true);
         } else {
+          toast({
+            title: "Failed",
+            description: result.message || "Failed to sign up",
+          });
           setErrorMessage(result.message);
         }
       } else {
         const result = await signIn("credentials", {
           email: values.email,
           password: values.password,
+          role: "user",
           redirect: false,
         });
 
         if (result?.error) {
+          toast({
+            title: "Failed",
+            description: result.error || "Failed to sign out",
+          });
           setErrorMessage(result.error);
         } else if (result?.ok) {
+          toast({ title: "Success", description: "Signed In successfully" });
           router.push("/");
           router.refresh();
         }
@@ -306,6 +322,9 @@ const AuthForm = ({ type }: { type: FormType }) => {
                       {type === "sign-in" ? "Sign Up" : "Sign In"}
                     </Link>
                   </div>
+                  <Link href="/forgot-password" className="text-sm text-brand ">
+                    Forgot Password?
+                  </Link>
                 </CardFooter>
               </form>
             </Form>
@@ -313,6 +332,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
             {showOtpModal && (
               <OtpModal
                 email={userEmail}
+                role="user"
                 onVerified={verifyOTP}
                 onResendOTP={resendOTP}
               />
