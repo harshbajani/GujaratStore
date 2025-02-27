@@ -1,7 +1,13 @@
 import ProductsDetailPage from "@/components/ProductDetails";
+import SimilarProducts from "@/components/SimilarProducts";
 
 const ClothingDetailPage = () => {
-  return <ProductsDetailPage />;
+  return (
+    <div>
+      <ProductsDetailPage />
+      <SimilarProducts />
+    </div>
+  );
 };
 
 export default ClothingDetailPage;
