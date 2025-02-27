@@ -120,27 +120,26 @@ const ProductsDetailPage = () => {
         }
 
         let productWithStatus = productData.data;
-        let userStatus;
+
         // Only fetch user data if logged in
-        if (userStatus === "authenticated") {
-          try {
-            const userResp = await fetch("/api/user/current");
-            const userData = await userResp.json();
 
-            if (userData.success && userData.data) {
-              const wishlistIds = userData.data.wishlist || [];
-              const cartIds = userData.data.cart || [];
+        try {
+          const userResp = await fetch("/api/user/current");
+          const userData = await userResp.json();
 
-              productWithStatus = {
-                ...productWithStatus,
-                wishlist: wishlistIds.includes(productWithStatus._id),
-                inCart: cartIds.includes(productWithStatus._id),
-              };
-            }
-          } catch (userErr) {
-            console.error("Error fetching user data:", userErr);
-            // Continue with basic product display
+          if (userData.success && userData.data) {
+            const wishlistIds = userData.data.wishlist || [];
+            const cartIds = userData.data.cart || [];
+
+            productWithStatus = {
+              ...productWithStatus,
+              wishlist: wishlistIds.includes(productWithStatus._id),
+              inCart: cartIds.includes(productWithStatus._id),
+            };
           }
+        } catch (userErr) {
+          console.error("Error fetching user data:", userErr);
+          // Continue with basic product display
         }
 
         setProduct(productWithStatus);
@@ -413,7 +412,6 @@ const ProductsDetailPage = () => {
               </div>
             </div>
           </div>
-          <div>qwdqwd</div>
         </div>
       </div>
     </div>
