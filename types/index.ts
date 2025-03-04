@@ -358,7 +358,10 @@ export interface IProductResponse {
   productQuantity: number;
   productStatus?: boolean;
   productRating?: number;
-  productReviews?: string[]; // Optional array of MongoDB ObjectIds as strings
+  productReviews?: {
+    _id: string;
+    rating: number;
+  };
   productWarranty?: string;
   productReturnPolicy?: string;
   wishlist?: boolean;
