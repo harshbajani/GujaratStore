@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, getProductRating } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Check, Heart, ShoppingCart, Filter } from "lucide-react";
+import { Check, Heart, ShoppingCart, Filter, Star } from "lucide-react";
 import Image from "next/image";
 import { useInView } from "react-intersection-observer";
 import Link from "next/link";
@@ -103,9 +103,6 @@ const ClothingPage = () => {
     },
   };
 
-  // Apply sorting to filteredProducts
-  const sortedProducts = applySorting(filteredProducts, sortBy);
-
   // Helper function to construct image URL from GridFS ID
   const getImageUrl = (imageId: string | File) => `/api/files/${imageId}`;
 
@@ -185,7 +182,7 @@ const ClothingPage = () => {
     }
   };
 
-  // Apply sorting to products
+  // Now applySorting can use getProductRating since it's defined above
   function applySorting(products: IProductResponse[], sortMethod: string) {
     const sortedProducts = [...products];
 
@@ -198,12 +195,12 @@ const ClothingPage = () => {
         break;
       case "rating-high-to-low":
         sortedProducts.sort(
-          (a, b) => (b.productRating || 0) - (a.productRating || 0)
+          (a, b) => getProductRating(b) - getProductRating(a)
         );
         break;
       case "rating-low-to-high":
         sortedProducts.sort(
-          (a, b) => (a.productRating || 0) - (b.productRating || 0)
+          (a, b) => getProductRating(a) - getProductRating(b)
         );
         break;
       case "featured":
@@ -214,6 +211,9 @@ const ClothingPage = () => {
 
     return sortedProducts;
   }
+
+  // Apply sorting to filteredProducts
+  const sortedProducts = applySorting(filteredProducts, sortBy);
 
   // Initialize filter dialog with current filter values
   const openFilterDialog = () => {
@@ -753,7 +753,7 @@ const ClothingPage = () => {
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                    <div className="mb-4 flex items-center gap-2">
+                    <div className="mb-2 flex items-center gap-2">
                       <span className="text-lg font-bold text-gray-900">
                         ₹{Math.floor(product.netPrice).toLocaleString("en-IN")}
                       </span>
@@ -762,6 +762,27 @@ const ClothingPage = () => {
                           ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
                         </span>
                       )}
+                    </div>
+                    <div className="flex items-center mb-2">
+                      {Array.from({ length: 5 }).map((_, index) => {
+                        const rating = getProductRating(product);
+                        return (
+                          <Star
+                            key={index}
+                            className={cn(
+                              "h-4 w-4",
+                              rating > index
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                            )}
+                          />
+                        );
+                      })}
+                      <span className="ml-1 text-xs text-gray-500">
+                        {getProductRating(product) > 0
+                          ? `${getProductRating(product)}/5`
+                          : "No rating"}
+                      </span>
                     </div>
                   </div>
                 </Link>

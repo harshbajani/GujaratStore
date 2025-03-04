@@ -5,6 +5,7 @@ import "@/lib/models/secondaryCategory.model";
 import "@/lib/models/brand.model";
 import "@/lib/models/attribute.model";
 import "@/lib/models/size.model";
+import "@/lib/models/productReview.model";
 
 const productSchema = new Schema({
   productName: { type: String, required: true },

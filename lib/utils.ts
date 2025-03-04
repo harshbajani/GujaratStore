@@ -1,4 +1,4 @@
-import { IStore, StoreData } from "@/types";
+import { IProductResponse, IStore, StoreData } from "@/types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -115,4 +115,17 @@ export const toInterfaceFormat = (store: {
     },
     alternativeContact: store.alternativeContact || "",
   };
+};
+
+export const getProductRating = (product: IProductResponse): number => {
+  // Check if productReviews exists and is an array with at least one item
+  if (
+    Array.isArray(product.productReviews) &&
+    product.productReviews.length > 0
+  ) {
+    // Return the rating from the first review
+    return product.productReviews[0].rating;
+  }
+  // If there's no rating or the structure doesn't match, return 0
+  return 0;
 };

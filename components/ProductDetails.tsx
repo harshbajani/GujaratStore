@@ -208,7 +208,9 @@ const ProductsDetailPage = () => {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/clothing">Clothing</BreadcrumbLink>
+                  <BreadcrumbLink href={`/${product.parentCategory.name}`}>
+                    {product.parentCategory.name}
+                  </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
