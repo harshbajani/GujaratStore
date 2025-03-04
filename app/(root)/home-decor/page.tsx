@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import { DualThumbSlider } from "@/components/ui/dual-slider";
 import Loader from "@/components/Loader";
 import { toast } from "@/hooks/use-toast";
 import { IProductResponse } from "@/types";
@@ -667,7 +667,7 @@ const HomeDecorPage = () => {
                           ₹{currentPriceRange[1].toLocaleString("en-IN")}
                         </span>
                       </div>
-                      <Slider
+                      <DualThumbSlider
                         defaultValue={[priceRange[0], priceRange[1]]}
                         value={[currentPriceRange[0], currentPriceRange[1]]}
                         min={priceRange[0]}
