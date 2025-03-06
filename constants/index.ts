@@ -200,16 +200,16 @@ export const organicBucket = [
 
 export const flavoursOfGujarat = [
   {
+    src: "/food/chavanu.png",
+    label: "Chavanu(ચવાણું)",
+  },
+  {
     src: "/food/kachori.jpg",
     label: "Kachori(કચોરી)",
   },
   {
     src: "/food/chakri.jpg",
     label: "Chakri(ચક્રી)",
-  },
-  {
-    src: "/food/chavanu.png",
-    label: "Chavanu(ચવાણું)",
   },
   {
     src: "/food/bhakarvadi.jpg",
