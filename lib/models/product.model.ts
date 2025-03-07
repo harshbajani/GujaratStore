@@ -61,6 +61,7 @@ const productSchema = new Schema({
   gstRate: { type: Number, required: true },
   gstAmount: { type: Number, required: true },
   netPrice: { type: Number, required: true },
+  deliveryCharges: { type: Number, required: true },
   productStatus: { type: Boolean, default: true },
   productQuantity: { type: Number, required: true },
   gender: {
