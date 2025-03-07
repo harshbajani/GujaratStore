@@ -279,6 +279,7 @@ export interface IProduct {
   gstRate: number;
   gstAmount: number;
   netPrice: number;
+  deliveryCharges: number;
   productQuantity: number;
   productStatus?: boolean;
   productRating?: number;

@@ -94,6 +94,7 @@ const AddProductsForm = () => {
       gstRate: 0,
       gstAmount: 0,
       netPrice: 0,
+      deliveryCharges: 0,
       productQuantity: 0,
       productStatus: true,
       productRating: 0,
