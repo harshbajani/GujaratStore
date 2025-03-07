@@ -31,6 +31,7 @@ import {
   IPrimaryCategory,
   IProduct,
   IProductSecondaryCategory,
+  ISizes,
 } from "@/types";
 import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
 import { useParams, useRouter } from "next/navigation";
@@ -47,6 +48,8 @@ import { toast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { getAllSizes } from "@/lib/actions/size.actions";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 const EditProductsForm = () => {
   // * useStates and hooks
@@ -63,6 +66,7 @@ const EditProductsForm = () => {
   >([]);
   const [attributes, setAttributes] = useState<IAttribute[]>([]);
   const [brands, setBrands] = useState<IBrand[]>([]);
+  const [sizes, setSizes] = useState<ISizes[]>([]);
 
   const router = useRouter();
   const form = useForm<IProduct>({
@@ -76,6 +80,7 @@ const EditProductsForm = () => {
       brands: "",
       gender: "male",
       productColor: "",
+      productSize: [],
       productSKU: "",
       productDescription: "",
       productImages: [],
@@ -200,11 +205,14 @@ const EditProductsForm = () => {
     const fetchProduct = async () => {
       try {
         // Make sure we're using the correct URL structure
-        const response = await fetch(`/api/products?id=${params.id}`);
+        const response = await fetch(`/api/products/${params.id}`);
         const data = await response.json();
 
         if (data.success) {
           const product = data.data;
+          const productSizeIds = product.productSize
+            ? product.productSize.map((size: ISizes) => size._id)
+            : [];
           // Set form values with null checks
           form.reset({
             ...product,
@@ -212,6 +220,7 @@ const EditProductsForm = () => {
             primaryCategory: product.primaryCategory?._id || "",
             secondaryCategory: product.secondaryCategory?._id || "",
             brands: product.brands?._id || "",
+            productSize: productSizeIds,
           });
         }
       } catch (error) {
@@ -332,6 +341,7 @@ const EditProductsForm = () => {
         const secondaryCategoryResponse = await getAllSecondaryCategories();
         const attributeResponse = await getAllAttributes();
         const brandResponse = await getAllBrands();
+        const sizesResponse = await getAllSizes();
 
         if (parentCategoryResponse.success) {
           setParentCategories(parentCategoryResponse.data as IParentCategory[]);
@@ -352,6 +362,9 @@ const EditProductsForm = () => {
         }
         if (brandResponse.length > 0) {
           setBrands(brandResponse as IBrand[]);
+        }
+        if (sizesResponse.success) {
+          setSizes(sizesResponse.data as ISizes[]);
         }
       } catch {
         console.log("error");
@@ -572,7 +585,30 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
-
+          <FormField
+            control={form.control}
+            name="productSize"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Product Size</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    {...field}
+                    options={sizes.map((size) => ({
+                      value: size._id || "", // Changed from size.id to size._id
+                      label: size.label,
+                    }))}
+                    onValueChange={(values) => {
+                      field.onChange(values);
+                      console.log("Selected values:", values); // Add this for debugging
+                    }}
+                    defaultValue={field.value} // Changed from selected to value
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="gender"
@@ -712,6 +748,44 @@ const EditProductsForm = () => {
                     </div>
                   ))}
                 </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="productReturnPolicy"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Product Return Policy</FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    placeholder="Return policy"
+                    value={field.value || ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="productWarranty"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Product Warranty</FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    placeholder="Product Warranty"
+                    value={field.value || ""}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, getProductRating } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Check, Heart, ShoppingCart } from "lucide-react";
+import { Check, Heart, ShoppingCart, Filter, Star } from "lucide-react";
 import Image from "next/image";
 import { useInView } from "react-intersection-observer";
 import Link from "next/link";
@@ -22,33 +22,75 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import Loader from "@/components/Loader";
 import { toast } from "@/hooks/use-toast";
+import { IProductResponse } from "@/types";
+import useProductFilter from "@/hooks/useProductFilter";
+import { DualThumbSlider } from "@/components/ui/dual-slider";
 
-interface Product {
+interface Category {
   _id: string;
-  productName: string;
-  productCoverImage: string;
-  mrp: number;
-  netPrice: number;
-  productImages: string[];
-  wishlist?: boolean;
-  inCart?: boolean;
-  parentCategory?: {
-    name?: string;
-  };
+  name: string;
+  count: number;
 }
 
 const ClothingPage = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<IProductResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("featured");
 
+  // Use the product filter hook
+  const { filters, setFilters, filteredProducts } = useProductFilter(products);
+
+  // State for temporary filters in the dialog
+  const [tempFilters, setTempFilters] = useState({ ...filters });
+
+  // State for current price range display in the filter dialog
+  const [currentPriceRange, setCurrentPriceRange] = useState<[number, number]>([
+    0, 0,
+  ]);
+
+  // Data for filter options
+  const [primaryCategories, setPrimaryCategories] = useState<Category[]>([]);
+  const [secondaryCategories, setSecondaryCategories] = useState<Category[]>(
+    []
+  );
+  const [availableColors, setAvailableColors] = useState<
+    { color: string; count: number }[]
+  >([]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
+
+  // Animation ref
   const [organicRef, organicInView] = useInView({
     threshold: 0.1,
     triggerOnce: true,
   });
 
+  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0, y: 50 },
     visible: {
@@ -62,10 +104,10 @@ const ClothingPage = () => {
   };
 
   // Helper function to construct image URL from GridFS ID
-  const getImageUrl = (imageId: string) => `/api/files/${imageId}`;
+  const getImageUrl = (imageId: string | File) => `/api/files/${imageId}`;
 
   // Toggle wishlist status.
-  const handleToggleWishlist = async (product: Product) => {
+  const handleToggleWishlist = async (product: IProductResponse) => {
     try {
       let response;
       if (product.wishlist) {
@@ -102,7 +144,7 @@ const ClothingPage = () => {
   };
 
   // Toggle cart: add if not in cart, remove if already in cart.
-  const handleToggleCart = async (product: Product) => {
+  const handleToggleCart = async (product: IProductResponse) => {
     try {
       let response;
       if (product.inCart) {
@@ -140,6 +182,104 @@ const ClothingPage = () => {
     }
   };
 
+  // Now applySorting can use getProductRating since it's defined above
+  function applySorting(products: IProductResponse[], sortMethod: string) {
+    const sortedProducts = [...products];
+
+    switch (sortMethod) {
+      case "price-low-to-high":
+        sortedProducts.sort((a, b) => a.netPrice - b.netPrice);
+        break;
+      case "price-high-to-low":
+        sortedProducts.sort((a, b) => b.netPrice - a.netPrice);
+        break;
+      case "rating-high-to-low":
+        sortedProducts.sort(
+          (a, b) => getProductRating(b) - getProductRating(a)
+        );
+        break;
+      case "rating-low-to-high":
+        sortedProducts.sort(
+          (a, b) => getProductRating(a) - getProductRating(b)
+        );
+        break;
+      case "featured":
+      default:
+        // Keep the original order
+        break;
+    }
+
+    return sortedProducts;
+  }
+
+  // Apply sorting to filteredProducts
+  const sortedProducts = applySorting(filteredProducts, sortBy);
+
+  // Initialize filter dialog with current filter values
+  const openFilterDialog = () => {
+    setTempFilters({ ...filters });
+    setCurrentPriceRange([...filters.priceRange] as [number, number]);
+    setFilterOpen(true);
+  };
+
+  // Apply filters to products
+  const applyFilters = () => {
+    setFilters(tempFilters);
+    setFilterOpen(false);
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    const resetFilters = {
+      primaryCategories: [],
+      secondaryCategories: [],
+      colors: [],
+      priceRange: priceRange,
+    };
+
+    setFilters(resetFilters);
+    setTempFilters(resetFilters);
+    setCurrentPriceRange(priceRange);
+  };
+
+  // Handle checkbox changes for categories
+  const handlePrimaryCategoryChange = (id: string, checked: boolean) => {
+    setTempFilters((prev) => ({
+      ...prev,
+      primaryCategories: checked
+        ? [...prev.primaryCategories, id]
+        : prev.primaryCategories.filter((catId) => catId !== id),
+    }));
+  };
+
+  const handleSecondaryCategoryChange = (id: string, checked: boolean) => {
+    setTempFilters((prev) => ({
+      ...prev,
+      secondaryCategories: checked
+        ? [...prev.secondaryCategories, id]
+        : prev.secondaryCategories.filter((catId) => catId !== id),
+    }));
+  };
+
+  // Handle color selection
+  const handleColorChange = (color: string, checked: boolean) => {
+    setTempFilters((prev) => ({
+      ...prev,
+      colors: checked
+        ? [...prev.colors, color]
+        : prev.colors.filter((c) => c !== color),
+    }));
+  };
+
+  // Handle price range change
+  const handlePriceRangeChange = (value: number[]) => {
+    setCurrentPriceRange([value[0], value[1]] as [number, number]);
+    setTempFilters((prev) => ({
+      ...prev,
+      priceRange: [value[0], value[1]] as [number, number],
+    }));
+  };
+
   useEffect(() => {
     const fetchProductsAndUser = async () => {
       try {
@@ -148,7 +288,7 @@ const ClothingPage = () => {
         const prodData = await prodResponse.json();
         if (prodData.success) {
           let clothingProducts = prodData.data.filter(
-            (product: Product) =>
+            (product: IProductResponse) =>
               product.parentCategory?.name?.toLowerCase() === "clothing"
           );
           // Fetch current user data to mark wishlist and cart.
@@ -157,13 +297,104 @@ const ClothingPage = () => {
           if (userData.success && userData.data) {
             const wishlistIds: string[] = userData.data.wishlist || [];
             const cartIds: string[] = userData.data.cart || [];
-            clothingProducts = clothingProducts.map((product: Product) => ({
-              ...product,
-              wishlist: wishlistIds.includes(product._id),
-              inCart: cartIds.includes(product._id),
-            }));
+            clothingProducts = clothingProducts.map(
+              (product: IProductResponse) => ({
+                ...product,
+                wishlist: wishlistIds.includes(product._id!),
+                inCart: cartIds.includes(product._id!),
+              })
+            );
           }
+
+          // Set up product data
           setProducts(clothingProducts);
+
+          const primaryCatMap = new Map<
+            string,
+            { id: string; name: string; count: number }
+          >();
+          clothingProducts.forEach((product: IProductResponse) => {
+            if (product.primaryCategory) {
+              const id = product.primaryCategory._id;
+              if (primaryCatMap.has(id)) {
+                const cat = primaryCatMap.get(id)!;
+                cat.count += 1;
+                primaryCatMap.set(id, cat);
+              } else {
+                primaryCatMap.set(id, {
+                  id,
+                  name: product.primaryCategory.name,
+                  count: 1,
+                });
+              }
+            }
+          });
+
+          const primaryCats = Array.from(primaryCatMap.values()).map(
+            ({ id, name, count }) => ({
+              _id: id,
+              name,
+              count,
+            })
+          );
+          setPrimaryCategories(primaryCats);
+
+          // Secondary Categories
+          const secondaryCatMap = new Map<
+            string,
+            { id: string; name: string; count: number }
+          >();
+          clothingProducts.forEach((product: IProductResponse) => {
+            if (product.secondaryCategory) {
+              const id = product.secondaryCategory._id;
+              if (secondaryCatMap.has(id)) {
+                const cat = secondaryCatMap.get(id)!;
+                cat.count += 1;
+                secondaryCatMap.set(id, cat);
+              } else {
+                secondaryCatMap.set(id, {
+                  id,
+                  name: product.secondaryCategory.name,
+                  count: 1,
+                });
+              }
+            }
+          });
+
+          const secondaryCats = Array.from(secondaryCatMap.values()).map(
+            ({ id, name, count }) => ({
+              _id: id,
+              name,
+              count,
+            })
+          );
+          setSecondaryCategories(secondaryCats);
+
+          // Colors
+          const colorMap = new Map<string, number>();
+          clothingProducts.forEach((product: IProductResponse) => {
+            if (product.productColor) {
+              const color = product.productColor.toLowerCase();
+              colorMap.set(color, (colorMap.get(color) || 0) + 1);
+            }
+          });
+
+          const colors = Array.from(colorMap.entries()).map(
+            ([color, count]) => ({
+              color,
+              count,
+            })
+          );
+          setAvailableColors(colors);
+
+          // Price Range
+          const prices = clothingProducts.map(
+            (p: IProductResponse) => p.netPrice
+          );
+          const minPrice = Math.floor(Math.min(...prices));
+          const maxPrice = Math.ceil(Math.max(...prices));
+          setPriceRange([minPrice, maxPrice]);
+          setCurrentPriceRange([minPrice, maxPrice]);
         } else {
           setError("Failed to fetch products");
         }
@@ -193,7 +424,6 @@ const ClothingPage = () => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <motion.div
@@ -241,108 +471,370 @@ const ClothingPage = () => {
           </div>
         </motion.div>
       </motion.div>
-      <div className="container mx-auto px-4 py-16">
+
+      <div className="container mx-auto px-4">
+        {/* Filter and Sort Controls */}
+        <div className="flex flex-col sm:flex-row justify-between items-center my-6 gap-4">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={openFilterDialog}
+            >
+              <Filter className="h-4 w-4" />
+              Filters
+              {(filters.primaryCategories.length > 0 ||
+                filters.secondaryCategories.length > 0 ||
+                filters.colors.length > 0) && (
+                <span className="ml-1 rounded-full bg-brand px-2 py-0.5 text-xs text-white">
+                  {filters.primaryCategories.length +
+                    filters.secondaryCategories.length +
+                    filters.colors.length}
+                </span>
+              )}
+            </Button>
+
+            {/* Active filter tags could go here */}
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-sm text-gray-500">Sort by:</span>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Featured" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="featured">Featured</SelectItem>
+                <SelectItem value="price-low-to-high">
+                  Price: Low to High
+                </SelectItem>
+                <SelectItem value="price-high-to-low">
+                  Price: High to Low
+                </SelectItem>
+                <SelectItem value="rating-high-to-low">
+                  Rating: High to Low
+                </SelectItem>
+                <SelectItem value="rating-low-to-high">
+                  Rating: Low to High
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            <span className="text-sm text-gray-500 ml-2">
+              {filteredProducts.length}{" "}
+              {filteredProducts.length === 1 ? "product" : "products"}
+            </span>
+          </div>
+        </div>
+
+        {/* Filter Dialog */}
+        <Dialog open={filterOpen} onOpenChange={setFilterOpen}>
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex justify-between items-center">
+                <span>Filters</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="text-sm"
+                >
+                  Clear all
+                </Button>
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Categories Filter */}
+              <Accordion
+                type="single"
+                collapsible
+                className="w-full"
+                defaultValue="categories"
+              >
+                <AccordionItem value="categories">
+                  <AccordionTrigger>Categories</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">
+                        Primary Categories
+                      </h4>
+                      <div className="space-y-1">
+                        {primaryCategories.map((category) => (
+                          <div
+                            key={category._id}
+                            className="flex items-center space-x-2"
+                          >
+                            <Checkbox
+                              id={`primary-${category._id}`}
+                              checked={tempFilters.primaryCategories.includes(
+                                category._id
+                              )}
+                              onCheckedChange={(checked) =>
+                                handlePrimaryCategoryChange(
+                                  category._id,
+                                  checked as boolean
+                                )
+                              }
+                            />
+                            <Label
+                              htmlFor={`primary-${category._id}`}
+                              className="text-sm font-normal flex-1"
+                            >
+                              {category.name} ({category.count})
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+
+                      <h4 className="text-sm font-medium mt-4">
+                        Secondary Categories
+                      </h4>
+                      <div className="space-y-1">
+                        {secondaryCategories.map((category) => (
+                          <div
+                            key={category._id}
+                            className="flex items-center space-x-2"
+                          >
+                            <Checkbox
+                              id={`secondary-${category._id}`}
+                              checked={tempFilters.secondaryCategories.includes(
+                                category._id
+                              )}
+                              onCheckedChange={(checked) =>
+                                handleSecondaryCategoryChange(
+                                  category._id,
+                                  checked as boolean
+                                )
+                              }
+                            />
+                            <Label
+                              htmlFor={`secondary-${category._id}`}
+                              className="text-sm font-normal flex-1"
+                            >
+                              {category.name} ({category.count})
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Color Filter */}
+                <AccordionItem value="color">
+                  <AccordionTrigger>Color</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="grid grid-cols-4 gap-2">
+                      {availableColors.map(({ color, count }) => (
+                        <div key={color} className="flex flex-col items-center">
+                          <div
+                            className={cn(
+                              "h-8 w-8 rounded-full border cursor-pointer relative",
+                              tempFilters.colors.includes(color)
+                                ? "ring-2 ring-brand ring-offset-2"
+                                : ""
+                            )}
+                            style={{ backgroundColor: color }}
+                            onClick={() =>
+                              handleColorChange(
+                                color,
+                                !tempFilters.colors.includes(color)
+                              )
+                            }
+                          >
+                            {tempFilters.colors.includes(color) && (
+                              <Check className="h-4 w-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white" />
+                            )}
+                          </div>
+                          <span className="text-xs mt-1">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Price Range Filter */}
+                <AccordionItem value="price">
+                  <AccordionTrigger>Price</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between">
+                        <span className="text-sm">
+                          ₹{currentPriceRange[0].toLocaleString("en-IN")}
+                        </span>
+                        <span className="text-sm">
+                          ₹{currentPriceRange[1].toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <DualThumbSlider
+                        defaultValue={[priceRange[0], priceRange[1]]}
+                        value={[currentPriceRange[0], currentPriceRange[1]]}
+                        min={priceRange[0]}
+                        max={priceRange[1]}
+                        step={100}
+                        onValueChange={handlePriceRangeChange}
+                        className="mt-6"
+                      />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+
+            <DialogFooter className="sm:justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setFilterOpen(false)}
+                className="sm:w-24"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                onClick={applyFilters}
+                className="sm:w-24 primary-btn"
+              >
+                Apply
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Products Grid */}
         <motion.div
           ref={organicRef}
           variants={containerVariants}
           initial="hidden"
           animate={organicInView ? "visible" : "hidden"}
-          className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 py-8"
         >
-          {products.map((product) => (
-            <motion.div
-              variants={containerVariants}
-              className="flex flex-col items-center justify-between rounded-lg bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-              key={product._id}
-            >
-              {/* Image Container */}
-              <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
-                <Link href={`/clothing/${product._id}`}>
-                  <Image
-                    src={getImageUrl(product.productCoverImage)}
-                    alt={product.productName}
-                    width={250}
-                    height={250}
-                    className="h-full w-full object-cover object-top transition-transform duration-300 hover:scale-105"
-                  />
-                </Link>
-              </div>
-
-              {/* Product Info */}
-              <Link href={`/clothing/${product._id}`}>
-                <div className="flex w-full flex-1 flex-col items-center">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <h3 className="mb-2 text-center text-sm font-semibold text-brand h-5 overflow-hidden">
-                          {product.productName}
-                        </h3>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs text-wrap">
-                        {product.productName}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <div className="mb-4 flex items-center gap-2">
-                    <span className="text-lg font-bold text-gray-900">
-                      ₹{Math.floor(product.netPrice).toLocaleString("en-IN")}
-                    </span>
-                    {product.mrp > product.netPrice && (
-                      <span className="text-sm text-gray-500 line-through">
-                        ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
-                      </span>
-                    )}
-                  </div>
+          {sortedProducts.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-lg text-gray-500">
+                No products match your filters.
+              </p>
+              <Button variant="link" onClick={clearFilters} className="mt-2">
+                Clear all filters
+              </Button>
+            </div>
+          ) : (
+            sortedProducts.map((product) => (
+              <motion.div
+                variants={containerVariants}
+                className="flex flex-col items-center justify-between rounded-lg bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+                key={product._id}
+              >
+                {/* Image Container */}
+                <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
+                  <Link href={`/clothing/${product._id}`}>
+                    <Image
+                      src={getImageUrl(product.productCoverImage)}
+                      alt={product.productName}
+                      width={250}
+                      height={250}
+                      className="h-full w-full object-cover object-top transition-transform duration-300 hover:scale-105"
+                    />
+                  </Link>
                 </div>
-              </Link>
 
-              {/* Buttons Container */}
-              <div className="flex w-full items-center justify-center gap-2">
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex flex-1"
-                >
-                  <Button
-                    variant="secondary"
-                    className="shadow-md flex items-center gap-2"
-                    onClick={() => handleToggleCart(product)}
-                  >
-                    <div
-                      className={cn(
-                        product.inCart ? "bg-secondary/90" : "bg-brand",
-                        "p-2 rounded -ml-3 transition-all duration-300"
-                      )}
-                    >
-                      {product.inCart ? (
-                        <Check className="size-5 text-green-500" />
-                      ) : (
-                        <ShoppingCart className="size-5 text-white" />
+                {/* Product Info */}
+                <Link href={`/clothing/${product._id}`}>
+                  <div className="flex w-full flex-1 flex-col items-center">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <h3 className="mb-2 text-center text-sm font-semibold text-brand h-5 overflow-hidden">
+                            {product.productName}
+                          </h3>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs text-wrap">
+                          {product.productName}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="text-lg font-bold text-gray-900">
+                        ₹{Math.floor(product.netPrice).toLocaleString("en-IN")}
+                      </span>
+                      {product.mrp > product.netPrice && (
+                        <span className="text-sm text-gray-500 line-through">
+                          ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
+                        </span>
                       )}
                     </div>
-                    {product.inCart ? "Remove from Cart" : "Add to Cart"}
-                  </Button>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    variant="secondary"
-                    className="aspect-square p-2 shadow-sm hover:shadow-md"
-                    onClick={() => handleToggleWishlist(product)}
+                    <div className="flex items-center mb-2">
+                      {Array.from({ length: 5 }).map((_, index) => {
+                        const rating = getProductRating(product);
+                        return (
+                          <Star
+                            key={index}
+                            className={cn(
+                              "h-4 w-4",
+                              rating > index
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                            )}
+                          />
+                        );
+                      })}
+                      <span className="ml-1 text-xs text-gray-500">
+                        {getProductRating(product) > 0
+                          ? `${getProductRating(product)}/5`
+                          : "No rating"}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Buttons Container */}
+                <div className="flex w-full items-center justify-center gap-2">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex flex-1"
                   >
-                    <Heart
-                      className={cn(
-                        "h-5 w-5",
-                        product.wishlist ? "fill-red-500" : "text-red-600"
-                      )}
-                    />
-                  </Button>
-                </motion.div>
-              </div>
-            </motion.div>
-          ))}
+                    <Button
+                      variant="secondary"
+                      className="shadow-md flex items-center gap-2"
+                      onClick={() => handleToggleCart(product)}
+                    >
+                      <div
+                        className={cn(
+                          product.inCart ? "bg-secondary/90" : "bg-brand",
+                          "p-2 rounded -ml-3 transition-all duration-300"
+                        )}
+                      >
+                        {product.inCart ? (
+                          <Check className="size-5 text-green-500" />
+                        ) : (
+                          <ShoppingCart className="size-5 text-white" />
+                        )}
+                      </div>
+                      {product.inCart ? "Remove from Cart" : "Add to Cart"}
+                    </Button>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      variant="secondary"
+                      className="aspect-square p-2 shadow-sm hover:shadow-md"
+                      onClick={() => handleToggleWishlist(product)}
+                    >
+                      <Heart
+                        className={cn(
+                          "h-5 w-5",
+                          product.wishlist ? "fill-red-500" : "text-red-600"
+                        )}
+                      />
+                    </Button>
+                  </motion.div>
+                </div>
+              </motion.div>
+            ))
+          )}
         </motion.div>
       </div>
     </div>

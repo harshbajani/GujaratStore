@@ -1,4 +1,4 @@
-import { IStore, StoreData } from "@/types";
+import { IProductResponse, IStore, StoreData } from "@/types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -19,6 +19,20 @@ export function convertToBase64(file: File): Promise<string> {
       reject(error);
     };
   });
+}
+// Add or update this function in your utils.ts file
+export function getAverageRating(distribution: Record<number, number>): number {
+  const totalReviews = Object.values(distribution).reduce(
+    (acc, val) => acc + val,
+    0
+  );
+  if (totalReviews === 0) return 0;
+
+  const weightedSum = Object.entries(distribution).reduce(
+    (acc, [rating, count]) => acc + parseInt(rating) * count,
+    0
+  );
+  return weightedSum / totalReviews;
 }
 
 export const formatDateTime = (isoString: string | null | undefined) => {
@@ -101,4 +115,17 @@ export const toInterfaceFormat = (store: {
     },
     alternativeContact: store.alternativeContact || "",
   };
+};
+
+export const getProductRating = (product: IProductResponse): number => {
+  // Check if productReviews exists and is an array with at least one item
+  if (
+    Array.isArray(product.productReviews) &&
+    product.productReviews.length > 0
+  ) {
+    // Return the rating from the first review
+    return product.productReviews[0].rating;
+  }
+  // If there's no rating or the structure doesn't match, return 0
+  return 0;
 };

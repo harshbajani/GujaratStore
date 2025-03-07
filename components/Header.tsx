@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { LogOut, Menu, Search, ShoppingCart, User } from "lucide-react";
@@ -24,12 +24,104 @@ import { useToast } from "@/hooks/use-toast";
 import { signOut as nextAuthSignOut } from "next-auth/react";
 import { signOut as serverSignOut } from "@/lib/actions/auth.actions";
 import { useRouter } from "next/navigation";
+import SearchDropdown from "./SearchDropdown";
+
+// Define the search result type
+type SearchResult = {
+  _id: string;
+  productName: string;
+  productCoverImage: string;
+  parentCategory: {
+    name: string;
+  };
+};
 
 const Header = () => {
+  const [isOpen, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
   // * hooks
+  const sheetContentRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { isAuthenticated, isLoading } = useAuth(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  // * Search function with debouncing
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+
+    // Clear any existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (query.trim().length === 0) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowDropdown(true);
+
+    // Set a new timeout (300ms debounce)
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/search?q=${encodeURIComponent(query)}&limit=5`
+        );
+        const data = await response.json();
+
+        if (data.success) {
+          setSearchResults(data.data);
+        } else {
+          console.error("Search error:", data.error);
+        }
+      } catch (error) {
+        console.error("Search fetch error:", error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+  };
+
+  // Function to handle product selection and clear input
+  const handleProductSelect = () => {
+    setSearchQuery("");
+    setShowDropdown(false);
+    setSearchResults([]);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+
+      if (
+        isOpen &&
+        sheetContentRef.current &&
+        !sheetContentRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, sheetContentRef, searchRef]);
+
   // * signOut function
   const handleSignOut = async () => {
     try {
@@ -61,11 +153,30 @@ const Header = () => {
             <Link href="/">
               <Image src="/logo.png" height={56} width={108} alt="logo" />
             </Link>
-            <div className="relative">
-              <Input className="w-[400px] bg-white" placeholder="Search..." />
+            <div className="relative" ref={searchRef}>
+              <Input
+                className="w-[400px] bg-white"
+                placeholder="Search for products..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                onFocus={() => {
+                  if (searchQuery.trim().length > 0) {
+                    setShowDropdown(true);
+                  }
+                }}
+              />
               <Button className="absolute right-0 top-0 h-full bg-transparent hover:bg-transparent">
                 <Search className="h-5 w-5 text-gray-500" />
               </Button>
+
+              {showDropdown && (
+                <SearchDropdown
+                  results={searchResults}
+                  isLoading={isSearching}
+                  searchQuery={searchQuery}
+                  onClose={handleProductSelect}
+                />
+              )}
             </div>
             {!isLoading && !isAuthenticated && (
               <div className="space-x-4">
@@ -111,7 +222,7 @@ const Header = () => {
                     {UserNavLinks.map((link) => (
                       <DropdownMenuItem
                         key={link.route}
-                        onClick={() => router.push(link.route)} // Explicitly trigger the navigation
+                        onClick={() => router.push(link.route)}
                         className="cursor-pointer flex items-center space-x-2"
                       >
                         <link.icon className="h-4 w-4" />
@@ -133,18 +244,58 @@ const Header = () => {
 
         {/* Mobile Header */}
         <div className="h-[72px] w-full md:hidden flex items-center justify-between px-4">
-          <Sheet>
+          <Sheet open={isOpen} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="text-white">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">
+            {/* Mobile Header - Sheet Content */}
+            <SheetContent
+              ref={sheetContentRef}
+              side="left"
+              className="w-[300px] sm:w-[400px] p-0"
+            >
               <SheetHeader className="p-4 bg-brand text-white">
                 <SheetTitle className="flex justify-between items-center">
-                  <Image src="/logo.png" height={40} width={80} alt="logo" />
+                  <Link href="/">
+                    <Image src="/logo.png" height={40} width={80} alt="logo" />
+                  </Link>
                 </SheetTitle>
               </SheetHeader>
+
+              {/* Mobile Search */}
+              <div className="p-4">
+                <div className="relative" ref={searchRef}>
+                  <Input
+                    className="w-full bg-white"
+                    placeholder="Search for products..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    onFocus={() => {
+                      if (searchQuery.trim().length > 0) {
+                        setShowDropdown(true);
+                      }
+                    }}
+                  />
+                  <Button className="absolute right-0 top-0 h-full bg-transparent hover:bg-transparent">
+                    <Search className="h-5 w-5 text-gray-500" />
+                  </Button>
+
+                  {showDropdown && (
+                    <SearchDropdown
+                      results={searchResults}
+                      isLoading={isSearching}
+                      searchQuery={searchQuery}
+                      onClose={() => {
+                        handleProductSelect();
+                        setOpen(false);
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+
               <div>
                 <div className="border-t">
                   {NavLinks.map((link) => (
@@ -152,6 +303,7 @@ const Header = () => {
                       key={link.route}
                       href={link.route}
                       className="block px-4 py-3 text-gray-600 hover:bg-gray-100"
+                      onClick={() => setOpen(false)}
                     >
                       {link.label}
                     </Link>
@@ -165,21 +317,28 @@ const Header = () => {
                     className="flex-1 border border-brand text-brand hover:bg-brand hover:text-white"
                     asChild
                   >
-                    <Link href="/sign-in">Login</Link>
+                    <Link href="/sign-in" onClick={() => setOpen(false)}>
+                      Login
+                    </Link>
                   </Button>
                   <Button
                     variant="default"
                     className="flex-1 bg-brand hover:bg-brand-300 text-white"
                     asChild
                   >
-                    <Link href="/sign-up">Sign Up</Link>
+                    <Link href="/sign-up" onClick={() => setOpen(false)}>
+                      Sign Up
+                    </Link>
                   </Button>
                 </div>
               ) : (
                 <div className="px-4 py-3">
                   <Button
                     className="w-full bg-brand text-white hover:bg-brand-300"
-                    onClick={handleSignOut}
+                    onClick={() => {
+                      setOpen(false);
+                      handleSignOut();
+                    }}
                   >
                     Sign Out
                   </Button>

@@ -4,6 +4,8 @@ import "@/lib/models/primaryCategory.model";
 import "@/lib/models/secondaryCategory.model";
 import "@/lib/models/brand.model";
 import "@/lib/models/attribute.model";
+import "@/lib/models/size.model";
+import "@/lib/models/productReview.model";
 
 const productSchema = new Schema({
   productName: { type: String, required: true },
@@ -37,6 +39,12 @@ const productSchema = new Schema({
     ref: "Brand",
     required: true,
   },
+  productSize: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Size",
+    },
+  ],
   productSKU: { type: String, required: true },
   productColor: { type: String, required: false },
   productDescription: { type: String, required: true },
@@ -88,6 +96,7 @@ productSchema.index({ parentCategory: 1, productStatus: 1 });
 productSchema.index({ primaryCategory: 1, productStatus: 1 });
 productSchema.index({ secondaryCategory: 1, productStatus: 1 });
 productSchema.index({ brands: 1, productStatus: 1 });
+productSchema.index({ productSize: 1, productStatus: 1 });
 
 const Products =
   mongoose.models.Product || mongoose.model("Product", productSchema);

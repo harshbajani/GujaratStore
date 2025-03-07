@@ -26,9 +26,8 @@ export async function signUp(data: SignUpData): Promise<ActionResponse> {
 
     // Check if user exists
     const existingUser = await User.findOne({
-      $or: [{ email: data.email }, { phone: data.phone }, { role: data.role }],
+      $or: [{ email: data.email }, { phone: data.phone }],
     });
-
     if (existingUser) {
       return {
         success: false,

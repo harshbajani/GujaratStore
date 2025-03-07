@@ -112,10 +112,9 @@ const OrganicAndFlavours = () => {
               <motion.div
                 key={index}
                 variants={itemVariants}
-                className="flex flex-col items-center"
                 whileHover={{ y: -10, transition: { duration: 0.3 } }}
               >
-                <Link href="/organic">
+                <Link href="/organic" className="flex flex-col items-center">
                   <motion.div
                     className="mb-4 rounded-full overflow-hidden w-[250px] h-[250px]"
                     whileHover={{ scale: 1.05 }}

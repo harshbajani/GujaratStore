@@ -16,6 +16,7 @@ import {
   Star,
   LayoutPanelLeft,
   PencilLine,
+  Ruler,
 } from "lucide-react";
 export const NavLinks = [
   {
@@ -199,16 +200,16 @@ export const organicBucket = [
 
 export const flavoursOfGujarat = [
   {
+    src: "/food/chavanu.png",
+    label: "Chavanu(ચવાણું)",
+  },
+  {
     src: "/food/kachori.jpg",
     label: "Kachori(કચોરી)",
   },
   {
     src: "/food/chakri.jpg",
     label: "Chakri(ચક્રી)",
-  },
-  {
-    src: "/food/chavanu.png",
-    label: "Chavanu(ચવાણું)",
   },
   {
     src: "/food/bhakarvadi.jpg",
@@ -621,5 +622,10 @@ export const vendorSidebarLinks = [
     label: "Discount",
     route: "/vendor/discounts",
     icon: Percent,
+  },
+  {
+    label: "Sizes",
+    route: "/vendor/size",
+    icon: Ruler,
   },
 ];
