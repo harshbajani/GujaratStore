@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 import { CheckoutData, IUser } from "@/types";
+import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 
 const CheckoutPage = () => {
   const router = useRouter();
@@ -236,11 +237,7 @@ const CheckoutPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold">Checkout</h1>
-        </div>
-      </div>
+      <BreadcrumbHeader title="Home" subtitle="Checkout" titleHref="/" />
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

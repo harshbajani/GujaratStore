@@ -9,14 +9,6 @@ import Image from "next/image";
 import { useInView } from "react-intersection-observer";
 import Link from "next/link";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -49,6 +41,7 @@ import { toast } from "@/hooks/use-toast";
 import { IProductResponse } from "@/types";
 import useProductFilter from "@/hooks/useProductFilter";
 import { DualThumbSlider } from "@/components/ui/dual-slider";
+import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 
 interface Category {
   _id: string;
@@ -426,51 +419,7 @@ const FarsanPage = () => {
   }
   return (
     <div className="min-h-screen bg-gray-50">
-      <motion.div
-        className="relative h-[273px] w-full"
-        initial={{ opacity: 0, scale: 1.1 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-      >
-        <div className="absolute inset-0 bg-[url('/bg/bg1.png')] bg-cover bg-center sm:bg-contain md:bg-[top_50%_right_200px] h-[273px]" />
-        <div className="absolute inset-0 bg-brand-200/30 h-[273px]" />
-        <motion.div
-          className="relative z-10 flex h-full flex-col items-center justify-center p-4 text-center"
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.8 }}
-        >
-          <motion.h1
-            className="mb-2 text-2xl font-bold sm:text-3xl md:text-4xl mt-10"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-          >
-            નમસ્તે જી
-          </motion.h1>
-          <motion.p
-            className="text-sm sm:text-base md:text-lg mb-5"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.7, duration: 0.5 }}
-          >
-            Let&apos;s Discover The World Of Gujarat Art & Crafts
-          </motion.p>
-          <div className="">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Farsan</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </motion.div>
-      </motion.div>
+      <BreadcrumbHeader title="Home" subtitle="Farsan" titleHref="/" />
 
       <div className="container mx-auto px-4">
         {/* Filter and Sort Controls */}

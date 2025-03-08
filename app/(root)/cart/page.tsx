@@ -2,21 +2,12 @@
 
 import { useEffect, useState } from "react";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { motion } from "framer-motion";
 import { CheckoutData, IProductResponse } from "@/types";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -26,6 +17,7 @@ import QuantitySelector from "@/components/ui/quantity-selector";
 import Loader from "@/components/Loader";
 import { removeFromCart } from "@/lib/actions/user.actions";
 import { useRouter } from "next/navigation";
+import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 
 interface CartItem extends IProductResponse {
   cartQuantity: number; // Renamed from quantity to cartQuantity to avoid confusion
@@ -220,51 +212,7 @@ const CartPage = () => {
 
   return (
     <div className="min-h-screen">
-      <motion.div
-        className="relative h-[273px] w-full"
-        initial={{ opacity: 0, scale: 1.1 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-      >
-        <div className="absolute inset-0 bg-[url('/bg/bg1.png')] bg-cover bg-center sm:bg-contain md:bg-[top_50%_right_200px] h-[273px]" />
-        <div className="absolute inset-0 bg-brand-200/30 h-[273px]" />
-        <motion.div
-          className="relative z-10 flex h-full flex-col items-center justify-center p-4 text-center"
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.8 }}
-        >
-          <motion.h1
-            className="mb-2 text-2xl font-bold sm:text-3xl md:text-4xl mt-10"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-          >
-            નમસ્તે જી
-          </motion.h1>
-          <motion.p
-            className="text-sm sm:text-base md:text-lg mb-5"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.7, duration: 0.5 }}
-          >
-            Let&apos;s Discover The World Of Gujarat Art & Crafts
-          </motion.p>
-          <div>
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Cart</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </motion.div>
-      </motion.div>
+      <BreadcrumbHeader title="Home" subtitle="Cart" titleHref="/" />
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
