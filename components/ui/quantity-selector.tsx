@@ -1,28 +1,40 @@
-"use client";
+import { Minus, Plus } from "lucide-react";
+import { Button } from "./button";
 
-import { Button } from "@/components/ui/button";
+interface QuantitySelectorProps {
+  quantity: number;
+  setQuantity: (quantity: number) => void;
+  max?: number;
+}
 
-function QuantitySelector({
+const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   quantity,
   setQuantity,
-}: {
-  quantity: number;
-  setQuantity: React.Dispatch<React.SetStateAction<number>>;
-}) {
-  const increment = () => setQuantity((prev) => prev + 1);
-  const decrement = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 0));
-
+  max,
+}) => {
   return (
     <div className="flex items-center gap-2">
-      <Button variant="outline" onClick={decrement}>
-        -
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => quantity > 1 && setQuantity(quantity - 1)}
+        disabled={quantity <= 1}
+      >
+        <Minus className="h-4 w-4" />
       </Button>
-      <div className="w-8 text-center">{quantity}</div>
-      <Button variant="outline" onClick={increment}>
-        +
+      <span className="w-8 text-center">{quantity}</span>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() =>
+          quantity < (max ?? Infinity) && setQuantity(quantity + 1)
+        }
+        disabled={quantity >= (max ?? Infinity)}
+      >
+        <Plus className="h-4 w-4" />
       </Button>
     </div>
   );
-}
+};
 
 export default QuantitySelector;

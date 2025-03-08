@@ -22,6 +22,7 @@ export interface IUser {
   email: string;
   phone: string;
   password: string;
+  addresses: IAddress[];
   role: "user";
   isVerified: boolean;
   verificationToken?: string;
@@ -280,6 +281,7 @@ export interface IProduct {
   gstAmount: number;
   netPrice: number;
   deliveryCharges: number;
+  deliveryDays: number;
   productQuantity: number;
   productStatus?: boolean;
   productRating?: number;
@@ -343,6 +345,7 @@ export interface IProductResponse {
   productSize?: {
     _id: string;
     label: string;
+    isActive: boolean;
   }[];
   productColor?: string;
   productDescription: string;
@@ -356,6 +359,8 @@ export interface IProductResponse {
   gstRate: number;
   gstAmount: number;
   netPrice: number;
+  deliveryCharges: number;
+  deliveryDays: number;
   productQuantity: number;
   productStatus?: boolean;
   productRating?: number;
@@ -380,4 +385,21 @@ export interface IProductReview {
   rating: number;
   comment: string;
   date: string;
+}
+
+export interface CheckoutItem {
+  productId: string;
+  productName: string;
+  selectedSize?: string;
+  quantity: number;
+  price: number;
+  coverImage: string;
+  deliveryDate: string;
+}
+
+export interface CheckoutData {
+  items: CheckoutItem[];
+  subtotal: number;
+  deliveryCharges: number;
+  total: number;
 }

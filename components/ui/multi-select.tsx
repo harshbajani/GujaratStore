@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 export interface Option {
   value: string;
   label: string;
+  isActive?: boolean;
 }
 
 interface MultiSelectProps {
