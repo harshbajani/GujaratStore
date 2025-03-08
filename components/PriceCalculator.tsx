@@ -182,6 +182,24 @@ const PriceCalculator = ({ control }: IPriceCalculatorProps) => {
             </FormItem>
           )}
         />
+
+        <FormField
+          control={control}
+          name="deliveryDays"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Delivery Time (Days)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="Enter number of days for delivery"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
     </div>
   );

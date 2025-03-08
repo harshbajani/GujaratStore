@@ -93,6 +93,7 @@ const EditProductsForm = () => {
       gstAmount: 0,
       netPrice: 0,
       deliveryCharges: 0,
+      deliveryDays: 0,
       productQuantity: 0,
       productStatus: true,
       productRating: 0,
@@ -596,14 +597,15 @@ const EditProductsForm = () => {
                   <MultiSelect
                     {...field}
                     options={sizes.map((size) => ({
-                      value: size._id || "", // Changed from size.id to size._id
+                      value: size._id || "",
                       label: size.label,
+                      isActive: size.isActive,
                     }))}
                     onValueChange={(values) => {
                       field.onChange(values);
-                      console.log("Selected values:", values); // Add this for debugging
+                      console.log("Selected values:", values);
                     }}
-                    defaultValue={field.value} // Changed from selected to value
+                    defaultValue={field.value}
                   />
                 </FormControl>
                 <FormMessage />

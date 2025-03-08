@@ -205,6 +205,9 @@ export const productSchema = z.object({
   deliveryCharges: z
     .number()
     .nonnegative("Delivery charges must be a non-negative number"),
+  deliveryDays: z
+    .number()
+    .nonnegative("Delivery date must be a non-negative number"),
   productQuantity: z.coerce
     .number()
     .positive("Product quantity must be a positive number"),
