@@ -10,10 +10,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ShieldCheck } from "lucide-react";
 import Loader from "@/components/Loader";
 import { toast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { cn, generateOrderId } from "@/lib/utils";
 
 import { CheckoutData, IUser } from "@/types";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
+import OrderConfirmationDialog from "@/components/OrderConfirmationDialog";
 
 const CheckoutPage = () => {
   const router = useRouter();
@@ -21,84 +22,86 @@ const CheckoutPage = () => {
   const [userData, setUserData] = useState<IUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedAddress, setSelectedAddress] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Order confirmation dialog state
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [confirmedOrderId, setConfirmedOrderId] = useState("");
 
   // Section expansion states
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   // Payment option state
-  const [paymentOption, setPaymentOption] = useState("google-pay");
+  const [paymentOption, setPaymentOption] = useState("cash-on-delivery");
 
-  const confirmOrder = async () => {
-    // Validation checks
+  const confirmOrder = () => {
     if (!selectedAddress) {
       toast({
-        title: "Delivery address required",
+        title: "Error",
         description: "Please select a delivery address",
         variant: "destructive",
       });
-      setExpandedSection("deliveryAddress");
       return;
     }
 
-    if (!paymentOption) {
-      toast({
-        title: "Payment method required",
-        description: "Please select a payment method",
-        variant: "destructive",
+    setSubmitting(true);
+    const orderId = generateOrderId();
+    const orderStatus = "confirmed";
+
+    const orderPayload = {
+      orderId,
+      status: orderStatus,
+      userId: userData?._id,
+      items: checkoutData?.items,
+      subtotal: checkoutData?.subtotal,
+      deliveryCharges: checkoutData?.deliveryCharges,
+      total: checkoutData?.total,
+      addressId: selectedAddress,
+      paymentOption,
+    };
+
+    fetch("/api/order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(orderPayload),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Clear checkout data from session storage
+          sessionStorage.removeItem("checkoutData");
+
+          // Set the confirmed order ID and open the confirmation dialog
+          setConfirmedOrderId(orderId);
+          setIsConfirmationOpen(true);
+
+          toast({
+            title: "Success",
+            description: "Order Confirmed",
+            className: "bg-green-500 text-white",
+          });
+        } else {
+          console.error("Error creating order", data.error);
+          toast({
+            title: "Error",
+            description: data.error || "Failed to confirm order",
+            variant: "destructive",
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Error processing order:", error);
+        toast({
+          title: "Error",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        setSubmitting(false);
       });
-      setExpandedSection("paymentOptions");
-      return;
-    }
-
-    // Show loading state
-    setLoading(true);
-
-    try {
-      // Call the API to create the order
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          checkoutData,
-          selectedAddressId: selectedAddress,
-          paymentMethod: paymentOption,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || "Failed to place order");
-      }
-
-      // Clear checkout data from session storage
-      sessionStorage.removeItem("checkoutData");
-
-      // Show success message
-      toast({
-        title: "Order placed successfully",
-        description: `Your order #${result.data.orderNumber} has been confirmed`,
-      });
-
-      // Add validation before redirect to prevent "undefined" in the URL
-      if (result.data && result.data.orderId) {
-        router.push(`/orders/${result.data.orderId}`);
-      } else {
-        router.push("/orders");
-        console.error("Order ID not returned from API");
-      }
-    } catch (error) {
-      console.error("Order confirmation error:", error);
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to place order",
-        variant: "destructive",
-      });
-      setLoading(false);
-    }
   };
 
   useEffect(() => {
@@ -597,11 +600,11 @@ const CheckoutPage = () => {
               </div>
 
               <Button
-                className="w-full primary-btn"
+                className="w-full bg-red-600 hover:bg-red-700"
                 onClick={confirmOrder}
-                disabled={loading || !selectedAddress}
+                disabled={loading || !selectedAddress || submitting}
               >
-                Confirm order
+                {submitting ? "Processing..." : "Confirm order"}
               </Button>
 
               <div className="flex items-center justify-center gap-2 mt-4">
@@ -615,6 +618,13 @@ const CheckoutPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Order Confirmation Dialog */}
+      <OrderConfirmationDialog
+        isOpen={isConfirmationOpen}
+        onClose={() => setIsConfirmationOpen(false)}
+        orderId={confirmedOrderId}
+      />
     </div>
   );
 };
