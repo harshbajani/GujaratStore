@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import "./product.model";
+import "./order.model";
 
 const deliveryAddressSchema = new mongoose.Schema({
   name: { type: String, required: true, minlength: 2 },
@@ -28,6 +30,11 @@ const userSchema = new mongoose.Schema({
   cart: {
     type: [mongoose.Schema.Types.ObjectId],
     ref: "Product",
+    default: [],
+  },
+  order: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "Order",
     default: [],
   },
   isVerified: { type: Boolean, default: false },

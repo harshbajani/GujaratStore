@@ -1,4 +1,4 @@
-import Order from "@/lib/models/order.models";
+import Order from "@/lib/models/order.model";
 import Products from "@/lib/models/product.model";
 import User from "@/lib/models/user.model";
 import { connectToDB } from "@/lib/mongodb";
@@ -83,7 +83,10 @@ export async function POST(request: Request) {
       });
     }
 
-    await User.findByIdAndUpdate(userId, { cart: [] });
+    await User.findByIdAndUpdate(userId, {
+      $push: { order: newOrder._id },
+      cart: [],
+    });
 
     setTimeout(async () => {
       try {

@@ -1,4 +1,4 @@
-import Order from "@/lib/models/order.models";
+import Order from "@/lib/models/order.model";
 import { connectToDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 
