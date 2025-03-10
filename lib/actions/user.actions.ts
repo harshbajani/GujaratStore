@@ -17,6 +17,7 @@ const sanitizeUser = (user: IUser): UserResponse => {
     _id: safeUser._id.toString(),
     wishlist: safeUser.wishlist?.map((id) => id.toString()),
     cart: safeUser.cart?.map((id) => id.toString()),
+    order: safeUser.order?.map((id) => id.toString()),
   };
 };
 
