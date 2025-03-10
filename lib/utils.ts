@@ -8,6 +8,12 @@ export function cn(...inputs: ClassValue[]) {
 export const parseStringify = (value: unknown) =>
   JSON.parse(JSON.stringify(value));
 
+export const generateOrderId = () => {
+  // Generates a random 6-digit number
+  const randomDigits = Math.floor(100000 + Math.random() * 900000);
+  return `TGS${randomDigits}`;
+};
+
 export function convertToBase64(file: File): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const fileReader = new FileReader();
