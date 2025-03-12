@@ -4,14 +4,14 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Establish database connection
     await connectToDB();
 
     // Get the MongoDB ObjectId from the route params
-    const { id } = params;
+    const { id } = await params;
 
     // Basic validation: Ensure id is provided
     if (!id) {
