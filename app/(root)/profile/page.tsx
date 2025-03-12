@@ -26,6 +26,7 @@ import { getCurrentUser } from "@/lib/actions/user.actions";
 import { UserResponse } from "@/types";
 import Coupons from "./components/Coupons";
 import Loader from "@/components/Loader";
+import Orders from "./components/Orders";
 
 const ProfilePage = () => {
   // * useStates and hooks
@@ -140,6 +141,8 @@ const ProfilePage = () => {
             onProfileUpdate={handleProfileUpdate}
           />
         );
+      case "orders":
+        return <Orders />;
       case "address":
         return <Address />;
       case "coupons":
