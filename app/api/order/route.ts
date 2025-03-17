@@ -114,3 +114,36 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    // Establish database connection
+    await connectToDB();
+
+    // Get query parameters (for potential filtering)
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+    const status = searchParams.get("status");
+
+    // Build query object
+    const query: { userId?: string; status?: string } = {};
+
+    // Apply filters if provided
+    if (userId) query.userId = userId;
+    if (status) query.status = status;
+
+    // Find orders with optional filters
+    const orders = await Order.find(query).sort({ createdAt: -1 });
+
+    // Return the orders data
+    return NextResponse.json({ success: true, data: orders }, { status: 200 });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "An error occurred",
+      },
+      { status: 500 }
+    );
+  }
+}
