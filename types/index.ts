@@ -404,3 +404,29 @@ export interface CheckoutData {
   deliveryCharges: number;
   total: number;
 }
+
+export interface OrderItem {
+  _id: string;
+  productId: string;
+  productName: string;
+  coverImage: string;
+  quantity: number;
+  price: number;
+  deliveryDate: string;
+}
+
+export interface IOrder {
+  _id: string;
+  orderId: string;
+  status: string;
+  userId: string;
+  items: OrderItem[];
+  subtotal: number;
+  deliveryCharges: number;
+  total: number;
+  addressId: string;
+  paymentOption: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
