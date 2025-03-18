@@ -24,121 +24,58 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
-import { IUser } from "@/types";
-
-interface OrderItem {
-  productId: string;
-  productName: string;
-  coverImage: string;
-  quantity: number;
-  price: number;
-}
-
-interface IOrder {
-  _id: string;
-  orderId: string;
-  status: string;
-  userId: string;
-  items: OrderItem[];
-  subtotal: number;
-  deliveryCharges: number;
-  total: number;
-  addressId: string;
-  paymentOption: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Function to get customer details
-const getCustomerById = async (id: string) => {
-  try {
-    const response = await fetch(`/api/user/${id}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch customer details");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching customer details:", error);
-    throw error;
-  }
-};
-
-// Function to get customer orders
-const getCustomerOrders = async (userId: string) => {
-  try {
-    // In a real implementation, you would have a dedicated endpoint for this
-    const response = await fetch("/api/order", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch orders");
-    }
-
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(data.error || "Failed to fetch orders");
-    }
-
-    // Filter orders by userId
-    const allOrders = Array.isArray(data.data) ? data.data : [];
-    const customerOrders = allOrders.filter(
-      (order: IOrder) => order.userId === userId
-    );
-
-    return { success: true, data: customerOrders };
-  } catch (error) {
-    console.error("Error fetching customer orders:", error);
-    throw error;
-  }
-};
+import { IOrder } from "@/types";
+import { useUserDetails } from "@/hooks/useOrderHooks"; // Import the hook
+import { getCustomerOrders } from "@/lib/utils";
 
 const CustomerDetailPage = () => {
-  const [customer, setCustomer] = useState<IUser | null>(null);
   const [orders, setOrders] = useState<IOrder[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [ordersLoading, setOrdersLoading] = useState<boolean>(false);
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
   const customerId = params.id as string;
 
-  const fetchCustomerDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await getCustomerById(customerId);
-      if (!response.success) {
-        throw new Error(response.message || "Failed to fetch customer details");
-      }
-      setCustomer(response.data);
+  // Use the hook instead of the direct fetch function
+  const { user: customer, loading, error } = useUserDetails(customerId);
 
-      // Fetch customer orders
+  const fetchCustomerOrders = async () => {
+    try {
+      setOrdersLoading(true);
       const ordersResponse = await getCustomerOrders(customerId);
       if (ordersResponse.success) {
         setOrders(ordersResponse.data);
       }
     } catch (error) {
-      console.error("Failed to fetch customer details:", error);
+      console.error("Failed to fetch customer orders:", error);
       toast({
         title: "Error",
         description:
           error instanceof Error
             ? error.message
-            : "Failed to fetch customer details",
+            : "Failed to fetch customer orders",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setOrdersLoading(false);
     }
   };
 
   useEffect(() => {
     if (customerId) {
-      fetchCustomerDetails();
+      fetchCustomerOrders();
     }
   }, [customerId]);
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -196,7 +133,7 @@ const CustomerDetailPage = () => {
 
   const stats = calculateCustomerStats();
 
-  if (loading) {
+  if (loading || ordersLoading) {
     return <Loader />;
   }
 
