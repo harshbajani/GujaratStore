@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   ClipboardList,
   ArrowLeft,
@@ -23,169 +22,27 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
-import { IAddress, IOrder, IUser } from "@/types";
 import Image from "next/image";
-
-const getOrderById = async (id: string) => {
-  try {
-    const response = await fetch(`/api/order/byId/${id}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch order details");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching order details:", error);
-    throw error;
-  }
-};
-
-const updateOrderStatus = async (id: string, status: string) => {
-  try {
-    const response = await fetch(`/api/order/byId/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (!response.ok) {
-      throw new Error("Failed to update order status");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating order status:", error);
-    throw error;
-  }
-};
-
-const getShippingAddress = async (addressId: string) => {
-  try {
-    const response = await fetch(`/api/address/${addressId}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch shipping address");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching shipping address:", error);
-    return null;
-  }
-};
-
-const getUserDetails = async (userId: string) => {
-  try {
-    const response = await fetch(`/api/user/${userId}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch user details");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching user details:", error);
-    return null;
-  }
-};
+import {
+  useOrder,
+  useShippingAddress,
+  useUserDetails,
+} from "@/hooks/useOrderHooks";
 
 const ViewOrderPage = () => {
-  const [order, setOrder] = useState<IOrder | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [address, setAddress] = useState<IAddress>();
-  const [addressLoading, setAddressLoading] = useState<boolean>(false);
-  const [userDetails, setUserDetails] = useState<IUser>();
   const params = useParams();
   const router = useRouter();
-  const { toast } = useToast();
   const orderId = params.id as string;
+
+  // Use custom hooks
+  const { order, loading, updateStatus } = useOrder(orderId);
+  const { address, loading: addressLoading } = useShippingAddress(
+    order?.addressId
+  );
+  const { user: userDetails } = useUserDetails(order?.userId);
+
   const getImageUrl = (imageId: string | File) => `/api/files/${imageId}`;
-
-  const fetchOrderDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await getOrderById(orderId);
-      if (!response.success) {
-        throw new Error(response.message || "Failed to fetch order details");
-      }
-      setOrder(response.order);
-
-      // Fetch shipping address if available
-      if (response.order.addressId) {
-        fetchShippingAddress(response.order.addressId);
-      }
-      // Fetch user details based on userId from the order
-      if (response.order.userId) {
-        fetchUserDetails(response.order.userId);
-      }
-    } catch (error) {
-      console.error("Failed to fetch order details:", error);
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch order details",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchShippingAddress = async (addressId: string) => {
-    try {
-      setAddressLoading(true);
-      const response = await getShippingAddress(addressId);
-      if (response && response.success) {
-        setAddress(response.address);
-      }
-    } catch (error) {
-      console.error("Failed to fetch shipping address:", error);
-    } finally {
-      setAddressLoading(false);
-    }
-  };
-
-  const fetchUserDetails = async (userId: string) => {
-    try {
-      const response = await getUserDetails(userId);
-      if (response && response.success) {
-        setUserDetails(response.data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch user details:", error);
-    }
-  };
-
-  const handleStatusChange = async (status: string) => {
-    try {
-      const response = await updateOrderStatus(orderId, status);
-      if (!response.success) {
-        throw new Error(response.error || "Failed to update order status");
-      }
-      await fetchOrderDetails();
-      toast({
-        title: "Success",
-        description: "Order status updated successfully!",
-        variant: "default",
-      });
-    } catch (error) {
-      console.error("Failed to update order status:", error);
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to update order status",
-        variant: "destructive",
-      });
-    }
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -227,12 +84,6 @@ const ViewOrderPage = () => {
     }
     return { badgeClass, icon };
   };
-
-  useEffect(() => {
-    if (orderId) {
-      fetchOrderDetails();
-    }
-  }, [orderId]);
 
   if (loading) {
     return <Loader />;
@@ -298,7 +149,7 @@ const ViewOrderPage = () => {
                       order.status === "confirmed" ? "default" : "outline"
                     }
                     className={order.status === "confirmed" ? "bg-brand" : ""}
-                    onClick={() => handleStatusChange("confirmed")}
+                    onClick={() => updateStatus("confirmed")}
                   >
                     Confirm
                   </Button>
@@ -308,7 +159,7 @@ const ViewOrderPage = () => {
                       order.status === "processing" ? "default" : "outline"
                     }
                     className={order.status === "processing" ? "bg-brand" : ""}
-                    onClick={() => handleStatusChange("processing")}
+                    onClick={() => updateStatus("processing")}
                   >
                     Processing
                   </Button>
@@ -316,7 +167,7 @@ const ViewOrderPage = () => {
                     size="sm"
                     variant={order.status === "shipped" ? "default" : "outline"}
                     className={order.status === "shipped" ? "bg-brand" : ""}
-                    onClick={() => handleStatusChange("shipped")}
+                    onClick={() => updateStatus("shipped")}
                   >
                     Shipped
                   </Button>
@@ -326,7 +177,7 @@ const ViewOrderPage = () => {
                       order.status === "delivered" ? "default" : "outline"
                     }
                     className={order.status === "delivered" ? "bg-brand" : ""}
-                    onClick={() => handleStatusChange("delivered")}
+                    onClick={() => updateStatus("delivered")}
                   >
                     Delivered
                   </Button>
@@ -340,7 +191,7 @@ const ViewOrderPage = () => {
                         ? "bg-red-600 hover:bg-red-700 text-white"
                         : "text-red-600 border-red-200 hover:bg-red-50"
                     }
-                    onClick={() => handleStatusChange("cancelled")}
+                    onClick={() => updateStatus("cancelled")}
                   >
                     Cancel
                   </Button>
@@ -458,7 +309,7 @@ const ViewOrderPage = () => {
           </CardHeader>
           <CardContent className="pt-6">
             {userDetails && (
-              <div className=" space-y-2">
+              <div className="space-y-2">
                 <h4 className="font-bold">Customer Details</h4>
                 <p>Name: {userDetails.name}</p>
                 <p>Email: {userDetails.email}</p>
