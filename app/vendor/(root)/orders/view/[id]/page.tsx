@@ -25,34 +25,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
-import { IAddress, IUser } from "@/types";
+import { IAddress, IOrder, IUser } from "@/types";
 import Image from "next/image";
-
-interface OrderItem {
-  _id: string;
-  productId: string;
-  productName: string;
-  coverImage: string;
-  quantity: number;
-  price: number;
-  deliveryDate: string;
-}
-
-interface IOrder {
-  _id: string;
-  orderId: string;
-  status: string;
-  userId: string;
-  items: OrderItem[];
-  subtotal: number;
-  deliveryCharges: number;
-  total: number;
-  addressId: string;
-  paymentOption: string;
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
-}
 
 const getOrderById = async (id: string) => {
   try {
