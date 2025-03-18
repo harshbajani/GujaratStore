@@ -70,41 +70,6 @@ const formatDate = (dateString: string) => {
   }).format(date);
 };
 
-// Function to check if delivery date has passed
-const isDeliveryDatePassed = (dateString: string) => {
-  // Parse date in format "DD/MM/YYYY"
-  const [day, month, year] = dateString.split("/").map(Number);
-  const deliveryDate = new Date(year, month - 1, day); // month is 0-indexed in JS Date
-  const today = new Date();
-
-  // Set time to beginning of day for accurate comparison
-  today.setHours(0, 0, 0, 0);
-  deliveryDate.setHours(0, 0, 0, 0);
-
-  return today >= deliveryDate;
-};
-
-// Function to get display status
-const getDisplayStatus = (order: Order) => {
-  // If status is already delivered, cancelled or returned, keep as is
-  if (["delivered", "cancelled", "returned"].includes(order.status)) {
-    return order.status;
-  }
-
-  // Check if any item has passed its delivery date
-  const anyItemDelivered = order.items.some((item) =>
-    isDeliveryDatePassed(item.deliveryDate)
-  );
-
-  // If any item has passed its delivery date, show as delivered
-  if (anyItemDelivered) {
-    return "delivered";
-  }
-
-  // Otherwise show actual status
-  return order.status;
-};
-
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -208,7 +173,7 @@ const Orders = () => {
       <h2 className="text-xl font-semibold mb-4">My Orders</h2>
 
       {orders.map((order) => {
-        const displayStatus = getDisplayStatus(order);
+        const displayStatus = order.status;
 
         return (
           <Card key={order._id} className="overflow-hidden">
@@ -220,15 +185,13 @@ const Orders = () => {
                 <p className="font-medium">Order #{order.orderId}</p>
               </div>
               <Badge className={`${getStatusColor(displayStatus)} capitalize`}>
-                {displayStatus}
+                {order.status}
               </Badge>
             </div>
 
             <CardContent className="p-0">
               {order.items.map((item) => {
-                const isPastDeliveryDate = isDeliveryDatePassed(
-                  item.deliveryDate
-                );
+                const isPastDeliveryDate = item.deliveryDate;
 
                 return (
                   <div key={item._id} className="p-4 border-b flex gap-4">
