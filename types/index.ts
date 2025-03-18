@@ -22,12 +22,14 @@ export interface IUser {
   email: string;
   phone: string;
   password: string;
+  addresses: IAddress[];
   role: "user";
   isVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
   wishlist?: (Types.ObjectId | string)[];
   cart?: (Types.ObjectId | string)[];
+  order?: (Types.ObjectId | string)[];
   __v: number;
 }
 
@@ -279,6 +281,8 @@ export interface IProduct {
   gstRate: number;
   gstAmount: number;
   netPrice: number;
+  deliveryCharges: number;
+  deliveryDays: number;
   productQuantity: number;
   productStatus?: boolean;
   productRating?: number;
@@ -342,6 +346,7 @@ export interface IProductResponse {
   productSize?: {
     _id: string;
     label: string;
+    isActive: boolean;
   }[];
   productColor?: string;
   productDescription: string;
@@ -355,10 +360,15 @@ export interface IProductResponse {
   gstRate: number;
   gstAmount: number;
   netPrice: number;
+  deliveryCharges: number;
+  deliveryDays: number;
   productQuantity: number;
   productStatus?: boolean;
   productRating?: number;
-  productReviews?: string[]; // Optional array of MongoDB ObjectIds as strings
+  productReviews?: {
+    _id: string;
+    rating: number;
+  };
   productWarranty?: string;
   productReturnPolicy?: string;
   wishlist?: boolean;
@@ -376,4 +386,47 @@ export interface IProductReview {
   rating: number;
   comment: string;
   date: string;
+}
+
+export interface CheckoutItem {
+  productId: string;
+  productName: string;
+  selectedSize?: string;
+  quantity: number;
+  price: number;
+  coverImage: string;
+  deliveryDate: string;
+}
+
+export interface CheckoutData {
+  items: CheckoutItem[];
+  subtotal: number;
+  deliveryCharges: number;
+  total: number;
+}
+
+export interface OrderItem {
+  _id: string;
+  productId: string;
+  productName: string;
+  coverImage: string;
+  quantity: number;
+  price: number;
+  deliveryDate: string;
+}
+
+export interface IOrder {
+  _id: string;
+  orderId: string;
+  status: string;
+  userId: string;
+  items: OrderItem[];
+  subtotal: number;
+  deliveryCharges: number;
+  total: number;
+  addressId: string;
+  paymentOption: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 }

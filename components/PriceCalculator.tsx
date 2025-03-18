@@ -164,6 +164,42 @@ const PriceCalculator = ({ control }: IPriceCalculatorProps) => {
             </FormItem>
           )}
         />
+
+        <FormField
+          control={control}
+          name="deliveryCharges"
+          render={({ field: { onChange, ...field } }) => (
+            <FormItem>
+              <FormLabel>Delivery Charges</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  onChange={(e) => onChange(Number(e.target.value))}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name="deliveryDays"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Delivery Time (Days)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="Enter number of days for delivery"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
     </div>
   );

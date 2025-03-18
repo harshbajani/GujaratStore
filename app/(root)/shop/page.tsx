@@ -2,14 +2,11 @@
 
 import { motion, Variants } from "framer-motion";
 import Image from "next/image";
-import {
-  artisan,
-  clothing,
-  flavoursOfGujarat,
-  furnishings,
-  homeDecor,
-  organic,
-} from "@/constants";
+import { clothing, flavoursOfGujarat, furnishings, organic } from "@/constants";
+import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
+import { PrimaryCategoryWithPopulatedFields } from "@/types";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface CategorySectionProps {
   title: string;
@@ -79,6 +76,34 @@ const imageHoverVariants: Variants = {
 };
 
 const CategorySection = ({ title, items }: CategorySectionProps) => {
+  const [data, setData] = useState<PrimaryCategoryWithPopulatedFields[]>([]);
+  const fetchPrimaryCategory = async () => {
+    try {
+      const response = await getAllPrimaryCategories();
+      // Filter categories based on the section title
+      const filteredCategories = response.filter(
+        (category) =>
+          category.parentCategory?.name.toLowerCase() === title.toLowerCase()
+      );
+      setData(filteredCategories);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPrimaryCategory();
+  }, [title]);
+
+  // Combine static images with dynamic category data
+  const combinedItems = data
+    .map((category, index) => ({
+      ...items[index], // Get static image data
+      id: category.id, // Add dynamic category id
+      label: category.name, // Use dynamic category name instead of static label
+    }))
+    .slice(0, items.length);
+
   return (
     <>
       <motion.div
@@ -124,40 +149,42 @@ const CategorySection = ({ title, items }: CategorySectionProps) => {
         whileInView="visible"
         viewport={{ once: true, margin: "-100px" }}
       >
-        {items.map((item, index) => (
+        {combinedItems.map((item) => (
           <motion.div
-            key={index}
+            key={item.id}
             className="relative group cursor-pointer overflow-hidden"
             variants={itemVariants}
             whileHover="hover"
             whileTap="tap"
           >
-            <motion.div
-              className="w-full h-44 relative"
-              variants={imageHoverVariants}
-            >
-              <Image
-                src={item.src}
-                alt={item.label}
-                width={170}
-                height={200}
-                className="w-full h-full object-cover rounded"
-              />
+            <Link href={`/product-category/${item.id}`}>
               <motion.div
-                className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/70 to-transparent rounded-b"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              />
-              <motion.h2
-                className="absolute bottom-2 w-full text-center text-white subtitle-1"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
+                className="w-full h-44 relative"
+                variants={imageHoverVariants}
               >
-                {item.label}
-              </motion.h2>
-            </motion.div>
+                <Image
+                  src={item.src}
+                  alt={item.label}
+                  width={170}
+                  height={200}
+                  className="w-full h-full object-cover rounded"
+                />
+                <motion.div
+                  className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/70 to-transparent rounded-b"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                />
+                <motion.h2
+                  className="absolute bottom-2 w-full text-center text-white subtitle-1"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  {item.label}
+                </motion.h2>
+              </motion.div>
+            </Link>
           </motion.div>
         ))}
       </motion.div>
@@ -209,10 +236,8 @@ const ShopPage = () => {
       <div className="pt-8">
         <div className="py-16 flex-center flex-col">
           <CategorySection title="Clothing" items={clothing} />
-          <CategorySection title="Artisan's" items={artisan} />
           <CategorySection title="Farsan" items={flavoursOfGujarat} />
           <CategorySection title="Furnishings" items={furnishings} />
-          <CategorySection title="Home Decor" items={homeDecor} />
           <CategorySection title="Organic" items={organic} />
         </div>
       </div>

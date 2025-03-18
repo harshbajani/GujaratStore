@@ -26,6 +26,8 @@ import { getCurrentUser } from "@/lib/actions/user.actions";
 import { UserResponse } from "@/types";
 import Coupons from "./components/Coupons";
 import Loader from "@/components/Loader";
+import Orders from "./components/Orders";
+import Wishlist from "./components/Wishlist";
 
 const ProfilePage = () => {
   // * useStates and hooks
@@ -140,10 +142,14 @@ const ProfilePage = () => {
             onProfileUpdate={handleProfileUpdate}
           />
         );
+      case "orders":
+        return <Orders />;
       case "address":
         return <Address />;
       case "coupons":
         return <Coupons />;
+      case "wishlist":
+        return <Wishlist />;
       default:
         return (
           <div className="p-4">

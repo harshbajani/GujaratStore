@@ -202,6 +202,12 @@ export const productSchema = z.object({
   gstRate: z.number().nonnegative("GST rate must be a non-negative number"),
   gstAmount: z.number().nonnegative("GST amount must be a non-negative number"),
   netPrice: z.number().nonnegative("Net price must be a non-negative number"),
+  deliveryCharges: z
+    .number()
+    .nonnegative("Delivery charges must be a non-negative number"),
+  deliveryDays: z
+    .number()
+    .nonnegative("Delivery date must be a non-negative number"),
   productQuantity: z.coerce
     .number()
     .positive("Product quantity must be a positive number"),

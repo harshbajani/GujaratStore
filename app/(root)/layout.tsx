@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import { Toaster } from "@/components/ui/toaster";
 import { SessionProvider } from "next-auth/react";
 import { ParallaxProvider } from "react-scroll-parallax";
+// import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   return (

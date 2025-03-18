@@ -102,6 +102,22 @@ const ProductsDetailPage = () => {
     }
   };
 
+  // Replace the existing formattedDeliveryDate calculation with this:
+  const formattedDeliveryDate = product
+    ? (() => {
+        const currentDate = new Date();
+        const deliveryDate = new Date(
+          currentDate.getTime() + product.deliveryDays * 24 * 60 * 60 * 1000
+        );
+        return deliveryDate
+          .toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })
+          .replace(/\//g, "/");
+      })()
+    : "Not available";
   // Simplified handlers that use the common function
   const handleToggleCart = () => handleAuthAction("cart");
   const handleToggleWishlist = () => handleAuthAction("wishlist");
@@ -120,27 +136,26 @@ const ProductsDetailPage = () => {
         }
 
         let productWithStatus = productData.data;
-        let userStatus;
+
         // Only fetch user data if logged in
-        if (userStatus === "authenticated") {
-          try {
-            const userResp = await fetch("/api/user/current");
-            const userData = await userResp.json();
 
-            if (userData.success && userData.data) {
-              const wishlistIds = userData.data.wishlist || [];
-              const cartIds = userData.data.cart || [];
+        try {
+          const userResp = await fetch("/api/user/current");
+          const userData = await userResp.json();
 
-              productWithStatus = {
-                ...productWithStatus,
-                wishlist: wishlistIds.includes(productWithStatus._id),
-                inCart: cartIds.includes(productWithStatus._id),
-              };
-            }
-          } catch (userErr) {
-            console.error("Error fetching user data:", userErr);
-            // Continue with basic product display
+          if (userData.success && userData.data) {
+            const wishlistIds = userData.data.wishlist || [];
+            const cartIds = userData.data.cart || [];
+
+            productWithStatus = {
+              ...productWithStatus,
+              wishlist: wishlistIds.includes(productWithStatus._id),
+              inCart: cartIds.includes(productWithStatus._id),
+            };
           }
+        } catch (userErr) {
+          console.error("Error fetching user data:", userErr);
+          // Continue with basic product display
         }
 
         setProduct(productWithStatus);
@@ -209,7 +224,9 @@ const ProductsDetailPage = () => {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/clothing">Clothing</BreadcrumbLink>
+                  <BreadcrumbLink href={`/${product.parentCategory.name}`}>
+                    {product.parentCategory.name}
+                  </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
@@ -309,7 +326,6 @@ const ProductsDetailPage = () => {
                 </div>
               </div>
             </div>
-
             <div className="flex gap-4 mb-4">
               <Button
                 variant="secondary"
@@ -343,6 +359,9 @@ const ProductsDetailPage = () => {
                 />
               </Button>
             </div>
+            <p className="text-gray-600 text-sm mb-4">
+              Expected Delivery By: {formattedDeliveryDate}
+            </p>
             <div>
               <h1 className="text-xl sm:text-3xl font-bold mb-4">
                 Product Details
@@ -413,7 +432,6 @@ const ProductsDetailPage = () => {
               </div>
             </div>
           </div>
-          <div>qwdqwd</div>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { IStore, StoreData } from "@/types";
+import { IOrder, IProductResponse, IStore, StoreData } from "@/types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -7,6 +7,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 export const parseStringify = (value: unknown) =>
   JSON.parse(JSON.stringify(value));
+
+export const generateOrderId = () => {
+  // Generates a random 6-digit number
+  const randomDigits = Math.floor(100000 + Math.random() * 900000);
+  return `TGS${randomDigits}`;
+};
 
 export function convertToBase64(file: File): Promise<string> {
   return new Promise<string>((resolve, reject) => {
@@ -115,4 +121,112 @@ export const toInterfaceFormat = (store: {
     },
     alternativeContact: store.alternativeContact || "",
   };
+};
+
+export const getProductRating = (product: IProductResponse): number => {
+  // Check if productReviews exists and is an array with at least one item
+  if (
+    Array.isArray(product.productReviews) &&
+    product.productReviews.length > 0
+  ) {
+    // Return the rating from the first review
+    return product.productReviews[0].rating;
+  }
+  // If there's no rating or the structure doesn't match, return 0
+  return 0;
+};
+
+export const getOrderById = async (id: string) => {
+  try {
+    const response = await fetch(`/api/order/byId/${id}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch order details");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching order details:", error);
+    throw error;
+  }
+};
+
+export const updateOrderStatus = async (id: string, status: string) => {
+  try {
+    const response = await fetch(`/api/order/byId/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!response.ok) {
+      throw new Error("Failed to update order status");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    throw error;
+  }
+};
+
+export const getShippingAddress = async (addressId: string) => {
+  try {
+    const response = await fetch(`/api/address/${addressId}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch shipping address");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching shipping address:", error);
+    return null;
+  }
+};
+
+export const getUserDetails = async (userId: string) => {
+  try {
+    const response = await fetch(`/api/user/${userId}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch user details");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    return null;
+  }
+};
+
+export // Function to get customer orders
+const getCustomerOrders = async (userId: string) => {
+  try {
+    // In a real implementation, you would have a dedicated endpoint for this
+    const response = await fetch("/api/order", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch orders");
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || "Failed to fetch orders");
+    }
+
+    // Filter orders by userId
+    const allOrders = Array.isArray(data.data) ? data.data : [];
+    const customerOrders = allOrders.filter(
+      (order: IOrder) => order.userId === userId
+    );
+
+    return { success: true, data: customerOrders };
+  } catch (error) {
+    console.error("Error fetching customer orders:", error);
+    throw error;
+  }
 };

@@ -5,6 +5,7 @@ import "@/lib/models/secondaryCategory.model";
 import "@/lib/models/brand.model";
 import "@/lib/models/attribute.model";
 import "@/lib/models/size.model";
+import "@/lib/models/productReview.model";
 
 const productSchema = new Schema({
   productName: { type: String, required: true },
@@ -60,6 +61,8 @@ const productSchema = new Schema({
   gstRate: { type: Number, required: true },
   gstAmount: { type: Number, required: true },
   netPrice: { type: Number, required: true },
+  deliveryCharges: { type: Number, required: true },
+  deliveryDays: { type: Number, required: true },
   productStatus: { type: Boolean, default: true },
   productQuantity: { type: Number, required: true },
   gender: {
