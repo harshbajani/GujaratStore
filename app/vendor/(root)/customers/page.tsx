@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Users, Eye, Search } from "lucide-react";
 import { withVendorProtection } from "../../HOC";
 import { useRouter } from "next/navigation";
@@ -38,6 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IOrder } from "@/types";
+import { formatDate } from "@/lib/utils";
 
 interface IUser {
   _id: string;
@@ -47,6 +48,15 @@ interface IUser {
   orderCount: number;
   totalSpent: number;
   lastOrderDate: string;
+  firstOrderDate: string; // Added to track the date of the first order
+}
+
+interface ICustomerStats {
+  totalCustomers: number;
+  activeCustomers: number;
+  newCustomers: number;
+  averageOrderValue: number;
+  yearlyNewCustomers: { [year: number]: number };
 }
 
 // Function to get customer details by ID
@@ -80,17 +90,26 @@ const CustomersPage = () => {
     pageIndex: 0,
     pageSize: 10,
   });
-  const [customerStats, setCustomerStats] = useState({
+  const [customerStats, setCustomerStats] = useState<ICustomerStats>({
     totalCustomers: 0,
     activeCustomers: 0,
     newCustomers: 0,
     averageOrderValue: 0,
+    yearlyNewCustomers: {},
   });
+
+  // State for month/year selection for historical stats
+  const [selectedMonth, setSelectedMonth] = useState<number>(
+    new Date().getMonth()
+  ); // 0-indexed month
+  const [selectedYear, setSelectedYear] = useState<number>(
+    new Date().getFullYear()
+  );
 
   const router = useRouter();
   const { toast } = useToast();
 
-  // Fetch all unique customers
+  // Fetch all unique customers and compute stats
   const fetchAllCustomers = async () => {
     try {
       setLoading(true);
@@ -122,19 +141,26 @@ const CustomersPage = () => {
           try {
             const userResponse = await getCustomerById(order.userId);
             if (userResponse && userResponse.success) {
-              // Calculate customer metrics
+              // Get all orders for this customer
               const customerOrders = orders.filter(
                 (o: IOrder) => o.userId === order.userId
               );
+
+              // Calculate total spent
               const totalSpent = customerOrders.reduce(
                 (sum: number, o: IOrder) => sum + (o.total || 0),
                 0
               );
-              const lastOrderDate = customerOrders.sort(
-                (a: IOrder, b: IOrder): number =>
-                  new Date(b.createdAt).getTime() -
-                  new Date(a.createdAt).getTime()
-              )[0].createdAt;
+
+              // Sort orders to determine first and last order dates
+              const sortedOrders = [...customerOrders].sort(
+                (a: IOrder, b: IOrder) =>
+                  new Date(a.createdAt).getTime() -
+                  new Date(b.createdAt).getTime()
+              );
+              const firstOrderDate = sortedOrders[0].createdAt;
+              const lastOrderDate =
+                sortedOrders[sortedOrders.length - 1].createdAt;
 
               uniqueCustomers.set(order.userId, {
                 _id: order.userId,
@@ -144,6 +170,7 @@ const CustomersPage = () => {
                 orderCount: customerOrders.length,
                 totalSpent: totalSpent,
                 lastOrderDate: lastOrderDate,
+                firstOrderDate: firstOrderDate,
               });
             }
           } catch (error) {
@@ -158,28 +185,49 @@ const CustomersPage = () => {
       const customersArray = Array.from(uniqueCustomers.values());
       setCustomers(customersArray);
 
-      // Calculate customer stats
+      // Calculate overall stats
+
+      // Active customers: those who placed an order in the last 30 days
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
       const activeCustomers = customersArray.filter(
         (customer) => new Date(customer.lastOrderDate) > thirtyDaysAgo
       ).length;
 
+      // New customers for the current month: those whose first order is within the current month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const newCustomers = customersArray.filter((customer) => {
+        const firstOrder = new Date(customer.firstOrderDate);
+        return firstOrder >= startOfMonth && firstOrder < endOfMonth;
+      }).length;
+
+      // Calculate year-wise new customers (all time)
+      const yearlyNewCustomers = customersArray.reduce((acc, customer) => {
+        const year = new Date(customer.firstOrderDate).getFullYear();
+        acc[year] = (acc[year] || 0) + 1;
+        return acc;
+      }, {} as { [year: number]: number });
+
+      // Average order value calculation
       const totalOrders = customersArray.reduce(
         (sum, customer) => sum + customer.orderCount,
         0
       );
-      const totalSpent = customersArray.reduce(
+      const grandTotalSpent = customersArray.reduce(
         (sum, customer) => sum + customer.totalSpent,
         0
       );
+      const averageOrderValue =
+        totalOrders > 0 ? grandTotalSpent / totalOrders : 0;
 
       setCustomerStats({
         totalCustomers: customersArray.length,
         activeCustomers,
-        newCustomers: Math.floor(customersArray.length * 0.2), // Simulated value
-        averageOrderValue: totalOrders > 0 ? totalSpent / totalOrders : 0,
+        newCustomers,
+        averageOrderValue,
+        yearlyNewCustomers,
       });
     } catch (error) {
       console.error("Failed to fetch customers:", error);
@@ -197,15 +245,18 @@ const CustomersPage = () => {
     fetchAllCustomers();
   }, []);
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  // Compute new customers count for the selected month/year using all historical orders
+  const newCustomersForSelectedMonth = useMemo(() => {
+    if (!customers.length) return 0;
+    const startOfSelectedMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfSelectedMonth = new Date(selectedYear, selectedMonth + 1, 1);
+    return customers.filter((customer) => {
+      const firstOrder = new Date(customer.firstOrderDate);
+      return (
+        firstOrder >= startOfSelectedMonth && firstOrder < endOfSelectedMonth
+      );
+    }).length;
+  }, [customers, selectedMonth, selectedYear]);
 
   const columns: ColumnDef<IUser>[] = [
     {
@@ -295,14 +346,74 @@ const CustomersPage = () => {
   }
 
   return (
-    <div className="p-2 space-y-6">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="p-2 space-y-4">
+      <div className="flex items-center gap-3">
         <Users className="text-brand h-8 w-8" />
         <h1 className="h1">Customers</h1>
       </div>
 
+      {/* Date Filter Section for Historical Stats */}
+      <div className="flex gap-4 items-center">
+        <div>
+          <label className="block text-sm font-medium text-gray-500 mb-1">
+            Month
+          </label>
+          <Select
+            value={selectedMonth.toString()}
+            onValueChange={(value) => setSelectedMonth(Number(value))}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Month" />
+            </SelectTrigger>
+            <SelectContent>
+              {[
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+              ].map((month, index) => (
+                <SelectItem key={index} value={index.toString()}>
+                  {month}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-500 mb-1">
+            Year
+          </label>
+          <Select
+            value={selectedYear.toString()}
+            onValueChange={(value) => setSelectedYear(Number(value))}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Year" />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from(
+                { length: 10 },
+                (_, i) => new Date().getFullYear() - i
+              ).map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Dashboard Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">
@@ -333,14 +444,14 @@ const CustomersPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">
-              New Customers
+              New Customers (Current Month)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {customerStats.newCustomers}
             </div>
-            <p className="text-xs text-gray-500">Last 30 days</p>
+            <p className="text-xs text-gray-500">Current Month</p>
           </CardContent>
         </Card>
 
@@ -358,6 +469,52 @@ const CustomersPage = () => {
         </Card>
       </div>
 
+      {/* Card for Historical New Customers */}
+      <div className="mb-6 grid grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">
+              New Customers (Selected Month)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {newCustomersForSelectedMonth}
+            </div>
+            <p className="text-xs text-gray-500">
+              {new Date(selectedYear, selectedMonth).toLocaleString("default", {
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Yearly New Customers Section */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">
+              New Customers by Year {new Date().getFullYear()}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {Object.keys(customerStats.yearlyNewCustomers).length ? (
+              Object.entries(customerStats.yearlyNewCustomers)
+                .sort(([yearA], [yearB]) => Number(yearA) - Number(yearB))
+                .map(([year, count]) => (
+                  <div key={year} className="flex flex-col">
+                    <span className="text-2xl font-bold">{count}</span>
+                    <span className="text-xs text-gray-500">{year}</span>
+                  </div>
+                ))
+            ) : (
+              <div className="text-gray-500">No yearly data available</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Customers Table with Scrollable Container */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -376,7 +533,8 @@ const CustomersPage = () => {
             </div>
           </div>
 
-          <div className="border rounded-lg">
+          {/* Wrap the Table with a container that has overflow-auto and a fixed max height */}
+          <div className="border rounded-lg overflow-auto max-h-[500px]">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
