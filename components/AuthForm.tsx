@@ -203,6 +203,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
                                 placeholder="Enter your phone number"
                                 {...field}
                                 className="h-10 sm:h-11"
+                                maxLength={10}
                               />
                             </FormControl>
                             <FormMessage />
