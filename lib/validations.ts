@@ -11,7 +11,7 @@ export const authFormSchema = (formType: FormType) => {
       email: z.string().email(),
       phone:
         formType === "sign-up"
-          ? z.string().min(10).max(15)
+          ? z.string().min(10).max(10)
           : z.string().optional(),
       password:
         formType === "sign-up"
