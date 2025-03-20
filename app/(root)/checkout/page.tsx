@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,7 +8,6 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ShieldCheck } from "lucide-react";
 import Loader from "@/components/Loader";
 import { toast } from "@/hooks/use-toast";
 import { cn, generateOrderId } from "@/lib/utils";
@@ -15,6 +15,7 @@ import { cn, generateOrderId } from "@/lib/utils";
 import { CheckoutData, IUser } from "@/types";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 import OrderConfirmationDialog from "@/components/OrderConfirmationDialog";
+import DiscountSection from "@/components/Discount";
 
 const CheckoutPage = () => {
   const router = useRouter();
@@ -23,6 +24,11 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountInfo, setDiscountInfo] = useState("");
+  const [loadingDiscount, setLoadingDiscount] = useState(false);
+  const [appliedDiscount, setAppliedDiscount] = useState(null);
 
   // Order confirmation dialog state
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
@@ -33,6 +39,78 @@ const CheckoutPage = () => {
 
   // Payment option state
   const [paymentOption, setPaymentOption] = useState("cash-on-delivery");
+
+  const handleApplyDiscount = async () => {
+    if (!discountCode) return;
+
+    setLoadingDiscount(true);
+    try {
+      // Call API to validate discount code
+      const response = await fetch(`/api/discounts/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: discountCode,
+          items: checkoutData?.items, // Send items to check category eligibility
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success && checkoutData) {
+        // Apply discount to total
+        const newTotal = checkoutData.total - result.discountAmount;
+
+        setDiscountAmount(result.discountAmount);
+        setDiscountInfo(
+          `${result.message} - ₹${result.discountAmount.toLocaleString(
+            "en-IN"
+          )} off`
+        );
+        setAppliedDiscount(result.discount);
+
+        // Update checkout data with discount
+        const updatedCheckoutData = {
+          ...checkoutData,
+          discountAmount: result.discountAmount,
+          discountCode: discountCode,
+          total: newTotal,
+        };
+
+        setCheckoutData(updatedCheckoutData);
+        sessionStorage.setItem(
+          "checkoutData",
+          JSON.stringify(updatedCheckoutData)
+        );
+
+        toast({
+          title: "Success",
+          description: result.message,
+          className: "bg-green-500 text-white",
+        });
+      } else {
+        setDiscountInfo("");
+        setDiscountAmount(0);
+        setAppliedDiscount(null);
+
+        toast({
+          title: "Invalid Code",
+          description:
+            result.message || "This discount code is invalid or expired",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error applying discount:", error);
+      toast({
+        title: "Error",
+        description: "Failed to apply discount code",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingDiscount(false);
+    }
+  };
 
   const confirmOrder = () => {
     if (!selectedAddress) {
@@ -55,6 +133,8 @@ const CheckoutPage = () => {
       items: checkoutData?.items,
       subtotal: checkoutData?.subtotal,
       deliveryCharges: checkoutData?.deliveryCharges,
+      discountAmount: checkoutData?.discountAmount || 0,
+      discountCode: checkoutData?.discountCode || "",
       total: checkoutData?.total,
       addressId: selectedAddress,
       paymentOption,
@@ -570,6 +650,35 @@ const CheckoutPage = () => {
                 </div>
               )}
             </div>
+            <div className="bg-white rounded-md overflow-hidden">
+              <div
+                className={cn(
+                  "flex justify-between items-center p-4 cursor-pointer",
+                  expandedSection === "discount" ? "bg-red-600 text-white" : ""
+                )}
+                onClick={() => toggleSection("discount")}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="flex justify-center items-center h-6 w-6 rounded-full border text-sm">
+                    5
+                  </span>
+                  <h2 className="font-semibold">DISCOUNT CODE</h2>
+                </div>
+              </div>
+
+              {expandedSection === "discount" && (
+                <div className="p-4">
+                  <DiscountSection
+                    onApplyDiscount={handleApplyDiscount}
+                    discountCode={discountCode}
+                    setDiscountCode={setDiscountCode}
+                    discountAmount={discountAmount}
+                    discountInfo={discountInfo}
+                    loadingDiscount={loadingDiscount}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Price Details */}
@@ -591,6 +700,15 @@ const CheckoutPage = () => {
                     <span className="text-green-500">Free</span>
                   )}
                 </div>
+
+                {/* Add discount info to price breakdown */}
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount</span>
+                    <span>- ₹{discountAmount.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
+
                 <div className="border-t pt-3 mt-3">
                   <div className="flex justify-between font-bold">
                     <span>Total</span>
@@ -607,13 +725,7 @@ const CheckoutPage = () => {
                 {submitting ? "Processing..." : "Confirm order"}
               </Button>
 
-              <div className="flex items-center justify-center gap-2 mt-4">
-                <ShieldCheck className="h-5 w-5 text-gray-500" />
-                <p className="text-xs text-gray-500">
-                  Safe and Secure Payments. Easy returns. 100% Authentic
-                  products.
-                </p>
-              </div>
+              {/* Rest of your component remains the same */}
             </div>
           </div>
         </div>

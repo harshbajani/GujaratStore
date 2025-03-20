@@ -220,3 +220,31 @@ export const productSchema = z.object({
   metaKeywords: z.string().optional(),
   metaDescription: z.string().optional(),
 });
+
+// Define the form schema with Zod
+export const discountFormSchema = z.object({
+  name: z.string().min(2, {
+    message: "Name must be at least 2 characters.",
+  }),
+  description: z.string().optional(),
+  discountType: z.enum(["percentage", "amount"], {
+    required_error: "Please select a discount type.",
+  }),
+  discountValue: z.coerce.number().positive({
+    message: "Discount value must be positive.",
+  }),
+  targetType: z.enum(["category", "referral"], {
+    required_error: "Please select a target type.",
+  }),
+  parentCategoryId: z.string({
+    required_error: "Please select a parent category.",
+  }),
+  referralCode: z.string().optional(),
+  startDate: z.string().min(1, {
+    message: "Please select a start date.",
+  }),
+  endDate: z.string().min(1, {
+    message: "Please select an end date.",
+  }),
+  isActive: z.boolean().default(true),
+});

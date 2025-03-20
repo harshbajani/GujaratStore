@@ -137,6 +137,8 @@ const CartPage = () => {
       subtotal,
       deliveryCharges,
       total,
+      discountAmount: 0,
+      discountCode: "",
     };
 
     sessionStorage.setItem("checkoutData", JSON.stringify(checkoutData));

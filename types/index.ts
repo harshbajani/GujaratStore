@@ -402,6 +402,8 @@ export interface CheckoutData {
   items: CheckoutItem[];
   subtotal: number;
   deliveryCharges: number;
+  discountAmount: number;
+  discountCode: string;
   total: number;
 }
 
@@ -429,4 +431,44 @@ export interface IOrder {
   createdAt: string;
   updatedAt: string;
   __v: number;
+}
+
+// Define discount types
+enum DiscountType {
+  PERCENTAGE = "percentage",
+  AMOUNT = "amount",
+}
+
+// Define discount target types
+enum DiscountTargetType {
+  CATEGORY = "category",
+  REFERRAL = "referral",
+}
+// Interface for parent category
+export interface IParentCategory {
+  id: string;
+  _id: string;
+  name: string;
+  isActive: boolean;
+}
+
+// Interface for discount
+export interface IDiscount {
+  _id: string;
+  name: string;
+  description?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  targetType: DiscountTargetType;
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  referralCode?: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
