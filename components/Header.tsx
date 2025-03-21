@@ -3,7 +3,7 @@ import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { LogOut, Menu, Search, ShoppingCart, User } from "lucide-react";
+import { LogOut, Menu, Search, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -21,11 +21,12 @@ import {
 import { NavLinks, UserNavLinks } from "@/constants";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { signOut as nextAuthSignOut } from "next-auth/react";
+import { signOut as nextAuthSignOut, useSession } from "next-auth/react";
 import { signOut as serverSignOut } from "@/lib/actions/auth.actions";
 import { useRouter } from "next/navigation";
 import SearchDropdown from "./SearchDropdown";
 import { useCart } from "@/hooks/useCart";
+import { Avatar, AvatarFallback } from "./ui/avatar";
 
 // Define the search result type
 type SearchResult = {
@@ -48,12 +49,14 @@ const Header = () => {
   const sheetContentRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { isAuthenticated, isLoading } = useAuth(false);
+  const { isLoading } = useAuth(false);
+  const { data: session, status } = useSession();
   const { cartItems } = useCart();
   const router = useRouter();
   const { toast } = useToast();
 
   const cartItemsCount = cartItems?.length || 0;
+  const isAuthenticated = status === "authenticated";
 
   // * Search function with debouncing
   const handleSearch = (query: string) => {
@@ -148,6 +151,30 @@ const Header = () => {
     }
   };
 
+  // Add loading state UI
+  const renderAuthButtons = () => {
+    if (!isAuthenticated) {
+      return (
+        <div className="space-x-4">
+          <Button
+            variant="ghost"
+            className="border border-white text-white rounded hover:bg-white/20 hover:text-white"
+            asChild
+          >
+            <Link href="/sign-in">Login</Link>
+          </Button>
+          <Button
+            variant="secondary"
+            className="bg-white text-brand hover:bg-white/90"
+            asChild
+          >
+            <Link href="/sign-up">Sign Up</Link>
+          </Button>
+        </div>
+      );
+    }
+  };
+
   return (
     <nav className="fixed top-0 w-full z-50">
       <div className="bg-brand">
@@ -182,24 +209,7 @@ const Header = () => {
                 />
               )}
             </div>
-            {!isLoading && !isAuthenticated && (
-              <div className="space-x-4">
-                <Button
-                  variant="ghost"
-                  className="border border-white text-white rounded hover:bg-white/20 hover:text-white"
-                  asChild
-                >
-                  <Link href="/sign-in">Login</Link>
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="bg-white text-brand hover:bg-white/90"
-                  asChild
-                >
-                  <Link href="/sign-up">Sign Up</Link>
-                </Button>
-              </div>
-            )}
+            {renderAuthButtons()}
           </div>
           <div className="flex items-center space-x-4">
             <Button
@@ -228,7 +238,11 @@ const Header = () => {
                       variant="ghost"
                       className="relative h-10 w-10 rounded-full hover:bg-white/20"
                     >
-                      <User className="h-5 w-5 text-white" />
+                      <Avatar className="border border-brand">
+                        <AvatarFallback className="bg-white text-brand text-lg">
+                          {session?.user?.name?.[0] ?? "U"}
+                        </AvatarFallback>
+                      </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="center">
@@ -242,14 +256,15 @@ const Header = () => {
                         <span>{link.label}</span>
                       </DropdownMenuItem>
                     ))}
+                    <DropdownMenuItem
+                      onClick={handleSignOut}
+                      className="ml-0.5"
+                    >
+                      <LogOut />
+                      Sign Out
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button
-                  className="bg-white text-brand hover:bg-white hover:text-brand-200"
-                  onClick={handleSignOut}
-                >
-                  Sign Out
-                </Button>
               </>
             )}
           </div>
@@ -323,40 +338,7 @@ const Header = () => {
                   ))}
                 </div>
               </div>
-              {!isLoading && !isAuthenticated ? (
-                <div className="px-4 py-3 flex space-x-2">
-                  <Button
-                    variant="ghost"
-                    className="flex-1 border border-brand text-brand hover:bg-brand hover:text-white"
-                    asChild
-                  >
-                    <Link href="/sign-in" onClick={() => setOpen(false)}>
-                      Login
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="default"
-                    className="flex-1 bg-brand hover:bg-brand-300 text-white"
-                    asChild
-                  >
-                    <Link href="/sign-up" onClick={() => setOpen(false)}>
-                      Sign Up
-                    </Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="px-4 py-3">
-                  <Button
-                    className="w-full bg-brand text-white hover:bg-brand-300"
-                    onClick={() => {
-                      setOpen(false);
-                      handleSignOut();
-                    }}
-                  >
-                    Sign Out
-                  </Button>
-                </div>
-              )}
+              <div className="px-4 py-3">{renderAuthButtons()}</div>
             </SheetContent>
           </Sheet>
           <div className="flex items-center space-x-4">
@@ -383,7 +365,11 @@ const Header = () => {
                     variant="ghost"
                     className="relative h-10 w-10 rounded-full hover:bg-white/20"
                   >
-                    <User className="h-5 w-5 text-white" />
+                    <Avatar className="border border-brand">
+                      <AvatarFallback className="bg-white text-brand">
+                        {session?.user?.name?.[0] ?? "U"}
+                      </AvatarFallback>
+                    </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
