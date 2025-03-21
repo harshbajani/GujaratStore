@@ -70,6 +70,8 @@ const orderSchema = new Schema(
       type: Number,
       required: true,
     },
+    discountAmount: { type: Number, default: 0 },
+    discountCode: { type: String },
     total: {
       type: Number,
       required: true,

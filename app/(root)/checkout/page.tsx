@@ -7,7 +7,6 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ShieldCheck } from "lucide-react";
 import Loader from "@/components/Loader";
 import { toast } from "@/hooks/use-toast";
 import { cn, generateOrderId } from "@/lib/utils";
@@ -15,6 +14,7 @@ import { cn, generateOrderId } from "@/lib/utils";
 import { CheckoutData, IUser } from "@/types";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 import OrderConfirmationDialog from "@/components/OrderConfirmationDialog";
+import DiscountSection from "@/components/Discount";
 
 const CheckoutPage = () => {
   const router = useRouter();
@@ -23,87 +23,18 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
-
-  // Order confirmation dialog state
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountInfo, setDiscountInfo] = useState("");
+  const [loadingDiscount, setLoadingDiscount] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [paymentOption, setPaymentOption] = useState("cash-on-delivery");
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [confirmedOrderId, setConfirmedOrderId] = useState("");
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState<string>("");
+  const [originalTotal, setOriginalTotal] = useState<number>(0);
 
-  // Section expansion states
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
-
-  // Payment option state
-  const [paymentOption, setPaymentOption] = useState("cash-on-delivery");
-
-  const confirmOrder = () => {
-    if (!selectedAddress) {
-      toast({
-        title: "Error",
-        description: "Please select a delivery address",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setSubmitting(true);
-    const orderId = generateOrderId();
-    const orderStatus = "confirmed";
-
-    const orderPayload = {
-      orderId,
-      status: orderStatus,
-      userId: userData?._id,
-      items: checkoutData?.items,
-      subtotal: checkoutData?.subtotal,
-      deliveryCharges: checkoutData?.deliveryCharges,
-      total: checkoutData?.total,
-      addressId: selectedAddress,
-      paymentOption,
-    };
-
-    fetch("/api/order", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(orderPayload),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success) {
-          // Clear checkout data from session storage
-          sessionStorage.removeItem("checkoutData");
-
-          // Set the confirmed order ID and open the confirmation dialog
-          setConfirmedOrderId(orderId);
-          setIsConfirmationOpen(true);
-
-          toast({
-            title: "Success",
-            description: "Order Confirmed",
-            className: "bg-green-500 text-white",
-          });
-        } else {
-          console.error("Error creating order", data.error);
-          toast({
-            title: "Error",
-            description: data.error || "Failed to confirm order",
-            variant: "destructive",
-          });
-        }
-      })
-      .catch((error) => {
-        console.error("Error processing order:", error);
-        toast({
-          title: "Error",
-          description: "Something went wrong. Please try again.",
-          variant: "destructive",
-        });
-      })
-      .finally(() => {
-        setSubmitting(false);
-      });
-  };
-
+  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -141,92 +72,221 @@ const CheckoutPage = () => {
     fetchData();
   }, [router]);
 
+  useEffect(() => {
+    if (checkoutData) {
+      setOriginalTotal(checkoutData.total);
+    }
+  }, [checkoutData]);
+
+  // Utility functions
   const toggleSection = (section: string) => {
-    if (expandedSection === section) {
-      setExpandedSection(null);
-    } else {
-      setExpandedSection(section);
+    setExpandedSection(expandedSection === section ? null : section);
+  };
+
+  // Apply discount code
+  const handleApplyDiscount = async () => {
+    if (!discountCode || !checkoutData) return;
+
+    // Prevent applying same discount code again
+    if (discountCode === appliedDiscountCode) {
+      toast({
+        title: "Warning",
+        description: "This discount code is already applied",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoadingDiscount(true);
+    try {
+      const response = await fetch(`/api/discounts/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: discountCode,
+          items: checkoutData.items,
+          userId: userData?._id, // Add user ID to track usage
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Reset to original total before applying new discount
+        const baseTotal = appliedDiscountCode
+          ? originalTotal
+          : checkoutData.total;
+        const newTotal = baseTotal - result.discountAmount;
+
+        setDiscountAmount(result.discountAmount);
+        setDiscountInfo(result.message);
+        setAppliedDiscountCode(discountCode);
+
+        // Update checkout data with new discount
+        const updatedCheckoutData = {
+          ...checkoutData,
+          discountAmount: result.discountAmount,
+          discountCode: discountCode,
+          total: newTotal,
+        };
+
+        setCheckoutData(updatedCheckoutData);
+        sessionStorage.setItem(
+          "checkoutData",
+          JSON.stringify(updatedCheckoutData)
+        );
+
+        toast({
+          title: "Success",
+          description: result.message,
+          className: "bg-green-500 text-white",
+        });
+      } else {
+        setDiscountInfo("");
+        setDiscountAmount(0);
+
+        toast({
+          title: "Invalid Code",
+          description:
+            result.message || "This discount code is invalid or expired",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error applying discount:", error);
+      toast({
+        title: "Error",
+        description: "Failed to apply discount code",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingDiscount(false);
     }
   };
 
-  // Function to update item quantity in checkout
+  // Confirm order
+  const confirmOrder = () => {
+    if (!selectedAddress || !checkoutData || !userData) {
+      toast({
+        title: "Error",
+        description: "Please select a delivery address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    const orderId = generateOrderId();
+
+    const orderPayload = {
+      orderId,
+      status: "confirmed",
+      userId: userData._id,
+      items: checkoutData.items,
+      subtotal: checkoutData.subtotal,
+      deliveryCharges: checkoutData.deliveryCharges,
+      discountAmount: checkoutData.discountAmount || 0,
+      discountCode: checkoutData.discountCode || "",
+      total: checkoutData.total,
+      addressId: selectedAddress,
+      paymentOption,
+    };
+
+    fetch("/api/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderPayload),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          sessionStorage.removeItem("checkoutData");
+          setConfirmedOrderId(orderId);
+          setIsConfirmationOpen(true);
+
+          toast({
+            title: "Success",
+            description: "Order Confirmed",
+            className: "bg-green-500 text-white",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: data.error || "Failed to confirm order",
+            variant: "destructive",
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Error processing order:", error);
+        toast({
+          title: "Error",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
+  };
+
+  // Item management functions
   const updateQuantity = (productId: string, newQuantity: number) => {
-    if (!checkoutData) return;
+    if (!checkoutData || newQuantity < 1) return;
 
-    // Ensure quantity doesn't go below 1
-    if (newQuantity < 1) return;
-
-    // Update the quantity in the checkout data
     const updatedItems = checkoutData.items.map((item) =>
       item.productId === productId ? { ...item, quantity: newQuantity } : item
     );
 
-    // Recalculate totals
     const subtotal = updatedItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
 
-    // Update checkout data with new values
-    const updatedCheckoutData = {
+    updateCheckoutData({
       ...checkoutData,
       items: updatedItems,
       subtotal,
-      total: subtotal + checkoutData.deliveryCharges,
-    };
-
-    // Update state and session storage
-    setCheckoutData(updatedCheckoutData);
-    sessionStorage.setItem("checkoutData", JSON.stringify(updatedCheckoutData));
+      total:
+        subtotal +
+        checkoutData.deliveryCharges -
+        (checkoutData.discountAmount || 0),
+    });
   };
 
-  // Function to remove item from checkout
   const removeItem = (productId: string) => {
     if (!checkoutData) return;
 
-    // Filter out the removed item
     const updatedItems = checkoutData.items.filter(
       (item) => item.productId !== productId
     );
 
-    // If no items left, return to cart
     if (updatedItems.length === 0) {
       router.push("/cart");
       return;
     }
 
-    // Recalculate totals
     const subtotal = updatedItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
 
-    // Calculate delivery charges (keep existing logic)
-    const deliveryCharges = updatedItems.reduce(
-      (sum) => sum + 0, // Replace with your delivery charge logic if needed
-      checkoutData.deliveryCharges
-    );
-
-    // Update checkout data
-    const updatedCheckoutData = {
+    updateCheckoutData({
       ...checkoutData,
       items: updatedItems,
       subtotal,
-      deliveryCharges,
-      total: subtotal + deliveryCharges,
-    };
+      total:
+        subtotal +
+        checkoutData.deliveryCharges -
+        (checkoutData.discountAmount || 0),
+    });
 
-    // Update state and session storage
-    setCheckoutData(updatedCheckoutData);
-    sessionStorage.setItem("checkoutData", JSON.stringify(updatedCheckoutData));
-
-    // Show success toast
     toast({
       title: "Item removed",
       description: "Item has been removed from your order",
     });
 
-    // Also remove from cart in the backend
+    // Remove from backend cart
     fetch("/api/user/cart", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -234,52 +294,63 @@ const CheckoutPage = () => {
     });
   };
 
+  // Helper function to update checkout data
+  const updateCheckoutData = (newData: CheckoutData) => {
+    setCheckoutData(newData);
+    sessionStorage.setItem("checkoutData", JSON.stringify(newData));
+  };
+
   if (loading) return <Loader />;
   if (!checkoutData || !userData) return null;
 
+  // Render UI components
+  const renderSectionHeader = (
+    id: string,
+    title: string,
+    index: number,
+    showItems = false
+  ) => (
+    <div
+      className={cn(
+        "flex justify-between items-center p-4 cursor-pointer",
+        expandedSection === id ? "bg-red-600 text-white" : ""
+      )}
+      onClick={() => toggleSection(id)}
+    >
+      <div className="flex items-center gap-2">
+        <span className="flex justify-center items-center h-6 w-6 rounded-full border text-sm">
+          {index}
+        </span>
+        <h2 className="font-semibold">{title}</h2>
+        {showItems && (
+          <span className="text-sm">({checkoutData.items.length} items)</span>
+        )}
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className={expandedSection === id ? "bg-white text-black" : ""}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleSection(id);
+        }}
+      >
+        CHANGE
+      </Button>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <BreadcrumbHeader title="Home" subtitle="Checkout" titleHref="/" />
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Checkout Details */}
+          {/* Left Column - Checkout Details */}
           <div className="lg:col-span-2 space-y-4">
             {/* Delivery To */}
             <div className="bg-white rounded-md overflow-hidden">
-              <div
-                className={cn(
-                  "flex justify-between items-center p-4 cursor-pointer",
-                  expandedSection === "deliveryTo"
-                    ? "bg-red-600 text-white"
-                    : ""
-                )}
-                onClick={() => toggleSection("deliveryTo")}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="flex justify-center items-center h-6 w-6 rounded-full border text-sm">
-                    1
-                  </span>
-                  <h2 className="font-semibold">DELIVERY TO</h2>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={
-                    expandedSection === "deliveryTo"
-                      ? "bg-white text-black"
-                      : ""
-                  }
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleSection("deliveryTo");
-                  }}
-                >
-                  CHANGE
-                </Button>
-              </div>
-
+              {renderSectionHeader("deliveryTo", "DELIVERY TO", 1)}
               {expandedSection === "deliveryTo" && (
                 <div className="p-4">
                   <p className="font-medium">{userData.name}</p>
@@ -290,37 +361,7 @@ const CheckoutPage = () => {
 
             {/* Delivery Address */}
             <div className="bg-white rounded-md overflow-hidden">
-              <div
-                className={cn(
-                  "flex justify-between items-center p-4 cursor-pointer",
-                  expandedSection === "deliveryAddress"
-                    ? "bg-red-600 text-white"
-                    : ""
-                )}
-                onClick={() => toggleSection("deliveryAddress")}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="flex justify-center items-center h-6 w-6 rounded-full border text-sm">
-                    2
-                  </span>
-                  <h2 className="font-semibold">DELIVERY ADDRESS</h2>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={
-                    expandedSection === "deliveryAddress"
-                      ? "bg-white text-black"
-                      : ""
-                  }
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleSection("deliveryAddress");
-                  }}
-                >
-                  CHANGE
-                </Button>
-              </div>
+              {renderSectionHeader("deliveryAddress", "DELIVERY ADDRESS", 2)}
 
               {expandedSection === "deliveryAddress" ? (
                 <div className="p-4">
@@ -376,22 +417,17 @@ const CheckoutPage = () => {
                     userData.addresses.find((a) => a._id === selectedAddress)
                       ?.address_line_1
                   }
-                  ,
-                  {
-                    userData.addresses.find((a) => a._id === selectedAddress)
-                      ?.address_line_2
-                  }
-                  ,
+                  ,{" "}
                   {
                     userData.addresses.find((a) => a._id === selectedAddress)
                       ?.locality
                   }
-                  ,
+                  ,{" "}
                   {
                     userData.addresses.find((a) => a._id === selectedAddress)
                       ?.state
                   }{" "}
-                  -
+                  -{" "}
                   {
                     userData.addresses.find((a) => a._id === selectedAddress)
                       ?.pincode
@@ -402,40 +438,7 @@ const CheckoutPage = () => {
 
             {/* Order Summary */}
             <div className="bg-white rounded-md overflow-hidden">
-              <div
-                className={cn(
-                  "flex justify-between items-center p-4 cursor-pointer",
-                  expandedSection === "orderSummary"
-                    ? "bg-red-600 text-white"
-                    : ""
-                )}
-                onClick={() => toggleSection("orderSummary")}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="flex justify-center items-center h-6 w-6 rounded-full border text-sm">
-                    3
-                  </span>
-                  <h2 className="font-semibold">ORDER SUMMARY</h2>
-                  <span className="text-sm">
-                    ({checkoutData.items.length} items)
-                  </span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={
-                    expandedSection === "orderSummary"
-                      ? "bg-white text-black"
-                      : ""
-                  }
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleSection("orderSummary");
-                  }}
-                >
-                  CHANGE
-                </Button>
-              </div>
+              {renderSectionHeader("orderSummary", "ORDER SUMMARY", 3, true)}
 
               {expandedSection === "orderSummary" && (
                 <div className="p-4 space-y-4">
@@ -454,7 +457,6 @@ const CheckoutPage = () => {
                       <div className="flex-1">
                         <h3 className="font-semibold">{item.productName}</h3>
                         <div className="text-sm text-gray-600 mt-1">
-                          <p>Color: Dark Grey</p>
                           {item.selectedSize && (
                             <p>Size: {item.selectedSize}</p>
                           )}
@@ -512,7 +514,7 @@ const CheckoutPage = () => {
             <div className="bg-white rounded-md overflow-hidden">
               <div
                 className={cn(
-                  "flex justify-between items-center p-4 cursor-pointer",
+                  "flex items-center p-4 cursor-pointer",
                   expandedSection === "paymentOptions"
                     ? "bg-red-600 text-white"
                     : ""
@@ -536,6 +538,16 @@ const CheckoutPage = () => {
                   >
                     <div className="flex items-center space-x-2 p-2 border rounded-md">
                       <RadioGroupItem
+                        value="cash-on-delivery"
+                        id="cash-on-delivery"
+                        className="text-red-600 border-red-600"
+                      />
+                      <Label htmlFor="cash-on-delivery">
+                        Cash on Delivery (COD)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-2 border rounded-md">
+                      <RadioGroupItem
                         value="google-pay"
                         id="google-pay"
                         className="text-red-600 border-red-600"
@@ -543,16 +555,6 @@ const CheckoutPage = () => {
                       />
                       <Label htmlFor="google-pay">
                         Google Pay (coming soon)
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 p-2 border rounded-md">
-                      <RadioGroupItem
-                        value="cash-on-delivery"
-                        id="cash-on-delivery"
-                        className="text-red-600 border-red-600"
-                      />
-                      <Label htmlFor="cash-on-delivery">
-                        Cash on Delivery (COD)
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2 p-2 border rounded-md">
@@ -570,9 +572,40 @@ const CheckoutPage = () => {
                 </div>
               )}
             </div>
+
+            {/* Discount Code */}
+            <div className="bg-white rounded-md overflow-hidden">
+              <div
+                className={cn(
+                  "flex items-center p-4 cursor-pointer",
+                  expandedSection === "discount" ? "bg-red-600 text-white" : ""
+                )}
+                onClick={() => toggleSection("discount")}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="flex justify-center items-center h-6 w-6 rounded-full border text-sm">
+                    5
+                  </span>
+                  <h2 className="font-semibold">DISCOUNT CODE</h2>
+                </div>
+              </div>
+
+              {expandedSection === "discount" && (
+                <div className="p-4">
+                  <DiscountSection
+                    onApplyDiscount={handleApplyDiscount}
+                    discountCode={discountCode}
+                    setDiscountCode={setDiscountCode}
+                    discountAmount={discountAmount}
+                    discountInfo={discountInfo}
+                    loadingDiscount={loadingDiscount}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Price Details */}
+          {/* Right Column - Price Details */}
           <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-md shadow-sm sticky top-4">
               <h2 className="text-xl font-bold mb-4">PRICE DETAILS</h2>
@@ -591,6 +624,14 @@ const CheckoutPage = () => {
                     <span className="text-green-500">Free</span>
                   )}
                 </div>
+
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount</span>
+                    <span>- ₹{discountAmount.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
+
                 <div className="border-t pt-3 mt-3">
                   <div className="flex justify-between font-bold">
                     <span>Total</span>
@@ -606,14 +647,6 @@ const CheckoutPage = () => {
               >
                 {submitting ? "Processing..." : "Confirm order"}
               </Button>
-
-              <div className="flex items-center justify-center gap-2 mt-4">
-                <ShieldCheck className="h-5 w-5 text-gray-500" />
-                <p className="text-xs text-gray-500">
-                  Safe and Secure Payments. Easy returns. 100% Authentic
-                  products.
-                </p>
-              </div>
             </div>
           </div>
         </div>
