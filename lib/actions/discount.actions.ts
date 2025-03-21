@@ -7,24 +7,7 @@ import Discount, {
   DiscountTargetType,
 } from "../models/discount.model";
 import ParentCategory from "../models/parentCategory.model";
-
-export interface IDiscount {
-  id: string;
-  _id: string;
-  name: string;
-  description?: string;
-  discountType: DiscountType;
-  discountValue: number;
-  targetType: DiscountTargetType;
-  parentCategory: { _id: string; name: string; isActive: boolean };
-  referralCode?: string;
-  startDate: Date;
-  endDate: Date;
-  isActive: boolean;
-  createdBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { IDiscount } from "@/types";
 
 // Helper function to serialize MongoDB documents
 const serializeDocument = (
@@ -49,7 +32,6 @@ const serializeDocument = (
             isActive: serialized.parentCategory.isActive,
           }
         : serialized.parentCategory,
-    referralCode: serialized.referralCode,
     startDate: serialized.startDate,
     endDate: serialized.endDate,
     isActive: serialized.isActive,
@@ -70,9 +52,7 @@ export async function createDiscount(data: {
   description?: string;
   discountType: DiscountType;
   discountValue: number;
-  targetType: DiscountTargetType;
   parentCategoryId: string;
-  referralCode?: string;
   startDate: Date;
   endDate: Date;
   isActive: boolean;
@@ -95,39 +75,14 @@ export async function createDiscount(data: {
       };
     }
 
-    // Validate referral code is provided if targetType is REFERRAL
-    if (data.targetType === DiscountTargetType.REFERRAL && !data.referralCode) {
-      return {
-        success: false,
-        error: "Referral code is required for referral discounts",
-      };
-    }
-
-    // Check if referral code already exists (if provided)
-    if (data.referralCode) {
-      const existingDiscount = await Discount.findOne({
-        referralCode: data.referralCode,
-        isActive: true,
-        endDate: { $gt: new Date() },
-      });
-
-      if (existingDiscount) {
-        return {
-          success: false,
-          error: "This referral code is already in use",
-        };
-      }
-    }
-
     // Create discount
     const discount = await Discount.create({
       name: data.name,
       description: data.description,
       discountType: data.discountType,
       discountValue: data.discountValue,
-      targetType: data.targetType,
+      targetType: DiscountTargetType.CATEGORY,
       parentCategory: data.parentCategoryId,
-      referralCode: data.referralCode,
       startDate: data.startDate,
       endDate: data.endDate,
       isActive: data.isActive,
@@ -213,9 +168,7 @@ export async function updateDiscount(
     description?: string;
     discountType?: DiscountType;
     discountValue?: number;
-    targetType?: DiscountTargetType;
     parentCategoryId?: string;
-    referralCode?: string;
     startDate?: Date;
     endDate?: Date;
     isActive?: boolean;
@@ -254,26 +207,6 @@ export async function updateDiscount(
         return {
           success: false,
           error: "Parent category not found",
-        };
-      }
-    }
-
-    // Check referral code uniqueness if changed
-    if (
-      data.referralCode &&
-      data.referralCode !== existingDiscount.referralCode
-    ) {
-      const duplicateCode = await Discount.findOne({
-        referralCode: data.referralCode,
-        _id: { $ne: id },
-        isActive: true,
-        endDate: { $gt: new Date() },
-      });
-
-      if (duplicateCode) {
-        return {
-          success: false,
-          error: "This referral code is already in use",
         };
       }
     }
@@ -365,66 +298,48 @@ export function calculateDiscountedPrice(
   }
 }
 
-// Function to check if a referral code is valid and get its discount
-export async function validateReferralCode(
-  referralCode: string,
-  parentCategoryId?: string
-): Promise<{
-  isValid: boolean;
-  discount?: {
+// Get active discounts for a specific category
+export async function getCategoryDiscounts(categoryId: string): Promise<{
+  success: boolean;
+  discounts?: Array<{
+    id: string;
+    name: string;
     discountType: DiscountType;
     discountValue: number;
-    parentCategory: string;
-  };
+  }>;
   error?: string;
 }> {
   try {
-    const query: any = {
-      referralCode,
-      targetType: DiscountTargetType.REFERRAL,
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return {
+        success: false,
+        error: "Invalid category ID",
+      };
+    }
+
+    const now = new Date();
+    const discounts = await Discount.find({
+      parentCategory: categoryId,
+      targetType: DiscountTargetType.CATEGORY,
       isActive: true,
-      startDate: { $lte: new Date() },
-      endDate: { $gt: new Date() },
-    };
-
-    // If parent category is specified, add it to the query
-    if (parentCategoryId) {
-      query.parentCategory = parentCategoryId;
-    }
-
-    const discount = await Discount.findOne(query).populate({
-      path: "parentCategory",
-      select: "name isActive",
-    });
-
-    if (!discount) {
-      return {
-        isValid: false,
-        error: "Invalid or expired referral code",
-      };
-    }
-
-    // Check if the parent category is active
-    if (!discount.parentCategory.isActive) {
-      return {
-        isValid: false,
-        error: "This discount is currently unavailable",
-      };
-    }
+      startDate: { $lte: now },
+      endDate: { $gt: now },
+    }).sort({ discountValue: -1 });
 
     return {
-      isValid: true,
-      discount: {
-        discountType: discount.discountType,
-        discountValue: discount.discountValue,
-        parentCategory: discount.parentCategory._id.toString(),
-      },
+      success: true,
+      discounts: discounts.map((d) => ({
+        id: d._id.toString(),
+        name: d.name,
+        discountType: d.discountType,
+        discountValue: d.discountValue,
+      })),
     };
   } catch (error) {
-    console.error("Validate referral code error:", error);
+    console.error("Get category discounts error:", error);
     return {
-      isValid: false,
-      error: "Failed to validate referral code",
+      success: false,
+      error: "Failed to fetch category discounts",
     };
   }
 }

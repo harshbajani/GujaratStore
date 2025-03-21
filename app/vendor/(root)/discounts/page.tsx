@@ -46,15 +46,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format } from "date-fns";
 import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { toast } from "@/hooks/use-toast";
-import { discountFormSchema } from "@/lib/validations";
 import { IDiscount, IParentCategory } from "@/types";
+import Loader from "@/components/Loader";
+import { discountFormSchema } from "@/lib/validations";
 
 const DiscountsPage = () => {
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
@@ -67,7 +67,6 @@ const DiscountsPage = () => {
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("category");
   const [searchTerm, setSearchTerm] = useState("");
 
   // Initialize form
@@ -78,7 +77,6 @@ const DiscountsPage = () => {
       description: "",
       discountType: "percentage",
       discountValue: 0,
-      targetType: "category",
       parentCategoryId: "",
       startDate: format(new Date(), "yyyy-MM-dd"),
       endDate: format(
@@ -88,9 +86,6 @@ const DiscountsPage = () => {
       isActive: true,
     },
   });
-
-  // Watch target type to conditionally show referral code field
-  const targetType = form.watch("targetType");
 
   // Load parent categories and discounts
   useEffect(() => {
@@ -106,7 +101,12 @@ const DiscountsPage = () => {
         const discountsResponse = await fetch("/api/discounts");
         const discountsData = await discountsResponse.json();
         if (discountsData.success) {
-          setDiscounts(discountsData.data);
+          // Filter to only include category discounts
+          setDiscounts(
+            discountsData.data.filter(
+              (discount: IDiscount) => discount.targetType === "category"
+            )
+          );
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -132,9 +132,9 @@ const DiscountsPage = () => {
 
       const payload = {
         ...values,
-        // Transform parentCategoryId into parentCategory
+        discountValue: Number(values.discountValue),
+        targetType: "category",
         parentCategory: values.parentCategoryId,
-        // Remove the original parentCategoryId field so it doesn't confuse the API
         parentCategoryId: undefined,
         ...(editingDiscount && { _id: editingDiscount._id }),
       };
@@ -152,7 +152,12 @@ const DiscountsPage = () => {
         const discountsResponse = await fetch("/api/discounts");
         const discountsData = await discountsResponse.json();
         if (discountsData.success) {
-          setDiscounts(discountsData.data);
+          // Filter to only include category discounts
+          setDiscounts(
+            discountsData.data.filter(
+              (discount: IDiscount) => discount.targetType === "category"
+            )
+          );
         }
 
         toast({
@@ -189,9 +194,7 @@ const DiscountsPage = () => {
       description: discount.description || "",
       discountType: discount.discountType,
       discountValue: discount.discountValue,
-      targetType: discount.targetType,
       parentCategoryId: discount.parentCategory._id,
-      referralCode: discount.referralCode || "",
       startDate: new Date(discount.startDate).toISOString().split("T")[0],
       endDate: new Date(discount.endDate).toISOString().split("T")[0],
       isActive: discount.isActive,
@@ -233,20 +236,15 @@ const DiscountsPage = () => {
     }
   };
 
-  // Filter discounts based on search term and active tab
+  // Filter discounts based on search term
   const filteredDiscounts = discounts.filter((discount) => {
-    const matchesSearch =
+    return (
       searchTerm === "" ||
       discount.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       discount.parentCategory.name
         .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (discount.referralCode &&
-        discount.referralCode.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    const matchesTab = activeTab === "all" || discount.targetType === activeTab;
-
-    return matchesSearch && matchesTab;
+        .includes(searchTerm.toLowerCase())
+    );
   });
 
   return (
@@ -266,7 +264,6 @@ const DiscountsPage = () => {
                   description: "",
                   discountType: "percentage",
                   discountValue: 0,
-                  targetType: "category",
                   parentCategoryId: "",
                   startDate: format(new Date(), "yyyy-MM-dd"),
                   endDate: format(
@@ -276,6 +273,7 @@ const DiscountsPage = () => {
                   isActive: true,
                 });
               }}
+              className="primary-btn"
             >
               <Plus className="mr-2" /> Add Discount
             </Button>
@@ -288,7 +286,7 @@ const DiscountsPage = () => {
               <DialogDescription>
                 {editingDiscount
                   ? "Update the discount details below."
-                  : "Fill in the details for your new discount."}
+                  : "Fill in the details for your new category discount."}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -369,6 +367,11 @@ const DiscountsPage = () => {
                                 : "50"
                             }
                             {...field}
+                            // Add this onChange handler to convert string to number
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value))
+                            }
+                            value={field.value}
                           />
                         </FormControl>
                         <FormMessage />
@@ -378,10 +381,10 @@ const DiscountsPage = () => {
                 </div>
                 <FormField
                   control={form.control}
-                  name="targetType"
+                  name="parentCategoryId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Target Type</FormLabel>
+                      <FormLabel>Parent Category</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
@@ -389,73 +392,26 @@ const DiscountsPage = () => {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select target" />
+                            <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="category">Category</SelectItem>
-                          <SelectItem value="referral">
-                            Referral Code
-                          </SelectItem>
+                          {parentCategories.map((category) => (
+                            <SelectItem
+                              key={category._id}
+                              value={category._id}
+                              disabled={!category.isActive}
+                            >
+                              {category.name}{" "}
+                              {!category.isActive && "(Inactive)"}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                {targetType === "category" ? (
-                  <FormField
-                    control={form.control}
-                    name="parentCategoryId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Parent Category</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {parentCategories.map((category) => (
-                              <SelectItem
-                                key={category._id}
-                                value={category._id}
-                                disabled={!category.isActive}
-                              >
-                                {category.name}{" "}
-                                {!category.isActive && "(Inactive)"}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ) : (
-                  <FormField
-                    control={form.control}
-                    name="referralCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Referral Code</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="SUMMER2023"
-                            {...field}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -512,7 +468,11 @@ const DiscountsPage = () => {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="primary-btn"
+                  >
                     {isSubmitting
                       ? "Saving..."
                       : editingDiscount
@@ -529,7 +489,7 @@ const DiscountsPage = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Manage Discounts</CardTitle>
+            <CardTitle>Manage Category Discounts</CardTitle>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -541,25 +501,12 @@ const DiscountsPage = () => {
             </div>
           </div>
           <CardDescription>
-            Create and manage discounts for categories and referral codes.
+            Create and manage discounts for product categories.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs
-            defaultValue="category"
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="mb-4"
-          >
-            <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="category">Category Discounts</TabsTrigger>
-              <TabsTrigger value="referral">Referral Discounts</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
           {isLoading ? (
-            <div className="flex justify-center py-8">Loading discounts...</div>
+            <Loader />
           ) : filteredDiscounts.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">No discounts found.</p>
@@ -579,7 +526,7 @@ const DiscountsPage = () => {
                     <TableHead className="w-[250px]">Name</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Value</TableHead>
-                    <TableHead>Target</TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead>Valid Until</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -605,11 +552,7 @@ const DiscountsPage = () => {
                         {discount.discountValue}
                         {discount.discountType === "percentage" ? "%" : ""}
                       </TableCell>
-                      <TableCell>
-                        {discount.targetType === "category"
-                          ? discount.parentCategory.name
-                          : `Code: ${discount.referralCode}`}
-                      </TableCell>
+                      <TableCell>{discount.parentCategory.name}</TableCell>
                       <TableCell>
                         {new Date(discount.endDate).toLocaleDateString()}
                       </TableCell>

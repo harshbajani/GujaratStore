@@ -7,10 +7,9 @@ export enum DiscountType {
   AMOUNT = "amount",
 }
 
-// Define enum for discount target types
+// Define enum for discount target types - simplified to just CATEGORY
 export enum DiscountTargetType {
   CATEGORY = "category", // For applying discount on parent category
-  REFERRAL = "referral", // For referral-based discounts
 }
 
 const discountSchema = new Schema({
@@ -33,19 +32,12 @@ const discountSchema = new Schema({
   targetType: {
     type: String,
     enum: Object.values(DiscountTargetType),
-    required: true,
+    default: DiscountTargetType.CATEGORY,
   },
   parentCategory: {
     type: Schema.Types.ObjectId,
     ref: "ParentCategory",
     required: true,
-  },
-  referralCode: {
-    type: String,
-    // Only required if targetType is REFERRAL
-    required: function (this: any) {
-      return this.targetType === DiscountTargetType.REFERRAL;
-    },
   },
   startDate: {
     type: Date,
@@ -76,12 +68,10 @@ const discountSchema = new Schema({
 // Add indexes for frequently queried fields
 discountSchema.index({ parentCategory: 1 });
 discountSchema.index({ isActive: 1 });
-discountSchema.index({ referralCode: 1 });
 discountSchema.index({ startDate: 1, endDate: 1 });
 
 // Compound indexes
 discountSchema.index({ parentCategory: 1, isActive: 1 });
-discountSchema.index({ referralCode: 1, isActive: 1 });
 
 const Discount =
   mongoose.models.Discount || mongoose.model("Discount", discountSchema);

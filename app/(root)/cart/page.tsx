@@ -1,6 +1,7 @@
+// CartPage.jsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -8,91 +9,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckoutData, IProductResponse } from "@/types";
+import { CheckoutData } from "@/types";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import QuantitySelector from "@/components/ui/quantity-selector";
 import Loader from "@/components/Loader";
-import { removeFromCart } from "@/lib/actions/user.actions";
 import { useRouter } from "next/navigation";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
-
-interface CartItem extends IProductResponse {
-  cartQuantity: number; // Renamed from quantity to cartQuantity to avoid confusion
-}
+import { useCart } from "@/hooks/useCart";
 
 const CartPage = () => {
   const router = useRouter();
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const {
+    cartItems,
+    loading,
+    error,
+    subtotal,
+    deliveryCharges,
+    total,
+    formattedDeliveryDate,
+    updateQuantity,
+    removeFromCart,
+  } = useCart();
+
   const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>(
     {}
   );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Calculate cart totals including delivery charges
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.netPrice * item.cartQuantity,
-    0
-  );
-
-  const deliveryCharges = cartItems.reduce(
-    (sum, item) => sum + (item.deliveryCharges || 0),
-    0
-  );
-
-  const total = subtotal + deliveryCharges;
-
-  const updateQuantity = async (productId: string, newQuantity: number) => {
-    try {
-      if (newQuantity < 1) return;
-
-      // Find the current item
-      const currentItem = cartItems.find((item) => item._id === productId);
-      if (!currentItem) return;
-
-      // Check if requested quantity is available in inventory
-      if (newQuantity > currentItem.productQuantity) {
-        toast({
-          title: "Error",
-          description: `Only ${currentItem.productQuantity} items available in stock`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Update quantity in backend
-      const response = await fetch("/api/user/cart", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, quantity: newQuantity }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Update local state
-        setCartItems((prev) =>
-          prev.map((item) =>
-            item._id === productId
-              ? { ...item, cartQuantity: newQuantity }
-              : item
-          )
-        );
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (err) {
-      console.error("Error updating quantity:", err);
-      toast({
-        title: "Error",
-        description: "Failed to update quantity",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleSizeSelect = (productId: string, sizeId: string) => {
     setSelectedSizes((prev) => ({
@@ -127,7 +71,7 @@ const CartPage = () => {
         return {
           productId: item._id!,
           productName: item.productName,
-          selectedSize: selectedSize ? selectedSize.label : undefined, // Using label instead of ID
+          selectedSize: selectedSize ? selectedSize.label : undefined,
           quantity: item.cartQuantity,
           price: item.netPrice,
           coverImage: item.productCoverImage as string,
@@ -143,64 +87,6 @@ const CartPage = () => {
 
     sessionStorage.setItem("checkoutData", JSON.stringify(checkoutData));
     router.push("/checkout");
-  };
-
-  // Fetch cart items
-  useEffect(() => {
-    const fetchCartItems = async () => {
-      try {
-        const userResponse = await fetch("/api/user/current");
-        const userData = await userResponse.json();
-
-        if (!userData.success || !userData.data) {
-          setError("Please login to view cart");
-          return;
-        }
-
-        const cartProductIds = userData.data.cart || [];
-        const productPromises = cartProductIds.map((id: string) =>
-          fetch(`/api/products/${id}`).then((res) => res.json())
-        );
-
-        const productResponses = await Promise.all(productPromises);
-        const cartProducts = productResponses
-          .filter((response) => response.success)
-          .map((response) => ({
-            ...response.data,
-            cartQuantity: 1, // Initial cart quantity is 1
-            deliveryCharges: calculateDeliveryCharges(response.data),
-          }));
-
-        setCartItems(cartProducts);
-      } catch (err) {
-        console.error("Error fetching cart:", err);
-        setError("Failed to load cart items");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCartItems();
-  }, []);
-
-  // Helper function to calculate delivery charges
-  const calculateDeliveryCharges = (product: IProductResponse): number => {
-    // Add your delivery charges calculation logic here
-    return product.deliveryCharges;
-  };
-
-  const formattedDeliveryDate = (deliveryDays: number) => {
-    const currentDate = new Date();
-    const deliveryDate = new Date(
-      currentDate.getTime() + deliveryDays * 24 * 60 * 60 * 1000
-    );
-    return deliveryDate
-      .toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })
-      .replace(/\//g, "/");
   };
 
   if (loading) return <Loader />;
@@ -252,7 +138,7 @@ const CartPage = () => {
                           setQuantity={(newQty: number) =>
                             updateQuantity(item._id!, newQty)
                           }
-                          max={item.productQuantity} // Set max to available inventory
+                          max={item.productQuantity}
                         />
                         <Select
                           value={selectedSizes[item._id!] || ""}
@@ -260,7 +146,6 @@ const CartPage = () => {
                             handleSizeSelect(item._id!, value)
                           }
                         >
-                          {/* Remove the extra bottom margin from the trigger */}
                           <SelectTrigger className="w-32">
                             <SelectValue placeholder="Select Size" />
                           </SelectTrigger>

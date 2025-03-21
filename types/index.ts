@@ -433,17 +433,6 @@ export interface IOrder {
   __v: number;
 }
 
-// Define discount types
-enum DiscountType {
-  PERCENTAGE = "percentage",
-  AMOUNT = "amount",
-}
-
-// Define discount target types
-enum DiscountTargetType {
-  CATEGORY = "category",
-  REFERRAL = "referral",
-}
 // Interface for parent category
 export interface IParentCategory {
   id: string;
@@ -451,24 +440,31 @@ export interface IParentCategory {
   name: string;
   isActive: boolean;
 }
+// Define discount types
+enum DiscountType {
+  PERCENTAGE = "percentage",
+  AMOUNT = "amount",
+}
 
 // Interface for discount
 export interface IDiscount {
+  id: string;
   _id: string;
   name: string;
   description?: string;
   discountType: DiscountType;
   discountValue: number;
-  targetType: DiscountTargetType;
+  targetType: "category";
   parentCategory: {
     _id: string;
     name: string;
     isActive: boolean;
   };
-  referralCode?: string;
-  startDate: string;
-  endDate: string;
+
+  startDate: Date;
+  endDate: Date;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

@@ -25,6 +25,7 @@ import { signOut as nextAuthSignOut } from "next-auth/react";
 import { signOut as serverSignOut } from "@/lib/actions/auth.actions";
 import { useRouter } from "next/navigation";
 import SearchDropdown from "./SearchDropdown";
+import { useCart } from "@/hooks/useCart";
 
 // Define the search result type
 type SearchResult = {
@@ -48,8 +49,11 @@ const Header = () => {
   const searchRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { isAuthenticated, isLoading } = useAuth(false);
+  const { cartItems } = useCart();
   const router = useRouter();
   const { toast } = useToast();
+
+  const cartItemsCount = cartItems?.length || 0;
 
   // * Search function with debouncing
   const handleSearch = (query: string) => {
@@ -204,7 +208,16 @@ const Header = () => {
             >
               <Link href="/cart" className="flex items-center space-x-2">
                 <ShoppingCart />
-                <span>Cart</span>
+                <span>
+                  <div className="relative">
+                    {cartItemsCount > 0 && (
+                      <span className="absolute -top-2 -right-4 bg-white text-brand rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold">
+                        {cartItemsCount}
+                      </span>
+                    )}
+                    Cart
+                  </div>
+                </span>
               </Link>
             </Button>
             {!isLoading && isAuthenticated && (
@@ -348,11 +361,18 @@ const Header = () => {
           </Sheet>
           <div className="flex items-center space-x-4">
             <Button
-              className="bg-transparent hover:bg-white/20 text-white"
+              className="bg-transparent hover:bg-white/20 text-white relative"
               asChild
             >
               <Link href="/cart" className="flex items-center space-x-2">
-                <ShoppingCart />
+                <div className="relative">
+                  <ShoppingCart />
+                  {cartItemsCount > 0 && (
+                    <span className="absolute -top-3 -right-4 bg-white text-brand rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                      {cartItemsCount}
+                    </span>
+                  )}
+                </div>
               </Link>
             </Button>
 

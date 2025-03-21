@@ -2,7 +2,6 @@ import Discount from "@/lib/models/discount.model";
 import { connectToDB } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
-// Populate configuration
 const populateConfig = [
   { path: "parentCategory", select: "name isActive" },
   { path: "createdBy", select: "name email" },
@@ -13,7 +12,6 @@ export async function GET(request: NextRequest) {
     await connectToDB();
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get("id");
-    const referralCode = searchParams.get("referralCode");
     const categoryId = searchParams.get("categoryId");
 
     // Get discount by ID
@@ -33,32 +31,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: discount });
     }
 
-    // Get discount by referral code
-    if (referralCode) {
-      const query: any = {
-        referralCode,
+    // Get discounts by category ID
+    if (categoryId) {
+      const now = new Date();
+      const discounts = await Discount.find({
+        parentCategory: categoryId,
         isActive: true,
-        startDate: { $lte: new Date() },
-        endDate: { $gt: new Date() },
-      };
-
-      if (categoryId) {
-        query.parentCategory = categoryId;
-      }
-
-      const discount = await Discount.findOne(query)
+        startDate: { $lte: now },
+        endDate: { $gt: now },
+      })
         .populate(populateConfig)
+        .sort({ discountValue: -1 })
         .lean()
         .exec();
 
-      if (!discount) {
-        return NextResponse.json(
-          { success: false, error: "Invalid or expired referral code" },
-          { status: 404 }
-        );
-      }
-
-      return NextResponse.json({ success: true, data: discount });
+      return NextResponse.json({ success: true, data: discounts });
     }
 
     // Get all discounts
