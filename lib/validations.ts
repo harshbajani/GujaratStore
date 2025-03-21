@@ -220,3 +220,17 @@ export const productSchema = z.object({
   metaKeywords: z.string().optional(),
   metaDescription: z.string().optional(),
 });
+
+export const discountFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  discountType: z.enum(["percentage", "amount"]),
+  discountValue: z
+    .number()
+    .min(0, "Value must be positive")
+    .or(z.string().regex(/^\d+$/).transform(Number)), // Allow string input but transform to number
+  parentCategoryId: z.string().min(1, "Category is required"),
+  startDate: z.string(),
+  endDate: z.string(),
+  isActive: z.boolean().default(true),
+});

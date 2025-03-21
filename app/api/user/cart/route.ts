@@ -6,6 +6,31 @@ import {
 } from "@/lib/actions/user.actions";
 import Products from "@/lib/models/product.model";
 
+export async function GET() {
+  try {
+    const userResult = await getCurrentUser();
+
+    if (!userResult.success) {
+      return NextResponse.json({
+        success: false,
+        error: "User not authenticated",
+      });
+    }
+    return NextResponse.json({
+      success: true,
+      data: {
+        cart: userResult.data?.cart || [],
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching cart:", error);
+    return NextResponse.json({
+      success: false,
+      error: "Failed to fetch cart items",
+    });
+  }
+}
+
 export async function POST(request: Request) {
   const { productId } = await request.json();
   const result = await addToCart(productId);
