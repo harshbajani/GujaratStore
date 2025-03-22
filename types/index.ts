@@ -23,6 +23,7 @@ export interface IUser {
   phone: string;
   password: string;
   addresses: IAddress[];
+  referral?: string;
   role: "user";
   isVerified: boolean;
   verificationToken?: string;
@@ -467,4 +468,29 @@ export interface IDiscount {
   createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface IReferral {
+  _id: string;
+  name: string;
+  description?: string;
+  code: string;
+  discountType: "percentage" | "amount";
+  discountValue: number;
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  expiryDate: Date | string;
+  maxUses: number;
+  usedCount: number;
+  isActive: boolean;
+  createdBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { z } from "zod";
@@ -13,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import OtpModal from "@/components/OTPModal";
 import { Loader2 } from "lucide-react";
@@ -30,17 +31,35 @@ import {
 } from "./ui/card";
 import { useToast } from "@/hooks/use-toast";
 
-const AuthForm = ({ type }: { type: FormType }) => {
+const AuthForm = ({
+  type,
+  referralCode: initialReferralCode,
+}: {
+  type: FormType;
+  referralCode?: string;
+}) => {
   // * useStates and hooks
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const [referralCode, setReferralCode] = useState(initialReferralCode || "");
   const { toast } = useToast();
   const router = useRouter();
 
   const formSchema = authFormSchema(type);
   type FormValues = z.infer<typeof formSchema>;
+
+  // Show toast notification about the referral if code is provided
+  useEffect(() => {
+    if (referralCode) {
+      toast({
+        title: "Referral Detected",
+        description:
+          "You're signing up with a referral link. You'll receive special discounts!",
+      });
+    }
+  }, [referralCode, toast]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -72,12 +91,17 @@ const AuthForm = ({ type }: { type: FormType }) => {
           phone: values.phone!,
           password: values.password,
           role: "user",
+          referral: referralCode || undefined, // Include referral code if present
         });
 
         if (result.success) {
-          toast({ title: "Success", description: "Signed Up successfully" });
+          toast({
+            title: "Success",
+            description: referralCode
+              ? "Signed up successfully with referral discount!"
+              : "Signed up successfully",
+          });
           setUserEmail(values.email);
-
           setShowOtpModal(true);
         } else {
           toast({
@@ -97,7 +121,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
         if (result?.error) {
           toast({
             title: "Failed",
-            description: result.error || "Failed to sign out",
+            description: result.error || "Failed to sign in",
           });
           setErrorMessage(result.error);
         } else if (result?.ok) {
@@ -114,6 +138,14 @@ const AuthForm = ({ type }: { type: FormType }) => {
     }
   };
 
+  // Prepare the links for sign-in/sign-up with referral preservation
+  const getAuthLink = (linkType: "sign-in" | "sign-up") => {
+    if (referralCode) {
+      return `/${referralCode}/${linkType}`;
+    }
+    return `/${linkType}`;
+  };
+
   return (
     <div className="flex w-full flex-col">
       {/* Header section with responsive height and padding */}
@@ -128,12 +160,17 @@ const AuthForm = ({ type }: { type: FormType }) => {
           <p className="subtitle-1 text-sm sm:text-base md:text-lg">
             Let&apos;s Discover The World Of Gujarat Art & Crafts
           </p>
+          {referralCode && (
+            <div className="mt-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+              Referral Discount Applied!
+            </div>
+          )}
         </div>
       </div>
 
       <div className="flex flex-1 w-full bg-[url('/bg/bg2.png')] bg-cover bg-center bg-no-repeat md:bg-[top_50%_right_200px]">
         <div className="w-full px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-16 lg:py-12">
-          <Card className="mx-auto w-full max-w-lg shadow-md">
+          <Card className="mx-auto w-full max-w-lg h-auto shadow-md">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -149,7 +186,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
                       : "Sign in to your account"}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4 px-4 sm:px-6">
+                <CardContent className="space-y-2 px-4 sm:px-6">
                   {type === "sign-up" && (
                     <>
                       <FormField
@@ -250,6 +287,33 @@ const AuthForm = ({ type }: { type: FormType }) => {
                           </FormItem>
                         )}
                       />
+                      {referralCode && (
+                        <div className="bg-green-50 border border-green-100 p-3 rounded-md mb-2">
+                          <div className="flex items-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 text-green-500 mr-2"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            <p className="text-sm text-green-700">
+                              <span className="font-medium">
+                                Referral Applied:
+                              </span>{" "}
+                              You&apos;ll receive special discounts on eligible
+                              products!
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                   {type === "sign-in" && (
@@ -317,7 +381,9 @@ const AuthForm = ({ type }: { type: FormType }) => {
                         : "Already have an account?"}
                     </p>
                     <Link
-                      href={type === "sign-in" ? "/sign-up" : "/sign-in"}
+                      href={getAuthLink(
+                        type === "sign-in" ? "sign-up" : "sign-in"
+                      )}
                       className="font-medium text-brand hover:underline"
                     >
                       {type === "sign-in" ? "Sign Up" : "Sign In"}
@@ -334,6 +400,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
               <OtpModal
                 email={userEmail}
                 role="user"
+                referralCode={referralCode} // Pass referral code to OTP modal
                 onVerified={verifyOTP}
                 onResendOTP={resendOTP}
               />

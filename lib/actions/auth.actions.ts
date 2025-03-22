@@ -11,6 +11,7 @@ type SignUpData = {
   phone: string;
   password: string;
   role: "user";
+  referral?: string; // Add optional referral field
 };
 
 type ActionResponse = {
@@ -51,7 +52,34 @@ export async function signUp(data: SignUpData): Promise<ActionResponse> {
     // Store OTP
     await OTP.create({ email: data.email, otp });
 
-    // Create user
+    // Handle referral - simplified approach to ensure it's always stored
+    let referralMessage = "";
+    if (data.referral) {
+      try {
+        const referralResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_APP_BASE_URL}/api/referrals?code=${data.referral}`
+        );
+
+        if (referralResponse.ok) {
+          const referralData = await referralResponse.json();
+          if (referralData.success) {
+            referralMessage = " with referral discount";
+            console.log(
+              "Valid referral found and will be applied:",
+              data.referral
+            );
+          } else {
+            console.log(
+              "Invalid referral code provided but will be stored:",
+              data.referral
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error validating referral:", error);
+      }
+    }
+
     const user = await User.create({
       ...data,
       isVerified: false,
@@ -59,7 +87,9 @@ export async function signUp(data: SignUpData): Promise<ActionResponse> {
 
     return {
       success: true,
-      message: "User created successfully. OTP sent to email.",
+      message: data.referral
+        ? `User created successfully${referralMessage}. OTP sent to email.`
+        : "User created successfully. OTP sent to email.",
       data: { tempUserId: user._id },
     };
   } catch (error) {
@@ -87,8 +117,13 @@ export async function verifyOTP(
       };
     }
 
-    // Update user verification status
-    await User.updateOne({ email }, { isVerified: true });
+    // Update user verification status WITHOUT overwriting other fields
+    await User.updateOne(
+      { email },
+      {
+        $set: { isVerified: true },
+      }
+    );
 
     // Delete OTP record
     await OTP.deleteOne({ email });

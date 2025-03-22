@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { type: String, enum: ["user"], default: "user" },
   addresses: { type: [deliveryAddressSchema], required: false },
+  referral: { type: String },
   wishlist: {
     type: [mongoose.Schema.Types.ObjectId],
     ref: "Product",

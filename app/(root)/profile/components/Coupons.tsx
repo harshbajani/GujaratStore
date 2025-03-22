@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { ClipboardCheckIcon, ClipboardCopy, Loader2 } from "lucide-react";
+import { Copy, CopyCheck, Loader2 } from "lucide-react";
 
 // Define type for discount data
 interface IDiscount {
@@ -121,11 +121,11 @@ const Coupons = () => {
                     {discount.name}
                     {copiedId === discount._id ? (
                       <span className="text-green-500 ml-2">
-                        <ClipboardCheckIcon className="size-4" />
+                        <CopyCheck className="size-4" />
                       </span>
                     ) : (
                       <span className="text-gray-400 ml-2">
-                        <ClipboardCopy className="size-4" />
+                        <Copy className="size-4" />
                       </span>
                     )}
                   </button>

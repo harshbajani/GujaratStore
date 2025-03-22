@@ -19,6 +19,7 @@ interface OtpModalProps {
   email: string;
   type?: "verification" | "password-reset";
   role: "user" | "vendor";
+  referralCode?: string; // Add referral code prop
   onVerified: (
     email: string,
     otp: string
@@ -32,6 +33,7 @@ const OtpModal = ({
   email,
   type = "verification",
   role = "user",
+  referralCode, // Accept the referral code
   onVerified,
   onResendOTP,
 }: OtpModalProps) => {
@@ -72,8 +74,13 @@ const OtpModal = ({
         } else if (type === "password-reset" && role === "user") {
           router.push(`/reset-password?email=${email}&token=${otp}`);
         } else {
+          // Handle redirect based on referral code
           if (role === "user") {
-            router.push("/sign-in");
+            if (referralCode) {
+              router.push(`/${referralCode}/sign-in`);
+            } else {
+              router.push("/sign-in");
+            }
           } else {
             router.push("/vendor/sign-in");
           }
