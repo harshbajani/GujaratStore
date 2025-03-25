@@ -1,10 +1,8 @@
 import Brand from "@/lib/models/brand.model";
+import { RouteParams } from "@/types";
 import { NextResponse } from "next/server";
 
-export async function PUT(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: Request, { params }: RouteParams) {
   const id = (await params).id;
   const body = await req.json();
 

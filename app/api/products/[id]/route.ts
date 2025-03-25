@@ -1,5 +1,6 @@
 import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
+import { RouteParams } from "@/types";
 import { NextRequest, NextResponse } from "next/server";
 
 // Populate configuration for reuse
@@ -12,10 +13,7 @@ const populateConfig = [
   { path: "productSize", select: "label" },
 ];
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     await connectToDB();
     const id = (await params).id;
