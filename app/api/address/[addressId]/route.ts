@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongodb";
 import User from "@/lib/models/user.model";
-import { IAddress } from "@/types";
+import { IAddress, RouteParams } from "@/types";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ addressId: string }> }
-) {
+export async function GET(request: Request, { params }: RouteParams) {
   try {
     // Connect to your MongoDB database
     const { addressId } = await params;

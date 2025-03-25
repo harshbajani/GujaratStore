@@ -4,6 +4,11 @@ import { Document, Types } from "mongoose";
 import { Control } from "react-hook-form";
 import { z } from "zod";
 
+export interface RouteParams {
+  params: Promise<Record<string, string>>;
+  searchParams: Promise<Record<string, string>>;
+}
+
 export interface IOTPDocument {
   email: string;
   otp: string;

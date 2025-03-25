@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFileById } from "@/lib/actions/blog.actions";
+import { RouteParams } from "@/types";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const id = (await params).id;
   try {
     const file = await getFileById(id);
