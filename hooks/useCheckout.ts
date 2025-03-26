@@ -1,4 +1,4 @@
-import { useReducer, useEffect } from "react";
+import { useReducer, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { generateOrderId } from "@/lib/utils";
@@ -99,9 +99,108 @@ function checkoutReducer(state: CheckoutState, action: Action): CheckoutState {
   }
 }
 
+async function checkReferralDiscount(
+  userData: IUser | null,
+  checkoutData: CheckoutData
+): Promise<{
+  referralDiscount: number;
+  referralDiscountType?: "percentage" | "amount";
+  referralCode?: string;
+}> {
+  // If no user or no referral code, return no discount
+  if (!userData?.referral) {
+    return { referralDiscount: 0 };
+  }
+
+  try {
+    // First, fetch the referral details
+    const referralResponse = await fetch(
+      `/api/referrals?code=${userData.referral}`
+    );
+    const referralData = await referralResponse.json();
+
+    if (!referralData.success) {
+      return { referralDiscount: 0 };
+    }
+
+    const referral = referralData.data;
+
+    // Check referral validity
+    const now = new Date();
+    if (
+      !referral.isActive ||
+      new Date(referral.expiryDate) < now ||
+      referral.usedCount >= referral.maxUses
+    ) {
+      return { referralDiscount: 0 };
+    }
+
+    // Check and calculate product-specific referral discount
+    let totalReferralDiscount = 0;
+
+    // Fetch and check each product's parent category
+    const discountPromises = checkoutData.items.map(async (item) => {
+      const productResponse = await fetch(`/api/products/${item.productId}`);
+      const productData = await productResponse.json();
+
+      // Check if product's parent category matches referral's parent category
+      if (
+        productData.success &&
+        productData.data.parentCategory?._id ===
+          referral.parentCategory._id.toString()
+      ) {
+        // Calculate discount for this specific product
+        let itemDiscount = 0;
+        if (referral.discountType === "percentage") {
+          // Calculate percentage discount on item's total price
+          itemDiscount =
+            (item.price * item.quantity * referral.discountValue) / 100;
+        } else {
+          // Fixed amount discount (applied per item)
+          itemDiscount = referral.discountValue * item.quantity;
+        }
+
+        return itemDiscount;
+      }
+
+      return 0;
+    });
+
+    // Wait for all discount calculations
+    const itemDiscounts = await Promise.all(discountPromises);
+
+    // Sum up total referral discount
+    totalReferralDiscount = itemDiscounts.reduce(
+      (sum, discount) => sum + discount,
+      0
+    );
+
+    // If no discount found, return 0
+    if (totalReferralDiscount <= 0) {
+      return { referralDiscount: 0 };
+    }
+
+    return {
+      referralDiscount: totalReferralDiscount,
+      referralDiscountType: referral.discountType,
+      referralCode: referral.code,
+    };
+  } catch (error) {
+    console.error("Error checking referral discount:", error);
+    return { referralDiscount: 0 };
+  }
+}
+
 export function useCheckout() {
   const router = useRouter();
   const [state, dispatch] = useReducer(checkoutReducer, initialState);
+  const [referralDiscount, setReferralDiscount] = useState(0);
+  const [referralDiscountType, setReferralDiscountType] = useState<
+    "percentage" | "amount" | undefined
+  >(undefined);
+  const [referralCode, setReferralCode] = useState<string | undefined>(
+    undefined
+  );
 
   // Fetch user data and checkout data from session storage
   useEffect(() => {
@@ -125,6 +224,38 @@ export function useCheckout() {
         const parsedData: CheckoutData = JSON.parse(storedData);
         dispatch({ type: "SET_CHECKOUT_DATA", payload: parsedData });
         dispatch({ type: "SET_ORIGINAL_TOTAL", payload: parsedData.total });
+
+        // Check for referral discount
+        const referralDiscountResult = await checkReferralDiscount(
+          userData.data,
+          parsedData
+        );
+
+        if (referralDiscountResult.referralDiscount > 0) {
+          setReferralDiscount(referralDiscountResult.referralDiscount);
+          setReferralDiscountType(referralDiscountResult.referralDiscountType);
+          setReferralCode(referralDiscountResult.referralCode);
+
+          // Update checkout data with referral discount
+          const newTotal =
+            parsedData.total - referralDiscountResult.referralDiscount;
+          const updatedCheckoutData: CheckoutData = {
+            ...parsedData,
+            discountAmount:
+              (parsedData.discountAmount || 0) +
+              referralDiscountResult.referralDiscount,
+            total: newTotal,
+          };
+
+          dispatch({
+            type: "UPDATE_CHECKOUT_DATA",
+            payload: updatedCheckoutData,
+          });
+          sessionStorage.setItem(
+            "checkoutData",
+            JSON.stringify(updatedCheckoutData)
+          );
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
@@ -366,6 +497,14 @@ export function useCheckout() {
     });
   };
 
+  const getReferralDiscountDetails = () => {
+    return {
+      referralDiscount,
+      referralDiscountType,
+      referralCode,
+    };
+  };
+
   return {
     state,
     dispatch,
@@ -375,5 +514,6 @@ export function useCheckout() {
     handleApplyDiscount,
     confirmOrder,
     toggleSection,
+    getReferralDiscountDetails,
   };
 }

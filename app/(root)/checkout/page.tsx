@@ -36,7 +36,11 @@ const CheckoutPage = () => {
     handleApplyDiscount,
     confirmOrder,
     toggleSection,
+    getReferralDiscountDetails,
   } = useCheckout();
+
+  const { referralDiscount, referralDiscountType, referralCode } =
+    getReferralDiscountDetails();
 
   if (loading) return <Loader />;
   if (!checkoutData || !userData) return null;
@@ -276,6 +280,17 @@ const CheckoutPage = () => {
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
                     <span>- ₹{discountAmount.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
+
+                {referralDiscount > 0 && (
+                  <div className="flex justify-between text-purple-600">
+                    <span>
+                      Referral Discount
+                      {referralCode && ` (${referralCode})`}
+                      {referralDiscountType === "percentage" && " (%)"}
+                    </span>
+                    <span>- ₹{referralDiscount.toLocaleString("en-IN")}</span>
                   </div>
                 )}
 
