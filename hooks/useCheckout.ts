@@ -1,0 +1,379 @@
+import { useReducer, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "@/hooks/use-toast";
+import { generateOrderId } from "@/lib/utils";
+import { CheckoutData, IUser } from "@/types";
+
+// Define the shape of our checkout state
+interface CheckoutState {
+  checkoutData: CheckoutData | null;
+  userData: IUser | null;
+  loading: boolean;
+  selectedAddress: string;
+  submitting: boolean;
+  discountCode: string;
+  discountAmount: number;
+  discountInfo: string;
+  loadingDiscount: boolean;
+  expandedSection: string | null;
+  paymentOption: string;
+  isConfirmationOpen: boolean;
+  confirmedOrderId: string;
+  appliedDiscountCode: string;
+  originalTotal: number;
+}
+
+// Define our action types
+type Action =
+  | { type: "SET_CHECKOUT_DATA"; payload: CheckoutData | null }
+  | { type: "SET_USER_DATA"; payload: IUser | null }
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_SELECTED_ADDRESS"; payload: string }
+  | { type: "SET_SUBMITTING"; payload: boolean }
+  | { type: "SET_DISCOUNT_CODE"; payload: string }
+  | { type: "SET_DISCOUNT_AMOUNT"; payload: number }
+  | { type: "SET_DISCOUNT_INFO"; payload: string }
+  | { type: "SET_LOADING_DISCOUNT"; payload: boolean }
+  | { type: "SET_EXPANDED_SECTION"; payload: string | null }
+  | { type: "SET_PAYMENT_OPTION"; payload: string }
+  | { type: "SET_CONFIRMATION_OPEN"; payload: boolean }
+  | { type: "SET_CONFIRMED_ORDER_ID"; payload: string }
+  | { type: "SET_APPLIED_DISCOUNT_CODE"; payload: string }
+  | { type: "SET_ORIGINAL_TOTAL"; payload: number }
+  | { type: "UPDATE_CHECKOUT_DATA"; payload: CheckoutData };
+
+const initialState: CheckoutState = {
+  checkoutData: null,
+  userData: null,
+  loading: true,
+  selectedAddress: "",
+  submitting: false,
+  discountCode: "",
+  discountAmount: 0,
+  discountInfo: "",
+  loadingDiscount: false,
+  expandedSection: null,
+  paymentOption: "cash-on-delivery",
+  isConfirmationOpen: false,
+  confirmedOrderId: "",
+  appliedDiscountCode: "",
+  originalTotal: 0,
+};
+
+function checkoutReducer(state: CheckoutState, action: Action): CheckoutState {
+  switch (action.type) {
+    case "SET_CHECKOUT_DATA":
+      return { ...state, checkoutData: action.payload };
+    case "SET_USER_DATA":
+      return { ...state, userData: action.payload };
+    case "SET_LOADING":
+      return { ...state, loading: action.payload };
+    case "SET_SELECTED_ADDRESS":
+      return { ...state, selectedAddress: action.payload };
+    case "SET_SUBMITTING":
+      return { ...state, submitting: action.payload };
+    case "SET_DISCOUNT_CODE":
+      return { ...state, discountCode: action.payload };
+    case "SET_DISCOUNT_AMOUNT":
+      return { ...state, discountAmount: action.payload };
+    case "SET_DISCOUNT_INFO":
+      return { ...state, discountInfo: action.payload };
+    case "SET_LOADING_DISCOUNT":
+      return { ...state, loadingDiscount: action.payload };
+    case "SET_EXPANDED_SECTION":
+      return { ...state, expandedSection: action.payload };
+    case "SET_PAYMENT_OPTION":
+      return { ...state, paymentOption: action.payload };
+    case "SET_CONFIRMATION_OPEN":
+      return { ...state, isConfirmationOpen: action.payload };
+    case "SET_CONFIRMED_ORDER_ID":
+      return { ...state, confirmedOrderId: action.payload };
+    case "SET_APPLIED_DISCOUNT_CODE":
+      return { ...state, appliedDiscountCode: action.payload };
+    case "SET_ORIGINAL_TOTAL":
+      return { ...state, originalTotal: action.payload };
+    case "UPDATE_CHECKOUT_DATA":
+      return { ...state, checkoutData: action.payload };
+    default:
+      return state;
+  }
+}
+
+export function useCheckout() {
+  const router = useRouter();
+  const [state, dispatch] = useReducer(checkoutReducer, initialState);
+
+  // Fetch user data and checkout data from session storage
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const userResponse = await fetch("/api/user/current");
+        const userData = await userResponse.json();
+
+        if (!userData.success) {
+          router.push("/login");
+          return;
+        }
+
+        dispatch({ type: "SET_USER_DATA", payload: userData.data });
+
+        const storedData = sessionStorage.getItem("checkoutData");
+        if (!storedData) {
+          router.push("/cart");
+          return;
+        }
+        const parsedData: CheckoutData = JSON.parse(storedData);
+        dispatch({ type: "SET_CHECKOUT_DATA", payload: parsedData });
+        dispatch({ type: "SET_ORIGINAL_TOTAL", payload: parsedData.total });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load checkout data",
+          variant: "destructive",
+        });
+      } finally {
+        dispatch({ type: "SET_LOADING", payload: false });
+      }
+    };
+
+    fetchData();
+  }, [router]);
+
+  // Helper: update checkout data in state and session storage
+  const updateCheckoutData = (newData: CheckoutData) => {
+    dispatch({ type: "UPDATE_CHECKOUT_DATA", payload: newData });
+    sessionStorage.setItem("checkoutData", JSON.stringify(newData));
+  };
+
+  // Update quantity for a given product in checkout
+  const updateQuantity = (productId: string, newQuantity: number) => {
+    if (!state.checkoutData || newQuantity < 1) return;
+
+    const updatedItems = state.checkoutData.items.map((item) =>
+      item.productId === productId ? { ...item, quantity: newQuantity } : item
+    );
+
+    const subtotal = updatedItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+
+    const newCheckoutData: CheckoutData = {
+      ...state.checkoutData,
+      items: updatedItems,
+      subtotal,
+      total:
+        subtotal +
+        state.checkoutData.deliveryCharges -
+        (state.checkoutData.discountAmount || 0),
+    };
+
+    updateCheckoutData(newCheckoutData);
+  };
+
+  // Remove an item from checkout
+  const removeItem = (productId: string) => {
+    if (!state.checkoutData) return;
+
+    const updatedItems = state.checkoutData.items.filter(
+      (item) => item.productId !== productId
+    );
+
+    if (updatedItems.length === 0) {
+      router.push("/cart");
+      return;
+    }
+
+    const subtotal = updatedItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+
+    const newCheckoutData: CheckoutData = {
+      ...state.checkoutData,
+      items: updatedItems,
+      subtotal,
+      total:
+        subtotal +
+        state.checkoutData.deliveryCharges -
+        (state.checkoutData.discountAmount || 0),
+    };
+
+    updateCheckoutData(newCheckoutData);
+
+    toast({
+      title: "Item removed",
+      description: "Item has been removed from your order",
+    });
+
+    // Also remove the item from the backend cart
+    fetch("/api/user/cart", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId }),
+    });
+  };
+
+  // Apply a discount code
+  const handleApplyDiscount = async () => {
+    if (!state.discountCode || !state.checkoutData) return;
+
+    // Prevent reapplying the same discount
+    if (state.discountCode === state.appliedDiscountCode) {
+      toast({
+        title: "Warning",
+        description: "This discount code is already applied",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    dispatch({ type: "SET_LOADING_DISCOUNT", payload: true });
+    try {
+      const response = await fetch(`/api/discounts/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: state.discountCode,
+          items: state.checkoutData.items,
+          userId: state.userData?._id,
+        }),
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        const baseTotal = state.appliedDiscountCode
+          ? state.originalTotal
+          : state.checkoutData.total;
+        const newTotal = baseTotal - result.discountAmount;
+
+        dispatch({
+          type: "SET_DISCOUNT_AMOUNT",
+          payload: result.discountAmount,
+        });
+        dispatch({ type: "SET_DISCOUNT_INFO", payload: result.message });
+        dispatch({
+          type: "SET_APPLIED_DISCOUNT_CODE",
+          payload: state.discountCode,
+        });
+
+        const updatedCheckoutData: CheckoutData = {
+          ...state.checkoutData,
+          discountAmount: result.discountAmount,
+          discountCode: state.discountCode,
+          total: newTotal,
+        };
+
+        updateCheckoutData(updatedCheckoutData);
+        toast({
+          title: "Success",
+          description: result.message,
+          className: "bg-green-500 text-white",
+        });
+      } else {
+        dispatch({ type: "SET_DISCOUNT_INFO", payload: "" });
+        dispatch({ type: "SET_DISCOUNT_AMOUNT", payload: 0 });
+        toast({
+          title: "Invalid Code",
+          description:
+            result.message || "This discount code is invalid or expired",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error applying discount:", error);
+      toast({
+        title: "Error",
+        description: "Failed to apply discount code",
+        variant: "destructive",
+      });
+    } finally {
+      dispatch({ type: "SET_LOADING_DISCOUNT", payload: false });
+    }
+  };
+
+  // Confirm the order
+  const confirmOrder = () => {
+    if (!state.selectedAddress || !state.checkoutData || !state.userData) {
+      toast({
+        title: "Error",
+        description: "Please select a delivery address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    dispatch({ type: "SET_SUBMITTING", payload: true });
+    const orderId = generateOrderId();
+
+    const orderPayload = {
+      orderId,
+      status: "confirmed",
+      userId: state.userData._id,
+      items: state.checkoutData.items,
+      subtotal: state.checkoutData.subtotal,
+      deliveryCharges: state.checkoutData.deliveryCharges,
+      discountAmount: state.checkoutData.discountAmount || 0,
+      discountCode: state.checkoutData.discountCode || "",
+      total: state.checkoutData.total,
+      addressId: state.selectedAddress,
+      paymentOption: state.paymentOption,
+    };
+
+    fetch("/api/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderPayload),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          sessionStorage.removeItem("checkoutData");
+          dispatch({ type: "SET_CONFIRMED_ORDER_ID", payload: orderId });
+          dispatch({ type: "SET_CONFIRMATION_OPEN", payload: true });
+          toast({
+            title: "Success",
+            description: "Order Confirmed",
+            className: "bg-green-500 text-white",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: data.error || "Failed to confirm order",
+            variant: "destructive",
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Error processing order:", error);
+        toast({
+          title: "Error",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        dispatch({ type: "SET_SUBMITTING", payload: false });
+      });
+  };
+
+  // Toggle accordion sections (e.g., delivery address, order summary)
+  const toggleSection = (section: string) => {
+    dispatch({
+      type: "SET_EXPANDED_SECTION",
+      payload: state.expandedSection === section ? null : section,
+    });
+  };
+
+  return {
+    state,
+    dispatch,
+    updateCheckoutData,
+    updateQuantity,
+    removeItem,
+    handleApplyDiscount,
+    confirmOrder,
+    toggleSection,
+  };
+}
