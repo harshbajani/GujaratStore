@@ -25,22 +25,7 @@ export async function POST(request: Request) {
 
     const currentDate = new Date();
 
-    const usedDiscount = await UsedDiscount.findOne({
-      userId,
-      discountCode: code,
-    });
-
-    if (usedDiscount) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "You have already used this discount code",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Find discount by name only (since we've removed referral codes)
+    // Check if the discount exists and is valid
     const discount = await Discount.findOne({
       name: code,
       startDate: { $lte: currentDate },
@@ -54,23 +39,25 @@ export async function POST(request: Request) {
         { status: 404 }
       );
     }
-    if (discount) {
-      // Record discount usage
-      await UsedDiscount.create({
-        userId,
-        discountCode: code,
-        usedAt: new Date(),
-      });
+
+    // Check if the user has already used this discount
+    const existingUsedDiscount = await UsedDiscount.findOne({
+      discountCode: code,
+      userIds: userId,
+    });
+
+    if (existingUsedDiscount) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "You have already used this discount code",
+        },
+        { status: 400 }
+      );
     }
 
-    // For category discounts, we need to check if any items match the category
-    let discountAmount = 0;
-    let applicableSubtotal = 0;
-
-    // Get category ID we're looking for
+    // Calculate applicable subtotal based on category
     const categoryId = discount.parentCategory._id.toString();
-
-    // Get all products to check their categories
     const productIds: string[] = items.map((item: CartItem) => item.productId);
     const products = await Products.find({ _id: { $in: productIds } });
 
@@ -82,6 +69,7 @@ export async function POST(request: Request) {
     });
 
     // Calculate applicable subtotal based on matching category
+    let applicableSubtotal = 0;
     items.forEach((item: CartItem) => {
       if (productCategories[item.productId] === categoryId) {
         applicableSubtotal += item.price * item.quantity;
@@ -99,6 +87,7 @@ export async function POST(request: Request) {
     }
 
     // Calculate discount amount
+    let discountAmount = 0;
     if (discount.discountType === "percentage") {
       discountAmount = Math.round(
         (applicableSubtotal * discount.discountValue) / 100
@@ -107,6 +96,20 @@ export async function POST(request: Request) {
       // For fixed amount discounts, ensure we don't exceed the applicable subtotal
       discountAmount = Math.min(discount.discountValue, applicableSubtotal);
     }
+
+    // Record discount usage
+    await UsedDiscount.findOneAndUpdate(
+      { discountCode: code },
+      {
+        $addToSet: { userIds: userId },
+        $setOnInsert: {
+          discountCode: code,
+          usedAt: new Date(),
+          maxUses: 1,
+        },
+      },
+      { upsert: true, new: true }
+    );
 
     return NextResponse.json(
       {
