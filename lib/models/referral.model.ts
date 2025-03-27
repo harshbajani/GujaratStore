@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { nanoid } from "nanoid";
-import "@/lib/models/parentCategory.model";
+import "./parentCategory.model";
 
 // Define enum for discount types
 export enum DiscountType {
@@ -23,7 +23,6 @@ const referralSchema = new Schema({
     required: true,
     unique: true,
     default: () => nanoid(8), // Generate a random 8-character code
-    index: true,
   },
   discountType: {
     type: String,
@@ -72,8 +71,7 @@ const referralSchema = new Schema({
   },
 });
 
-// Add indexes for frequently queried fields
-referralSchema.index({ code: 1 });
+// Remove duplicate indexes
 referralSchema.index({ parentCategory: 1 });
 referralSchema.index({ isActive: 1 });
 referralSchema.index({ expiryDate: 1 });

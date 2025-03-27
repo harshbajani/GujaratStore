@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         code,
         isActive: true,
         expiryDate: { $gt: now },
-        usedCount: { $lt: "$maxUses" },
+        $expr: { $lt: ["$usedCount", "$maxUses"] },
       })
         .populate(populateConfig)
         .lean()
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         parentCategory: categoryId,
         isActive: true,
         expiryDate: { $gt: now },
-        usedCount: { $lt: "$maxUses" },
+        $expr: { $lt: ["$usedCount", "$maxUses"] },
       })
         .populate(populateConfig)
         .sort({ discountValue: -1 })
