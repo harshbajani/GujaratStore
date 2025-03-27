@@ -1,23 +1,45 @@
 import { useSession } from "next-auth/react";
-import { usePathname, redirect } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export const useAuth = (requireAuth: boolean = true) => {
+export const useAuth = (
+  options: {
+    requireAuth?: boolean;
+    redirectIfAuthenticated?: boolean;
+    protectedRoutes?: string[];
+  } = {}
+) => {
+  const {
+    requireAuth = false,
+    redirectIfAuthenticated = false,
+    protectedRoutes = [],
+  } = options;
+
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     if (status === "loading") return;
 
-    if (requireAuth && !session) {
-      redirect(`/sign-in?callbackUrl=${encodeURIComponent(pathname)}`); // * Redirect to sign-in page while saving the current path
-    } else if (!requireAuth && session) {
-      if (pathname === "/sign-in" || pathname === "/sign-up") {
-        // * If we're on an auth page but user is already logged in, redirect to home
-        redirect("/");
+    const isProtectedRoute = protectedRoutes.some((route) =>
+      pathname.startsWith(route)
+    );
+
+    // Authentication required for specific routes
+    if ((requireAuth || isProtectedRoute) && !session) {
+      router.push(`/sign-in?callbackUrl=${encodeURIComponent(pathname)}`);
+      return;
+    }
+
+    // Redirect authenticated users from auth pages
+    if (redirectIfAuthenticated && session) {
+      if (["/sign-in", "/sign-up"].includes(pathname)) {
+        router.push("/");
+        return;
       }
     }
-  }, [session, status, requireAuth, pathname]);
+  }, [session, status, pathname, requireAuth, redirectIfAuthenticated]);
 
   return {
     user: session?.user,

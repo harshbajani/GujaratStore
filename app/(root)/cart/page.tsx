@@ -1,4 +1,3 @@
-// CartPage.jsx
 "use client";
 
 import { useState } from "react";
@@ -106,6 +105,7 @@ const CartPage = () => {
           {/* Cart Items */}
           <div className="lg:col-span-2">
             <h2 className="text-2xl font-bold mb-4">Shopping Cart</h2>
+
             {cartItems.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">Your cart is empty</p>
