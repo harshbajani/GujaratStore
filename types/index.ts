@@ -4,6 +4,11 @@ import { Document, Types } from "mongoose";
 import { Control } from "react-hook-form";
 import { z } from "zod";
 
+export interface RouteParams {
+  params: Promise<Record<string, string>>;
+  searchParams: Promise<Record<string, string>>;
+}
+
 export interface IOTPDocument {
   email: string;
   otp: string;
@@ -23,6 +28,8 @@ export interface IUser {
   phone: string;
   password: string;
   addresses: IAddress[];
+  referral?: string;
+  referralUsed?: string;
   role: "user";
   isVerified: boolean;
   verificationToken?: string;
@@ -467,4 +474,29 @@ export interface IDiscount {
   createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface IReferral {
+  _id: string;
+  name: string;
+  description?: string;
+  code: string;
+  discountType: "percentage" | "amount";
+  discountValue: number;
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  expiryDate: Date | string;
+  maxUses: number;
+  usedCount: number;
+  isActive: boolean;
+  createdBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }

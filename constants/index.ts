@@ -11,12 +11,12 @@ import {
   ShoppingCart,
   ClipboardList,
   Users,
-  Building,
   Percent,
   Star,
   LayoutPanelLeft,
   PencilLine,
   Ruler,
+  Link,
 } from "lucide-react";
 export const NavLinks = [
   {
@@ -614,9 +614,9 @@ export const vendorSidebarLinks = [
     icon: Users,
   },
   {
-    label: "Industries",
-    route: "/vendor/industry",
-    icon: Building,
+    label: "Referrals",
+    route: "/vendor/referrals",
+    icon: Link,
   },
   {
     label: "Discount",

@@ -1,11 +1,9 @@
 import Order from "@/lib/models/order.model";
 import { connectToDB } from "@/lib/mongodb";
+import { RouteParams } from "@/types";
 import { NextResponse } from "next/server";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: RouteParams) {
   try {
     // Establish database connection
     await connectToDB();
@@ -45,10 +43,7 @@ export async function GET(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: RouteParams) {
   try {
     // Establish database connection
     await connectToDB();
@@ -94,10 +89,7 @@ export async function DELETE(
   }
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: RouteParams) {
   try {
     // Establish database connection
     await connectToDB();
