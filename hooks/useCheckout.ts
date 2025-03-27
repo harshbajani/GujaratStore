@@ -324,46 +324,63 @@ export function useCheckout() {
   };
 
   // Remove an item from checkout
-  const removeItem = (productId: string) => {
+  const removeItem = async (productId: string) => {
     if (!state.checkoutData) return;
 
-    const updatedItems = state.checkoutData.items.filter(
-      (item) => item.productId !== productId
-    );
+    try {
+      // Remove item from cart via API
+      const response = await fetch("/api/user/cart", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId }),
+      });
+      const result = await response.json();
 
-    if (updatedItems.length === 0) {
-      router.push("/cart");
-      return;
+      if (!result.success) {
+        throw new Error(result.error || "Failed to remove item from cart");
+      }
+
+      // Update local checkout data
+      const updatedItems = state.checkoutData.items.filter(
+        (item) => item.productId !== productId
+      );
+
+      if (updatedItems.length === 0) {
+        // If no items left, clear checkout data and redirect
+        sessionStorage.removeItem("checkoutData");
+        router.push("/cart");
+        return;
+      }
+
+      const subtotal = updatedItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+
+      const newCheckoutData: CheckoutData = {
+        ...state.checkoutData,
+        items: updatedItems,
+        subtotal,
+        total:
+          subtotal +
+          state.checkoutData.deliveryCharges -
+          (state.checkoutData.discountAmount || 0),
+      };
+
+      updateCheckoutData(newCheckoutData);
+
+      toast({
+        title: "Item removed",
+        description: "Item has been removed from your order",
+      });
+    } catch (error) {
+      console.error("Error removing item:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove item",
+        variant: "destructive",
+      });
     }
-
-    const subtotal = updatedItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-
-    const newCheckoutData: CheckoutData = {
-      ...state.checkoutData,
-      items: updatedItems,
-      subtotal,
-      total:
-        subtotal +
-        state.checkoutData.deliveryCharges -
-        (state.checkoutData.discountAmount || 0),
-    };
-
-    updateCheckoutData(newCheckoutData);
-
-    toast({
-      title: "Item removed",
-      description: "Item has been removed from your order",
-    });
-
-    // Also remove the item from the backend cart
-    fetch("/api/user/cart", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId }),
-    });
   };
 
   // Apply a discount code
