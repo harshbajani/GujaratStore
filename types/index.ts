@@ -29,6 +29,7 @@ export interface IUser {
   password: string;
   addresses: IAddress[];
   referral?: string;
+  referralUsed?: string;
   role: "user";
   isVerified: boolean;
   verificationToken?: string;

@@ -107,8 +107,8 @@ async function checkReferralDiscount(
   referralDiscountType?: "percentage" | "amount";
   referralCode?: string;
 }> {
-  // If no user or no referral code, return no discount
-  if (!userData?.referral) {
+  // If no user, no referral, or referral already used, return no discount
+  if (!userData?.referral || userData.referralUsed) {
     return { referralDiscount: 0 };
   }
 
@@ -179,6 +179,26 @@ async function checkReferralDiscount(
     if (totalReferralDiscount <= 0) {
       return { referralDiscount: 0 };
     }
+
+    // Record referral usage
+    const usageResponse = await fetch("/api/referrals", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: referral.code }),
+    });
+    const usageData = await usageResponse.json();
+
+    if (!usageData.success) {
+      console.error("Failed to record referral usage");
+      return { referralDiscount: 0 };
+    }
+
+    // Update user to mark referral as used
+    await fetch("/api/user/current", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ referralUsed: true }),
+    });
 
     return {
       referralDiscount: totalReferralDiscount,
