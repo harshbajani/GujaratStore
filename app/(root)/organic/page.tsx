@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn, getProductRating } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Check, Heart, ShoppingCart, Filter, Star } from "lucide-react";
+import { Check, Filter, Heart, ShoppingCart, Star } from "lucide-react";
 import Image from "next/image";
 import { useInView } from "react-intersection-observer";
 import Link from "next/link";
@@ -22,60 +23,43 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { DualThumbSlider } from "@/components/ui/dual-slider";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+
 import Loader from "@/components/Loader";
 import { toast } from "@/hooks/use-toast";
 import { IProductResponse } from "@/types";
 import useProductFilter from "@/hooks/useProductFilter";
-import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 
-interface Category {
-  _id: string;
-  name: string;
-  count: number;
-}
+import BreadcrumbHeader from "@/components/BreadcrumbHeader";
+import ProductFilterSidebar from "@/components/ProductFilterSidebar";
 
 const OrganicPage = () => {
   const [products, setProducts] = useState<IProductResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
   const [sortBy, setSortBy] = useState<string>("featured");
 
-  // Use the product filter hook
-  const { filters, setFilters, filteredProducts } = useProductFilter(products);
-
-  // State for temporary filters in the dialog
-  const [tempFilters, setTempFilters] = useState({ ...filters });
-
-  // State for current price range display in the filter dialog
-  const [currentPriceRange, setCurrentPriceRange] = useState<[number, number]>([
-    0, 0,
-  ]);
-
-  // Data for filter options
-  const [primaryCategories, setPrimaryCategories] = useState<Category[]>([]);
-  const [secondaryCategories, setSecondaryCategories] = useState<Category[]>(
-    []
-  );
+  // State for filter metadata
+  const [primaryCategories, setPrimaryCategories] = useState<
+    { _id: string; name: string; count: number }[]
+  >([]);
+  const [secondaryCategories, setSecondaryCategories] = useState<
+    { _id: string; name: string; count: number }[]
+  >([]);
   const [availableColors, setAvailableColors] = useState<
     { color: string; count: number }[]
   >([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
+  // Use the product filter hook
+  const { filters, filteredProducts, updateFilter, clearFilters } =
+    useProductFilter(products);
 
   // Animation ref
   const [organicRef, organicInView] = useInView({
@@ -175,7 +159,7 @@ const OrganicPage = () => {
     }
   };
 
-  // Apply sorting to products
+  // Now applySorting can use getProductRating since it's defined above
   function applySorting(products: IProductResponse[], sortMethod: string) {
     const sortedProducts = [...products];
 
@@ -208,89 +192,29 @@ const OrganicPage = () => {
   // Apply sorting to filteredProducts
   const sortedProducts = applySorting(filteredProducts, sortBy);
 
-  // Initialize filter dialog with current filter values
-  const openFilterDialog = () => {
-    setTempFilters({ ...filters });
-    setCurrentPriceRange([...filters.priceRange] as [number, number]);
-    setFilterOpen(true);
-  };
-
-  // Apply filters to products
-  const applyFilters = () => {
-    setFilters(tempFilters);
-    setFilterOpen(false);
-  };
-
-  // Clear all filters
-  const clearFilters = () => {
-    const resetFilters = {
-      primaryCategories: [],
-      secondaryCategories: [],
-      colors: [],
-      priceRange: priceRange,
-    };
-
-    setFilters(resetFilters);
-    setTempFilters(resetFilters);
-    setCurrentPriceRange(priceRange);
-  };
-
-  // Handle checkbox changes for categories
-  const handlePrimaryCategoryChange = (id: string, checked: boolean) => {
-    setTempFilters((prev) => ({
-      ...prev,
-      primaryCategories: checked
-        ? [...prev.primaryCategories, id]
-        : prev.primaryCategories.filter((catId) => catId !== id),
-    }));
-  };
-
-  const handleSecondaryCategoryChange = (id: string, checked: boolean) => {
-    setTempFilters((prev) => ({
-      ...prev,
-      secondaryCategories: checked
-        ? [...prev.secondaryCategories, id]
-        : prev.secondaryCategories.filter((catId) => catId !== id),
-    }));
-  };
-
-  // Handle color selection
-  const handleColorChange = (color: string, checked: boolean) => {
-    setTempFilters((prev) => ({
-      ...prev,
-      colors: checked
-        ? [...prev.colors, color]
-        : prev.colors.filter((c) => c !== color),
-    }));
-  };
-
-  // Handle price range change
-  const handlePriceRangeChange = (value: number[]) => {
-    setCurrentPriceRange([value[0], value[1]] as [number, number]);
-    setTempFilters((prev) => ({
-      ...prev,
-      priceRange: [value[0], value[1]] as [number, number],
-    }));
-  };
-
   useEffect(() => {
     const fetchProductsAndUser = async () => {
       try {
-        // Fetch products.
+        // Fetch products
         const prodResponse = await fetch("/api/products");
         const prodData = await prodResponse.json();
+
         if (prodData.success) {
-          let organicProducts = prodData.data.filter(
+          // Filter clothing products
+          let clothingProducts = prodData.data.filter(
             (product: IProductResponse) =>
               product.parentCategory?.name?.toLowerCase() === "organic"
           );
-          // Fetch current user data to mark wishlist and cart.
+
+          // Fetch current user data
           const userResponse = await fetch("/api/user/current");
           const userData = await userResponse.json();
+
           if (userData.success && userData.data) {
             const wishlistIds: string[] = userData.data.wishlist || [];
             const cartIds: string[] = userData.data.cart || [];
-            organicProducts = organicProducts.map(
+
+            clothingProducts = clothingProducts.map(
               (product: IProductResponse) => ({
                 ...product,
                 wishlist: wishlistIds.includes(product._id!),
@@ -299,14 +223,15 @@ const OrganicPage = () => {
             );
           }
 
-          // Set up product data
-          setProducts(organicProducts);
+          // Set products
+          setProducts(clothingProducts);
 
+          // Prepare primary categories
           const primaryCatMap = new Map<
             string,
             { id: string; name: string; count: number }
           >();
-          organicProducts.forEach((product: IProductResponse) => {
+          clothingProducts.forEach((product: IProductResponse) => {
             if (product.primaryCategory) {
               const id = product.primaryCategory._id;
               if (primaryCatMap.has(id)) {
@@ -332,12 +257,12 @@ const OrganicPage = () => {
           );
           setPrimaryCategories(primaryCats);
 
-          // Secondary Categories
+          // Prepare secondary categories (similar to primary categories)
           const secondaryCatMap = new Map<
             string,
             { id: string; name: string; count: number }
           >();
-          organicProducts.forEach((product: IProductResponse) => {
+          clothingProducts.forEach((product: IProductResponse) => {
             if (product.secondaryCategory) {
               const id = product.secondaryCategory._id;
               if (secondaryCatMap.has(id)) {
@@ -363,9 +288,9 @@ const OrganicPage = () => {
           );
           setSecondaryCategories(secondaryCats);
 
-          // Colors
+          // Prepare colors
           const colorMap = new Map<string, number>();
-          organicProducts.forEach((product: IProductResponse) => {
+          clothingProducts.forEach((product: IProductResponse) => {
             if (product.productColor) {
               const color = product.productColor.toLowerCase();
               colorMap.set(color, (colorMap.get(color) || 0) + 1);
@@ -373,21 +298,17 @@ const OrganicPage = () => {
           });
 
           const colors = Array.from(colorMap.entries()).map(
-            ([color, count]) => ({
-              color,
-              count,
-            })
+            ([color, count]) => ({ color, count })
           );
           setAvailableColors(colors);
 
-          // Price Range
-          const prices = organicProducts.map(
+          // Set price range
+          const prices = clothingProducts.map(
             (p: IProductResponse) => p.netPrice
           );
           const minPrice = Math.floor(Math.min(...prices));
           const maxPrice = Math.ceil(Math.max(...prices));
           setPriceRange([minPrice, maxPrice]);
-          setCurrentPriceRange([minPrice, maxPrice]);
         } else {
           setError("Failed to fetch products");
         }
@@ -421,370 +342,249 @@ const OrganicPage = () => {
     <div className="min-h-screen bg-gray-50">
       <BreadcrumbHeader title="Home" subtitle="Organic" titleHref="/" />
 
-      <div className="container mx-auto px-4">
-        {/* Filter and Sort Controls */}
-        <div className="flex flex-col sm:flex-row justify-between items-center my-6 gap-4">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2"
-              onClick={openFilterDialog}
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-              {(filters.primaryCategories.length > 0 ||
-                filters.secondaryCategories.length > 0 ||
-                filters.colors.length > 0) && (
-                <span className="ml-1 rounded-full bg-brand px-2 py-0.5 text-xs text-white">
-                  {filters.primaryCategories.length +
-                    filters.secondaryCategories.length +
-                    filters.colors.length}
-                </span>
-              )}
-            </Button>
+      <div className="container mx-auto px-4 flex flex-col md:flex-row">
+        {/* Filter Sidebar for MD and larger screens */}
+        <div className="w-full hidden md:block md:w-64 md:mr-8 py-[78px]">
+          <ProductFilterSidebar
+            filters={filters}
+            categories={{
+              primary: primaryCategories,
+              secondary: secondaryCategories,
+            }}
+            colors={availableColors}
+            priceRange={priceRange}
+            onFilterChange={(type, value, checked) =>
+              updateFilter(type as any, value, checked)
+            }
+          />
+        </div>
 
-            {/* Active filter tags could go here */}
+        <div className="flex-1">
+          {/* Mobile Filter Button */}
+          <div className="md:hidden flex justify-between items-center mb-4 py-6">
+            <Sheet
+              open={isMobileFilterOpen}
+              onOpenChange={setIsMobileFilterOpen}
+            >
+              <SheetTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  Filters
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 max-w-md">
+                <SheetHeader>
+                  <SheetTitle>Filter Products</SheetTitle>
+                </SheetHeader>
+                <ProductFilterSidebar
+                  filters={filters}
+                  categories={{
+                    primary: primaryCategories,
+                    secondary: secondaryCategories,
+                  }}
+                  colors={availableColors}
+                  priceRange={priceRange}
+                  onFilterChange={(type, value, checked) => {
+                    updateFilter(type as any, value, checked);
+                  }}
+                />
+              </SheetContent>
+            </Sheet>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Sort by:</span>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Featured" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="featured">Featured</SelectItem>
+                  <SelectItem value="price-low-to-high">
+                    Price: Low to High
+                  </SelectItem>
+                  <SelectItem value="price-high-to-low">
+                    Price: High to Low
+                  </SelectItem>
+                  <SelectItem value="rating-high-to-low">
+                    Rating: High to Low
+                  </SelectItem>
+                  <SelectItem value="rating-low-to-high">
+                    Rating: Low to High
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-sm text-gray-500">Sort by:</span>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Featured" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="featured">Featured</SelectItem>
-                <SelectItem value="price-low-to-high">
-                  Price: Low to High
-                </SelectItem>
-                <SelectItem value="price-high-to-low">
-                  Price: High to Low
-                </SelectItem>
-                <SelectItem value="rating-high-to-low">
-                  Rating: High to Low
-                </SelectItem>
-                <SelectItem value="rating-low-to-high">
-                  Rating: Low to High
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <span className="text-sm text-gray-500 ml-2">
+          {/* Desktop Sorting */}
+          <div className="hidden md:flex justify-between items-center mb-4 my-6">
+            <span className="text-sm text-gray-500">
               {filteredProducts.length}{" "}
               {filteredProducts.length === 1 ? "product" : "products"}
             </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Sort by:</span>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Featured" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="featured">Featured</SelectItem>
+                  <SelectItem value="price-low-to-high">
+                    Price: Low to High
+                  </SelectItem>
+                  <SelectItem value="price-high-to-low">
+                    Price: High to Low
+                  </SelectItem>
+                  <SelectItem value="rating-high-to-low">
+                    Rating: High to Low
+                  </SelectItem>
+                  <SelectItem value="rating-low-to-high">
+                    Rating: Low to High
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
 
-        {/* Filter Dialog */}
-        <Dialog open={filterOpen} onOpenChange={setFilterOpen}>
-          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex justify-between items-center">
-                <span>Filters</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="text-sm"
-                >
-                  Clear all
+          {/* Products Grid */}
+          <motion.div
+            ref={organicRef}
+            variants={containerVariants}
+            initial="hidden"
+            animate={organicInView ? "visible" : "hidden"}
+            className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pb-8"
+          >
+            {sortedProducts.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <p className="text-lg text-gray-500">
+                  No products match your filters.
+                </p>
+                <Button variant="link" onClick={clearFilters} className="mt-2">
+                  Clear all filters
                 </Button>
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              {/* Categories Filter */}
-              <Accordion
-                type="single"
-                collapsible
-                className="w-full"
-                defaultValue="categories"
-              >
-                <AccordionItem value="categories">
-                  <AccordionTrigger>Categories</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">
-                        Primary Categories
-                      </h4>
-                      <div className="space-y-1">
-                        {primaryCategories.map((category) => (
-                          <div
-                            key={category._id}
-                            className="flex items-center space-x-2"
-                          >
-                            <Checkbox
-                              id={`primary-${category._id}`}
-                              checked={tempFilters.primaryCategories.includes(
-                                category._id
-                              )}
-                              onCheckedChange={(checked) =>
-                                handlePrimaryCategoryChange(
-                                  category._id,
-                                  checked as boolean
-                                )
-                              }
-                            />
-                            <Label
-                              htmlFor={`primary-${category._id}`}
-                              className="text-sm font-normal flex-1"
-                            >
-                              {category.name} ({category.count})
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-
-                      <h4 className="text-sm font-medium mt-4">
-                        Secondary Categories
-                      </h4>
-                      <div className="space-y-1">
-                        {secondaryCategories.map((category) => (
-                          <div
-                            key={category._id}
-                            className="flex items-center space-x-2"
-                          >
-                            <Checkbox
-                              id={`secondary-${category._id}`}
-                              checked={tempFilters.secondaryCategories.includes(
-                                category._id
-                              )}
-                              onCheckedChange={(checked) =>
-                                handleSecondaryCategoryChange(
-                                  category._id,
-                                  checked as boolean
-                                )
-                              }
-                            />
-                            <Label
-                              htmlFor={`secondary-${category._id}`}
-                              className="text-sm font-normal flex-1"
-                            >
-                              {category.name} ({category.count})
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* Color Filter */}
-                <AccordionItem value="color">
-                  <AccordionTrigger>Color</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="grid grid-cols-4 gap-2">
-                      {availableColors.map(({ color, count }) => (
-                        <div key={color} className="flex flex-col items-center">
-                          <div
-                            className={cn(
-                              "h-8 w-8 rounded-full border cursor-pointer relative",
-                              tempFilters.colors.includes(color)
-                                ? "ring-2 ring-brand ring-offset-2"
-                                : ""
-                            )}
-                            style={{ backgroundColor: color }}
-                            onClick={() =>
-                              handleColorChange(
-                                color,
-                                !tempFilters.colors.includes(color)
-                              )
-                            }
-                          >
-                            {tempFilters.colors.includes(color) && (
-                              <Check className="h-4 w-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white" />
-                            )}
-                          </div>
-                          <span className="text-xs mt-1">{count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* Price Range Filter */}
-                <AccordionItem value="price">
-                  <AccordionTrigger>Price</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between">
-                        <span className="text-sm">
-                          ₹{currentPriceRange[0].toLocaleString("en-IN")}
-                        </span>
-                        <span className="text-sm">
-                          ₹{currentPriceRange[1].toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                      <DualThumbSlider
-                        defaultValue={[priceRange[0], priceRange[1]]}
-                        value={[currentPriceRange[0], currentPriceRange[1]]}
-                        min={priceRange[0]}
-                        max={priceRange[1]}
-                        step={100}
-                        onValueChange={handlePriceRangeChange}
-                        className="mt-6"
+              </div>
+            ) : (
+              sortedProducts.map((product) => (
+                // Product card remains the same as in the previous implementation
+                <motion.div
+                  variants={containerVariants}
+                  className="flex flex-col items-center justify-between rounded-lg bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+                  key={product._id}
+                >
+                  {/* Image Container */}
+                  <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
+                    <Link href={`/clothing/${product._id}`}>
+                      <Image
+                        src={getImageUrl(product.productCoverImage)}
+                        alt={product.productName}
+                        width={250}
+                        height={250}
+                        className="h-full w-full object-cover object-top transition-transform duration-300 hover:scale-105"
                       />
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </div>
-
-            <DialogFooter className="sm:justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setFilterOpen(false)}
-                className="sm:w-24"
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                onClick={applyFilters}
-                className="sm:w-24 primary-btn"
-              >
-                Apply
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Products Grid */}
-        <motion.div
-          ref={organicRef}
-          variants={containerVariants}
-          initial="hidden"
-          animate={organicInView ? "visible" : "hidden"}
-          className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 py-8"
-        >
-          {sortedProducts.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <p className="text-lg text-gray-500">
-                No products match your filters.
-              </p>
-              <Button variant="link" onClick={clearFilters} className="mt-2">
-                Clear all filters
-              </Button>
-            </div>
-          ) : (
-            sortedProducts.map((product) => (
-              <motion.div
-                variants={containerVariants}
-                className="flex flex-col items-center justify-between rounded-lg bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-                key={product._id}
-              >
-                {/* Image Container */}
-                <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
-                  <Link href={`/organic/${product._id}`}>
-                    <Image
-                      src={getImageUrl(product.productCoverImage)}
-                      alt={product.productName}
-                      width={250}
-                      height={250}
-                      className="h-full w-full object-cover object-top transition-transform duration-300 hover:scale-105"
-                    />
-                  </Link>
-                </div>
-
-                {/* Product Info */}
-                <Link href={`/organic/${product._id}`}>
-                  <div className="flex w-full flex-1 flex-col items-center">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <h3 className="mb-2 text-center text-sm font-semibold text-brand h-5 overflow-hidden">
-                            {product.productName}
-                          </h3>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs text-wrap">
-                          {product.productName}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <div className="mb-2 flex items-center gap-2">
-                      <span className="text-lg font-bold text-gray-900">
-                        ₹{Math.floor(product.netPrice).toLocaleString("en-IN")}
-                      </span>
-                      {product.mrp > product.netPrice && (
-                        <span className="text-sm text-gray-500 line-through">
-                          ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center mb-2">
-                      {Array.from({ length: 5 }).map((_, index) => {
-                        const rating = getProductRating(product);
-                        return (
-                          <Star
-                            key={index}
-                            className={cn(
-                              "h-4 w-4",
-                              rating > index
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
-                            )}
-                          />
-                        );
-                      })}
-                      <span className="ml-1 text-xs text-gray-500">
-                        {getProductRating(product) > 0
-                          ? `${getProductRating(product)}/5`
-                          : "No rating"}
-                      </span>
-                    </div>
+                    </Link>
                   </div>
-                </Link>
 
-                {/* Buttons Container */}
-                <div className="flex w-full items-center justify-center gap-2">
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex flex-1"
-                  >
-                    <Button
-                      variant="secondary"
-                      className="shadow-md flex items-center gap-2"
-                      onClick={() => handleToggleCart(product)}
-                    >
-                      <div
-                        className={cn(
-                          product.inCart ? "bg-secondary/90" : "bg-brand",
-                          "p-2 rounded -ml-3 transition-all duration-300"
-                        )}
-                      >
-                        {product.inCart ? (
-                          <Check className="size-5 text-green-500" />
-                        ) : (
-                          <ShoppingCart className="size-5 text-white" />
+                  {/* Product Info */}
+                  <Link href={`/clothing/${product._id}`}>
+                    <div className="flex w-full flex-1 flex-col items-center">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <h3 className="mb-2 text-center text-sm font-semibold text-brand h-5 overflow-hidden">
+                              {product.productName}
+                            </h3>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs text-wrap">
+                            {product.productName}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="text-lg font-bold text-gray-900">
+                          ₹
+                          {Math.floor(product.netPrice).toLocaleString("en-IN")}
+                        </span>
+                        {product.mrp > product.netPrice && (
+                          <span className="text-sm text-gray-500 line-through">
+                            ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
+                          </span>
                         )}
                       </div>
-                      {product.inCart ? "Remove from Cart" : "Add to Cart"}
-                    </Button>
-                  </motion.div>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      variant="secondary"
-                      className="aspect-square p-2 shadow-sm hover:shadow-md"
-                      onClick={() => handleToggleWishlist(product)}
+                      <div className="flex items-center mb-2">
+                        {Array.from({ length: 5 }).map((_, index) => {
+                          const rating = getProductRating(product);
+                          return (
+                            <Star
+                              key={index}
+                              className={cn(
+                                "h-4 w-4",
+                                rating > index
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
+                              )}
+                            />
+                          );
+                        })}
+                        <span className="ml-1 text-xs text-gray-500">
+                          {getProductRating(product) > 0
+                            ? `${getProductRating(product)}/5`
+                            : "No rating"}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+
+                  {/* Buttons Container */}
+                  <div className="flex w-full items-center justify-center gap-2">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex flex-1"
                     >
-                      <Heart
-                        className={cn(
-                          "h-5 w-5",
-                          product.wishlist ? "fill-red-500" : "text-red-600"
-                        )}
-                      />
-                    </Button>
-                  </motion.div>
-                </div>
-              </motion.div>
-            ))
-          )}
-        </motion.div>
+                      <Button
+                        variant="secondary"
+                        className="shadow-md flex items-center gap-2"
+                        onClick={() => handleToggleCart(product)}
+                      >
+                        <div
+                          className={cn(
+                            product.inCart ? "bg-secondary/90" : "bg-brand",
+                            "p-2 rounded -ml-3 transition-all duration-300"
+                          )}
+                        >
+                          {product.inCart ? (
+                            <Check className="size-5 text-green-500" />
+                          ) : (
+                            <ShoppingCart className="size-5 text-white" />
+                          )}
+                        </div>
+                        {product.inCart ? "Remove from Cart" : "Add to Cart"}
+                      </Button>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button
+                        variant="secondary"
+                        className="aspect-square p-2 shadow-sm hover:shadow-md"
+                        onClick={() => handleToggleWishlist(product)}
+                      >
+                        <Heart
+                          className={cn(
+                            "h-5 w-5",
+                            product.wishlist ? "fill-red-500" : "text-red-600"
+                          )}
+                        />
+                      </Button>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </motion.div>
+        </div>
       </div>
     </div>
   );

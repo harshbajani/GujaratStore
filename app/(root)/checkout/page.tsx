@@ -49,7 +49,7 @@ const CheckoutPage = () => {
     <div className="min-h-screen bg-gray-50">
       <BreadcrumbHeader title="Home" subtitle="Checkout" titleHref="/" />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="dynamic-container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Checkout Details */}
           <div className="lg:col-span-2 space-y-4">

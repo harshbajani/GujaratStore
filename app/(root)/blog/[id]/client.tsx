@@ -76,7 +76,7 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
       transition={{ duration: 0.5 }}
       className="min-h-screen pt-[120px] pb-16"
     >
-      <div className="container max-w-4xl mx-auto px-4">
+      <div className="dynamic-container max-w-4xl mx-auto px-4">
         {/* Back Button */}
         <Link
           href="/"

@@ -40,7 +40,7 @@ const TestimonialSlider = () => {
         ))}
       </div>
 
-      <div className="container mx-auto max-w-7xl relative z-10">
+      <div className="dynamic-container mx-auto max-w-7xl relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

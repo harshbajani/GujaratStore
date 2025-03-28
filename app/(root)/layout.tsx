@@ -11,7 +11,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="en">
       <body className="flex min-h-screen flex-col overflow-x-hidden">
-        <SessionProvider basePath="/api/auth" refetchInterval={5 * 60}>
+        <SessionProvider
+          basePath="/api/auth"
+          refetchInterval={5 * 60}
+          refetchOnWindowFocus={true}
+        >
           <ParallaxProvider>
             {/* <SmoothScrollProvider> */}
             <div className="smooth-scroll-container">

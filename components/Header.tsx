@@ -49,7 +49,7 @@ const Header = () => {
   const sheetContentRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { isLoading } = useAuth(false);
+  const { isLoading } = useAuth({ redirectIfAuthenticated: false });
   const { data: session, status } = useSession();
   const { cartItems } = useCart();
   const router = useRouter();

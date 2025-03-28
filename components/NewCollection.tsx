@@ -185,7 +185,7 @@ const NewCollection: React.FC = () => {
 
   return (
     <section>
-      <div className="container mx-auto px-4 py-16">
+      <div className="dynamic-container mx-auto px-4 py-16">
         <motion.div
           ref={ref}
           initial="hidden"

@@ -1,4 +1,3 @@
-// CartPage.jsx
 "use client";
 
 import { useState } from "react";
@@ -101,11 +100,12 @@ const CartPage = () => {
   return (
     <div className="min-h-screen">
       <BreadcrumbHeader title="Home" subtitle="Cart" titleHref="/" />
-      <div className="container mx-auto px-4 py-8">
+      <div className="dynamic-container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2">
             <h2 className="text-2xl font-bold mb-4">Shopping Cart</h2>
+
             {cartItems.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">Your cart is empty</p>
