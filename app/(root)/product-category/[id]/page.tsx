@@ -418,7 +418,7 @@ const ProductCategoryPage = () => {
         </motion.div>
       </motion.div>
 
-      <div className="container mx-auto px-4">
+      <div className="dynamic-container mx-auto px-4">
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -527,7 +527,7 @@ const ProductCategoryPage = () => {
                 </motion.div>
               </motion.div>
 
-              <div className="container mx-auto px-4">
+              <div className="dynamic-container mx-auto px-4">
                 {/* Filter and Sort Controls */}
                 <div className="flex flex-col sm:flex-row justify-between items-center my-6 gap-4">
                   <div className="flex items-center gap-2 w-full sm:w-auto">

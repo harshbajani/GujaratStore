@@ -36,7 +36,7 @@ const Testimonials = () => {
 
   return (
     <section>
-      <div className="container mx-auto px-4 py-5">
+      <div className="dynamic-container mx-auto px-4 py-5">
         <motion.div
           ref={ref}
           variants={containerVariants}

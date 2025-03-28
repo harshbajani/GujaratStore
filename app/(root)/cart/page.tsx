@@ -100,7 +100,7 @@ const CartPage = () => {
   return (
     <div className="min-h-screen">
       <BreadcrumbHeader title="Home" subtitle="Cart" titleHref="/" />
-      <div className="container mx-auto px-4 py-8">
+      <div className="dynamic-container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2">
