@@ -247,16 +247,19 @@ const ProductsDetailPage = () => {
           <div className="w-full">
             <ProductGallery images={product.productImages} />
             {/* TODO: add review functionality here */}
-            <ReviewSection
-              productId={product._id}
-              initialRating={product.productRating || 0}
-              onStatsLoaded={setReviewStats}
-            />
+            <div className="hidden sm:block">
+              <ReviewSection
+                productId={product._id}
+                initialRating={product.productRating || 0}
+                onStatsLoaded={setReviewStats}
+              />
+            </div>
           </div>
 
           {/* Product Info */}
           <div className="flex flex-col">
             <h1 className="text-3xl font-bold mb-0">{product.productName}</h1>
+            <p className="text-gray-500">By - {product.brands.name}</p>
             <h2 className="text-lg text-gray-500">
               {product.parentCategory.name}, {product.primaryCategory.name},{" "}
               {product.secondaryCategory.name}
@@ -430,6 +433,13 @@ const ProductsDetailPage = () => {
                   </AccordionItem>
                 </Accordion>
               </div>
+            </div>
+            <div className="block sm:hidden">
+              <ReviewSection
+                productId={product._id}
+                initialRating={product.productRating || 0}
+                onStatsLoaded={setReviewStats}
+              />
             </div>
           </div>
         </div>
