@@ -1,6 +1,7 @@
 import { IAttribute } from "@/lib/actions/attribute.actions";
 import { Address } from "@/lib/validations";
 import { Document, Types } from "mongoose";
+import { ReactNode } from "react";
 import { Control } from "react-hook-form";
 import { z } from "zod";
 
@@ -499,4 +500,47 @@ export interface IReferral {
   };
   createdAt: Date | string;
   updatedAt: Date | string;
+}
+
+// Interfaces for different dashboard metrics
+export interface ISalesSummary {
+  totalRevenue: number;
+  totalOrders: number;
+  averageOrderValue: number;
+  monthlyRevenue: { [month: string]: number };
+  yearlyRevenue: { [year: number]: number };
+  topSellingProducts: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    revenue: number;
+  }>;
+}
+
+export interface IOrderStatusBreakdown {
+  confirmed: number;
+  processing: number;
+  shipped: number;
+  delivered: number;
+  cancelled: number;
+  returned: number;
+}
+
+export interface IProductInventoryStats {
+  totalProducts: number;
+  lowStockProducts: number;
+  outOfStockProducts: number;
+  inventoryValueTotal: number;
+  lowStockProductDetails?: {
+    name: string;
+    quantity: number;
+  }[];
+}
+
+export interface IDashboardCardProps {
+  title: string;
+  value: string | number;
+  icon: ReactNode;
+  trend?: number;
+  trendDirection?: "up" | "down";
 }
