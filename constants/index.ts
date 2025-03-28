@@ -576,7 +576,12 @@ export const vendorSidebarLinks = [
     icon: Star,
   },
   {
-    label: "Category",
+    label: "Sizes",
+    route: "/vendor/size",
+    icon: Ruler,
+  },
+  {
+    label: "Categories",
     route: [
       {
         route: "/vendor/category/parentCategory",
@@ -622,10 +627,5 @@ export const vendorSidebarLinks = [
     label: "Discount",
     route: "/vendor/discounts",
     icon: Percent,
-  },
-  {
-    label: "Sizes",
-    route: "/vendor/size",
-    icon: Ruler,
   },
 ];

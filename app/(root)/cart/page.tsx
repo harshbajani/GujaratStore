@@ -101,9 +101,9 @@ const CartPage = () => {
     <div className="min-h-screen">
       <BreadcrumbHeader title="Home" subtitle="Cart" titleHref="/" />
       <div className="dynamic-container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Cart Items */}
-          <div className="lg:col-span-2">
+          <div className="md:col-span-2">
             <h2 className="text-2xl font-bold mb-4">Shopping Cart</h2>
 
             {cartItems.length === 0 ? (
@@ -118,21 +118,37 @@ const CartPage = () => {
                 {cartItems.map((item) => (
                   <div
                     key={item._id}
-                    className="flex gap-4 bg-white p-4 rounded-lg shadow"
+                    className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-lg shadow"
                   >
-                    <Image
-                      src={`/api/files/${item.productCoverImage}`}
-                      alt={item.productName}
-                      width={100}
-                      height={100}
-                      className="rounded-md object-cover"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{item.productName}</h3>
-                      <p className="text-gray-600 text-sm">
-                        {item.primaryCategory?.name}
-                      </p>
-                      <div className="mt-2 flex items-center gap-4">
+                    <div className="flex-shrink-0 self-center">
+                      <Image
+                        src={`/api/files/${item.productCoverImage}`}
+                        alt={item.productName}
+                        width={100}
+                        height={100}
+                        className="rounded-md object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 w-full">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold text-sm sm:text-base">
+                            {item.productName}
+                          </h3>
+                          <p className="text-gray-600 text-xs sm:text-sm">
+                            {item.primaryCategory?.name}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="self-start"
+                          onClick={() => removeFromCart(item._id!)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                      <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                         <QuantitySelector
                           quantity={item.cartQuantity}
                           setQuantity={(newQty: number) =>
@@ -146,7 +162,7 @@ const CartPage = () => {
                             handleSizeSelect(item._id!, value)
                           }
                         >
-                          <SelectTrigger className="w-32">
+                          <SelectTrigger className="w-full sm:w-32">
                             <SelectValue placeholder="Select Size" />
                           </SelectTrigger>
                           <SelectContent>
@@ -157,21 +173,14 @@ const CartPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeFromCart(item._id!)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
                       </div>
-                      <p className="text-gray-600 text-sm mt-2">
+                      <p className="text-gray-600 text-xs sm:text-sm mt-2">
                         Expected Delivery By:{" "}
                         {formattedDeliveryDate(item.deliveryDays)}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold">
+                    <div className="text-right mt-2 sm:mt-0">
+                      <p className="font-semibold text-sm sm:text-base">
                         ₹
                         {(item.netPrice * item.cartQuantity).toLocaleString(
                           "en-IN"
@@ -179,7 +188,7 @@ const CartPage = () => {
                       </p>
                       {item.mrp > item.netPrice && (
                         <div>
-                          <p className="text-sm text-gray-500 line-through">
+                          <p className="text-xs text-gray-500 line-through">
                             ₹
                             {(item.mrp * item.cartQuantity).toLocaleString(
                               "en-IN"
@@ -203,40 +212,40 @@ const CartPage = () => {
           </div>
 
           {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white p-6 rounded-lg shadow sticky top-4">
+          <div className="md:col-span-1">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow md:sticky md:top-4">
               <h2 className="text-xl font-bold mb-4">Order Summary</h2>
               <div className="space-y-2 mb-4">
-                <div className="flex justify-between">
+                <div className="flex justify-between text-sm sm:text-base">
                   <span>Subtotal</span>
                   <span>₹{subtotal.toLocaleString("en-IN")}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between text-sm sm:text-base">
                   <span>Delivery Charges</span>
                   <span>₹{deliveryCharges.toLocaleString("en-IN")}</span>
                 </div>
                 <div className="border-t pt-2 mt-2">
-                  <div className="flex justify-between font-bold">
+                  <div className="flex justify-between font-bold text-sm sm:text-base">
                     <span>Total</span>
                     <span>₹{total.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
               </div>
               <Button
-                className="w-full primary-btn"
+                className="w-full primary-btn text-sm sm:text-base"
                 disabled={cartItems.length === 0}
                 onClick={handleCheckout}
               >
                 Proceed to Checkout
               </Button>
             </div>
-            <div className="flex-center gap-2 mt-4">
+            <div className="flex-center gap-2 mt-4 text-center sm:text-left">
               <ShieldCheck
-                className="size-10 text-gray-500"
+                className="size-6 sm:size-10 text-gray-500"
                 fill="gray"
                 color="white"
               />
-              <p className="text-sm max-w-xs text-gray-500">
+              <p className="text-xs sm:text-sm max-w-xs text-gray-500">
                 Safe and Secure Payments. Easy returns. 100% Authentic products.
               </p>
             </div>
