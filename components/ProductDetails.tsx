@@ -241,7 +241,7 @@ const ProductsDetailPage = () => {
       </motion.div>
 
       {/* Product Details Section */}
-      <div className="container mx-auto px-4 py-16">
+      <div className="dynamic-container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Product Gallery */}
           <div className="w-full">

@@ -1,5 +1,16 @@
+"use client";
 import AuthForm from "@/components/AuthForm";
+import { useAuth } from "@/hooks/useAuth";
+import { redirect } from "next/navigation";
 
-const SignUp = () => <AuthForm type="sign-up" />;
+const SignUp = () => {
+  const { isAuthenticated } = useAuth({
+    requireAuth: true,
+    protectedRoutes: ["/checkout"],
+  });
+
+  if (isAuthenticated) redirect("/");
+  <AuthForm type="sign-up" />;
+};
 
 export default SignUp;
