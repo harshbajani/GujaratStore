@@ -269,6 +269,7 @@ export interface ISizes {
 
 export interface IProduct {
   _id?: string;
+  vendorId: string;
   productName: string;
   parentCategory: string; // MongoDB ObjectId as string
   primaryCategory: string; // MongoDB ObjectId as string

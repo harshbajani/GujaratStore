@@ -167,6 +167,7 @@ export const brandSchema = z.object({
 // Define the Zod schema for product validation
 export const productSchema = z.object({
   productName: z.string().min(1, "Product name is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   parentCategory: z.string().length(24, "Invalid parent category ID"),
   primaryCategory: z.string().length(24, "Invalid primary category ID"),
   secondaryCategory: z.string().length(24, "Invalid secondary category ID"),
