@@ -16,7 +16,6 @@ export interface IAttribute {
 }
 
 // Helper function to serialize MongoDB documents
-// Helper function to serialize MongoDB documents
 const serializeDocument = (doc: mongoose.Document): IAttribute | null => {
   if (!doc) return null;
   const serialized = doc.toJSON ? doc.toJSON() : doc;

@@ -1,8 +1,13 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const blogSchema = new mongoose.Schema(
   {
     id: { type: String },
+    vendorId: {
+      type: Schema.Types.ObjectId,
+      ref: "Vendor",
+      required: true,
+    },
     imageId: { type: String, required: true },
     user: { type: String, required: true },
     date: { type: String, required: true },

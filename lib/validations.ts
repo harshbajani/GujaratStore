@@ -65,6 +65,7 @@ export const profileSchema = z.object({
 
 export const blogSchema = z.object({
   _id: z.string().optional(),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   imageId: z.string().min(1, "Image is required."),
   user: z.string().min(2, "User name is too short."),
   date: z.string().min(1, "Please enter a valid date."),

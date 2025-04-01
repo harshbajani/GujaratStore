@@ -95,6 +95,7 @@ export interface CollectionItemProps {
 
 export interface IBlog extends Document {
   _id: Types.ObjectId;
+  vendorId: string;
   imageId: string;
   user: string;
   date: string;
@@ -110,6 +111,7 @@ export interface IBlog extends Document {
 
 export interface TransformedBlog {
   id: string;
+  vendorId: string;
   imageId: string;
   user: string;
   date: string;

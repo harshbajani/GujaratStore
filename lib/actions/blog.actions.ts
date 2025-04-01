@@ -6,12 +6,14 @@ import { blogSchema } from "@/lib/validations";
 import { IBlog, TransformedBlog } from "@/types";
 import { Types } from "mongoose";
 import { ObjectId } from "mongodb";
+import { revalidatePath } from "next/cache";
+import { getCurrentVendor } from "./vendor.actions";
 
-export async function createBlog(formData: FormData) {
+export async function createBlog(formData: FormData, vendorId: string) {
   try {
-    await connectToDB();
-
-    const validatedData = blogSchema.parse({
+    // Create a plain object from FormData
+    const blogData = {
+      vendorId: vendorId,
       imageId: formData.get("imageId"),
       user: formData.get("user"),
       date: formData.get("date"),
@@ -20,34 +22,89 @@ export async function createBlog(formData: FormData) {
       category: formData.get("category"),
       metaTitle: formData.get("metaTitle"),
       metaDescription: formData.get("metaDescription"),
-      metaKeywords: formData.get("metaKeywords"),
+      metaKeywords: formData.get("metaKeywords") || "",
+    };
+
+    // Validate the data
+    const validationResult = blogSchema.safeParse(blogData);
+
+    if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error);
+      return {
+        success: false,
+        error: validationResult.error.errors[0].message,
+      };
+    }
+
+    // Create new blog
+    const blog = await Blog.create({
+      ...validationResult.data,
+      vendorId: vendorId, // Ensure vendorId is set correctly
     });
 
-    const blog = await Blog.create(validatedData);
-    return { success: true, blog };
+    revalidatePath("/vendor/blogs");
+
+    return {
+      success: true,
+      data: transformBlog(blog),
+    };
   } catch (error) {
     console.error("Blog creation error:", error);
-    throw new Error("Failed to create blog");
+    return {
+      success: false,
+      error: "Failed to create blog",
+    };
   }
+}
+
+// Helper function to transform blog document
+function transformBlog(blog: IBlog): TransformedBlog {
+  return {
+    id: blog._id.toString(),
+    vendorId: blog.vendorId,
+    imageId: blog.imageId,
+    user: blog.user,
+    date: blog.date,
+    heading: blog.heading,
+    description: blog.description,
+    category: blog.category,
+    metaTitle: blog.metaTitle,
+    metaDescription: blog.metaDescription,
+    metaKeywords: blog.metaKeywords,
+  };
 }
 
 export async function getAllBlogs() {
   try {
     await connectToDB();
 
-    const blogs = await Blog.find({}).sort({ createdAt: -1 }).lean().exec();
+    // Get the current vendor first
+    const vendorResponse = await getCurrentVendor();
+
+    if (!vendorResponse.success) {
+      throw new Error("Not authenticated as vendor");
+    }
+
+    const vendorId = vendorResponse.data?._id;
+
+    // Fetch only blogs for current vendor
+    const blogs = await Blog.find({ vendorId })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
 
     const transformedBlogs = await Promise.all(
       blogs.map(async (blog) => {
-        const image = await getFileById(blog.imageId); // Fetch file using the new server action
+        const image = await getFileById(blog.imageId);
         return {
-          id: (blog._id as Types.ObjectId).toString(), // Ensure id is a string
+          id: (blog._id as Types.ObjectId).toString(),
+          vendorId: blog.vendorId,
           heading: blog.heading,
           user: blog.user,
           date: blog.date,
           description: blog.description,
           category: blog.category,
-          imageId: image.buffer.toString("base64"), // Return the image as base64 for frontend use
+          imageId: image.buffer.toString("base64"),
           metaTitle: blog.metaTitle,
           metaDescription: blog.metaDescription,
           metaKeywords: blog.metaKeywords,
@@ -78,6 +135,7 @@ export async function getBlogById(id: string): Promise<TransformedBlog | null> {
     // Transform the blog data to include the image as base64
     const transformedBlog = {
       id: blog._id.toString(), // Ensure id is a string
+      vendorId: blog.vendorId,
       heading: blog.heading,
       user: blog.user,
       date: blog.date, // Convert date to string
@@ -99,6 +157,7 @@ export async function getBlogById(id: string): Promise<TransformedBlog | null> {
 //* Update a blog post
 export async function updateBlog(
   id: string,
+  vendorId: string,
   updateData: Partial<TransformedBlog>
 ) {
   try {
@@ -114,10 +173,14 @@ export async function updateBlog(
       updateData.imageId = existingBlog.imageId;
     }
 
-    const updatedBlog = await Blog.findByIdAndUpdate(id, updateData, {
-      new: true,
-      lean: true,
-    });
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      id,
+      { ...updateData, vendorId },
+      {
+        new: true,
+        lean: true,
+      }
+    );
 
     return { success: true, data: updatedBlog };
   } catch (error) {
