@@ -56,8 +56,8 @@ const BrandPage = () => {
   const fetchBrands = async () => {
     try {
       const response = await getAllBrands();
-      if (Array.isArray(response)) {
-        setData(response as IBrand[]);
+      if (response.success && response.data) {
+        setData(response.data);
       } else {
         console.error("Invalid response format");
         setData([]);
