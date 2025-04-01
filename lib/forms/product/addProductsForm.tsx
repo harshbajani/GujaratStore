@@ -322,8 +322,8 @@ const AddProductsForm = () => {
         if (attributeResponse.success) {
           setAttributes(attributeResponse.data as IAttribute[]);
         }
-        if (brandResponse.length > 0) {
-          setBrands(brandResponse as IBrand[]);
+        if (brandResponse.success && brandResponse.data) {
+          setBrands(brandResponse.data);
         }
         if (sizesResponse.success) {
           setSizes(sizesResponse.data as ISizes[]);
