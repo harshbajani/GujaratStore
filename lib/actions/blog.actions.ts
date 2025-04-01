@@ -119,6 +119,43 @@ export async function getAllBlogs() {
   }
 }
 
+// In your blog.actions.ts or a new public action file
+export async function getPublicBlogs() {
+  try {
+    await connectToDB();
+    // Fetch all blogs regardless of vendor
+    const blogs = await Blog.find({})
+      .sort({ createdAt: -1 })
+      .lean<IBlog[]>() // Specify that the resulting documents are an array of IBlog
+      .exec();
+
+    const transformedBlogs = await Promise.all(
+      blogs.map(async (blog) => {
+        const typedBlog = blog as IBlog; // Cast to IBlog
+        const image = await getFileById(typedBlog.imageId);
+        return {
+          id: typedBlog._id.toString(),
+          vendorId: typedBlog.vendorId,
+          heading: typedBlog.heading,
+          user: typedBlog.user,
+          date: typedBlog.date,
+          description: typedBlog.description,
+          category: typedBlog.category,
+          imageId: image.buffer.toString("base64"),
+          metaTitle: typedBlog.metaTitle,
+          metaDescription: typedBlog.metaDescription,
+          metaKeywords: typedBlog.metaKeywords,
+        };
+      })
+    );
+
+    return transformedBlogs;
+  } catch (error) {
+    console.error("Error fetching public blogs:", error);
+    throw new Error("Failed to fetch blogs");
+  }
+}
+
 export async function getBlogById(id: string): Promise<TransformedBlog | null> {
   try {
     await connectToDB();
