@@ -4,15 +4,18 @@ import { revalidatePath } from "next/cache";
 import Attributes from "@/lib/models/attribute.model";
 import mongoose from "mongoose";
 import { z } from "zod";
+import { getCurrentVendor } from "./vendor.actions";
 
 // Define the attribute interface
 export interface IAttribute {
   id: string;
   _id: string;
   name: string;
+  vendorId: string;
   isActive: boolean;
 }
 
+// Helper function to serialize MongoDB documents
 // Helper function to serialize MongoDB documents
 const serializeDocument = (doc: mongoose.Document): IAttribute | null => {
   if (!doc) return null;
@@ -21,6 +24,7 @@ const serializeDocument = (doc: mongoose.Document): IAttribute | null => {
     id: serialized._id.toString(),
     _id: serialized._id.toString(),
     name: (serialized as IAttribute).name,
+    vendorId: (serialized as IAttribute).vendorId.toString(),
     isActive: (serialized as IAttribute).isActive,
   };
 };
@@ -39,9 +43,20 @@ export type AttributeResponse = {
 
 export async function createAttribute(
   name: string,
+  vendorId: string,
   isActive: boolean
 ): Promise<AttributeResponse> {
   try {
+    // Get the current vendor first
+    const vendorResponse = await getCurrentVendor();
+
+    if (!vendorResponse.success) {
+      return {
+        success: false,
+        error: "Not authenticated as vendor",
+      };
+    }
+
     const validation = attributeSchema.safeParse({ name, isActive });
 
     if (!validation.success) {
@@ -51,15 +66,25 @@ export async function createAttribute(
       };
     }
 
-    const existingAttribute = await Attributes.findOne({ name });
+    // Use the vendorId from getCurrentVendor
+    const existingAttribute = await Attributes.findOne({
+      name,
+      vendorId: vendorResponse?.data?._id,
+    });
+
     if (existingAttribute) {
       return {
         success: false,
-        error: "Attribute with this name already exists",
+        error: "Attribute with this name already exists for this vendor",
       };
     }
 
-    const attribute = await Attributes.create({ name, isActive });
+    const attribute = await Attributes.create({
+      name,
+      vendorId: vendorResponse?.data?._id,
+      isActive,
+    });
+
     revalidatePath("/vendor/attribute");
 
     return {
@@ -77,7 +102,21 @@ export async function createAttribute(
 
 export async function getAllAttributes(): Promise<AttributeResponse> {
   try {
-    const attributes = await Attributes.find().sort({ name: 1 });
+    // Get the current vendor first
+    const vendorResponse = await getCurrentVendor();
+
+    if (!vendorResponse.success) {
+      return {
+        success: false,
+        error: "Not authenticated as vendor",
+      };
+    }
+
+    const vendorId = vendorResponse.data?._id;
+
+    // Fetch only attributes for current vendor
+    const attributes = await Attributes.find({ vendorId }).sort({ name: 1 });
+
     return {
       success: true,
       data: attributes
@@ -126,7 +165,7 @@ export async function getAttributeById(id: string): Promise<AttributeResponse> {
 // Add this after other attribute actions
 export async function updateAttribute(
   id: string,
-  data: { name: string; isActive: boolean }
+  data: { name: string; vendorId: string; isActive: boolean }
 ): Promise<AttributeResponse> {
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -136,23 +175,39 @@ export async function updateAttribute(
       };
     }
 
-    const updatedAttribute = await Attributes.findByIdAndUpdate(
-      id,
-      {
-        name: data.name,
-        isActive: data.isActive,
-      },
-      { new: true } // Returns updated document
-    );
+    // Convert the vendorId string to ObjectId
+    const vendorObjectId = new mongoose.Types.ObjectId(data.vendorId);
 
-    if (!updatedAttribute) {
+    // First check if attribute exists
+    const existingAttribute = await Attributes.findById(id);
+
+    if (!existingAttribute) {
       return {
         success: false,
         error: "Attribute not found",
       };
     }
 
+    // Update the attribute with the current vendor's ID
+    const updatedAttribute = await Attributes.findByIdAndUpdate(
+      id,
+      {
+        name: data.name,
+        vendorId: vendorObjectId,
+        isActive: data.isActive,
+      },
+      { new: true }
+    );
+
+    if (!updatedAttribute) {
+      return {
+        success: false,
+        error: "Failed to update attribute",
+      };
+    }
+
     revalidatePath("/vendor/attribute");
+
     return {
       success: true,
       data: serializeDocument(updatedAttribute),

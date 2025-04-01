@@ -186,6 +186,7 @@ export interface AddressDialogProps {
 export interface AttributeFormData {
   id: string;
   name: string;
+  vendorId: string;
   isActive: boolean;
 }
 
