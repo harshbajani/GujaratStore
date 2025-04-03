@@ -214,6 +214,7 @@ export interface IPrimaryCategory {
 export interface ISecondaryCategory {
   id?: string;
   name: string;
+  vendorId: string;
   parentCategory: string;
   primaryCategory: string;
   attributes: string[];

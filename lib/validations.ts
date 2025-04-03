@@ -150,6 +150,7 @@ export const primaryCategorySchema = z.object({
 
 export const secondaryCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   parentCategory: z.string().nonempty("Parent category is required"),
   primaryCategory: z.string().nonempty("Primary category is required"),
   attributes: z

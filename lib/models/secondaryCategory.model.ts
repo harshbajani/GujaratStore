@@ -17,6 +17,11 @@ const secondaryCategorySchema = new Schema({
     ref: "Attributes",
     required: true,
   },
+  vendorId: {
+    type: Schema.Types.ObjectId,
+    ref: "Vendor",
+    required: true,
+  },
   description: { type: String, default: "" },
   isActive: { type: Boolean, default: true },
 });
