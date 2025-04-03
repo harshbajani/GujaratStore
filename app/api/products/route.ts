@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { getCurrentVendor } from "@/lib/actions/vendor.actions";
 import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
@@ -56,50 +57,77 @@ export async function GET(request: NextRequest) {
     await connectToDB();
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get("id");
+    const fetchAll = searchParams.get("all") === "true"; // new flag
 
-    // Get the current vendor
-    const vendorResponse = await getCurrentVendor();
+    if (fetchAll) {
+      // Public route: return all products without vendor filtering
+      if (id) {
+        const product = await Products.findById(id)
+          .select(commonFields)
+          .populate(populateConfig)
+          .lean()
+          .exec();
+        if (!product) {
+          return NextResponse.json(
+            { success: false, error: "Product not found" },
+            { status: 404 }
+          );
+        }
+        return NextResponse.json({ success: true, data: product });
+      }
 
-    if (!vendorResponse.success) {
-      return NextResponse.json(
-        { success: false, error: "Not authenticated as vendor" },
-        { status: 401 }
-      );
-    }
+      // For product listing: fetch all products
+      const [products, count] = await Promise.all([
+        Products.find({})
+          .select(commonFields)
+          .populate(populateConfig)
+          .lean()
+          .exec(),
+        Products.countDocuments({}),
+      ]);
 
-    const vendorId = vendorResponse?.data?._id; // Get vendor ID from response
+      return NextResponse.json({ success: true, data: products });
+    } else {
+      // Vendor panel: filter by vendorId
+      const vendorResponse = await getCurrentVendor();
 
-    if (id) {
-      // For single product fetch - ensure it belongs to this vendor
-      const product = await Products.findOne({ _id: id, vendorId })
-        .select(commonFields)
-        .populate(populateConfig)
-        .lean()
-        .exec();
-
-      if (!product) {
+      if (!vendorResponse.success) {
         return NextResponse.json(
-          { success: false, error: "Product not found" },
-          { status: 404 }
+          { success: false, error: "Not authenticated as vendor" },
+          { status: 401 }
         );
       }
-      return NextResponse.json({ success: true, data: product });
+
+      const vendorId = vendorResponse?.data?._id;
+
+      if (id) {
+        // For single product fetch - ensure product belongs to this vendor
+        const product = await Products.findOne({ _id: id, vendorId })
+          .select(commonFields)
+          .populate(populateConfig)
+          .lean()
+          .exec();
+        if (!product) {
+          return NextResponse.json(
+            { success: false, error: "Product not found" },
+            { status: 404 }
+          );
+        }
+        return NextResponse.json({ success: true, data: product });
+      }
+
+      // For product listing - fetch products for this vendor
+      const [products, count] = await Promise.all([
+        Products.find({ vendorId })
+          .select(commonFields)
+          .populate(populateConfig)
+          .lean()
+          .exec(),
+        Products.countDocuments({ vendorId }),
+      ]);
+
+      return NextResponse.json({ success: true, data: products });
     }
-
-    // For product listing - filter by current vendor
-    const [products] = await Promise.all([
-      Products.find({ vendorId }) // Only show this vendor's products
-        .select(commonFields)
-        .populate(populateConfig)
-        .lean()
-        .exec(),
-      Products.countDocuments({ vendorId }),
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      data: products,
-    });
   } catch (error: unknown) {
     console.error("Error in GET products:", error);
     return NextResponse.json(

@@ -203,6 +203,7 @@ export interface IPrimaryCategory {
   id?: string;
   name: string;
   parentCategory: string;
+  vendorId: string;
   description?: string;
   metaTitle?: string;
   metaKeywords?: string[];
