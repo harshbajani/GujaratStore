@@ -1,6 +1,6 @@
 import { IAttribute } from "@/lib/actions/attribute.actions";
 import { Address } from "@/lib/validations";
-import { Document, Types } from "mongoose";
+import { Document, Schema, Types } from "mongoose";
 import { ReactNode } from "react";
 import { Control } from "react-hook-form";
 import { z } from "zod";
@@ -467,6 +467,7 @@ export interface IDiscount {
   id: string;
   _id: string;
   name: string;
+  vendorId: Schema.Types.ObjectId;
   description?: string;
   discountType: DiscountType;
   discountValue: number;

@@ -230,6 +230,7 @@ export const productSchema = z.object({
 
 export const discountFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   description: z.string().optional(),
   discountType: z.enum(["percentage", "amount"]),
   discountValue: z

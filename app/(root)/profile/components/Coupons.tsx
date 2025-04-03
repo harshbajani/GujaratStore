@@ -34,7 +34,7 @@ const Coupons = () => {
     const fetchDiscounts = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/discounts");
+        const response = await fetch("/api/discounts?public=true");
         const data = await response.json();
 
         if (data.success) {

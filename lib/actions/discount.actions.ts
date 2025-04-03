@@ -32,6 +32,7 @@ const serializeDocument = (
             isActive: serialized.parentCategory.isActive,
           }
         : serialized.parentCategory,
+    vendorId: serialized.vendorId,
     startDate: serialized.startDate,
     endDate: serialized.endDate,
     isActive: serialized.isActive,
@@ -49,6 +50,7 @@ export type DiscountResponse = {
 
 export async function createDiscount(data: {
   name: string;
+  vendorId: string;
   description?: string;
   discountType: DiscountType;
   discountValue: number;
@@ -78,6 +80,7 @@ export async function createDiscount(data: {
     // Create discount
     const discount = await Discount.create({
       name: data.name,
+      vendorId: data.vendorId,
       description: data.description,
       discountType: data.discountType,
       discountValue: data.discountValue,
@@ -165,6 +168,7 @@ export async function updateDiscount(
   id: string,
   data: {
     name?: string;
+    vendorId: string;
     description?: string;
     discountType?: DiscountType;
     discountValue?: number;

@@ -74,6 +74,7 @@ const DiscountsPage = () => {
     resolver: zodResolver(discountFormSchema),
     defaultValues: {
       name: "",
+      vendorId: "",
       description: "",
       discountType: "percentage",
       discountValue: 0,
@@ -125,6 +126,7 @@ const DiscountsPage = () => {
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof discountFormSchema>) => {
+    console.log("Form values:", values);
     setIsSubmitting(true);
     try {
       const endpoint = "/api/discounts";
@@ -191,6 +193,7 @@ const DiscountsPage = () => {
     setEditingDiscount(discount);
     form.reset({
       name: discount.name,
+      vendorId: form.getValues("vendorId"),
       description: discount.description || "",
       discountType: discount.discountType,
       discountValue: discount.discountValue,
@@ -247,6 +250,25 @@ const DiscountsPage = () => {
     );
   });
 
+  useEffect(() => {
+    const fetchVendor = async () => {
+      try {
+        const userResponse = await fetch("/api/vendor/current");
+        const userData = await userResponse.json();
+        if (userData.success && userData.data && userData.data._id) {
+          // Set the vendorId in the form state
+          form.setValue("vendorId", userData.data._id);
+          console.log("Vendor ID set:", userData.data._id);
+        } else {
+          console.error("Failed to get vendor ID from response", userData);
+        }
+      } catch (error) {
+        console.error("Error fetching vendor data:", error);
+      }
+    };
+    fetchVendor();
+  }, [form]);
+
   return (
     <div className="p-2">
       <div className="flex items-center justify-between mb-4">
@@ -262,6 +284,7 @@ const DiscountsPage = () => {
                 form.reset({
                   name: "",
                   description: "",
+                  vendorId: form.getValues("vendorId"),
                   discountType: "percentage",
                   discountValue: 0,
                   parentCategoryId: "",
@@ -294,6 +317,7 @@ const DiscountsPage = () => {
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-4"
               >
+                <Input type="hidden" {...form.register("vendorId")} />
                 <FormField
                   control={form.control}
                   name="name"
