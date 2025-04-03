@@ -133,6 +133,7 @@ export const inquirySchema = z.object({
 
 export const parentCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   isActive: z.boolean().default(true),
 });
 

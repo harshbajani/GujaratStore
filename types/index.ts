@@ -195,6 +195,7 @@ export interface AttributeFormData {
 export interface ParentCategoryFormData {
   id: string;
   name: string;
+  vendorId: string;
   isActive: boolean;
 }
 

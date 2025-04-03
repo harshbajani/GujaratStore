@@ -1,14 +1,16 @@
 "use server";
 
-import mongoose, { HydratedDocument } from "mongoose";
+import mongoose, { HydratedDocument, Schema } from "mongoose";
 import { revalidatePath } from "next/cache";
 import { parentCategorySchema } from "../validations";
 import ParentCategory from "../models/parentCategory.model";
+import { getCurrentVendor } from "./vendor.actions";
 
 export interface IParentCategory {
   id: string;
   _id: string;
   name: string;
+  vendorId: Schema.Types.ObjectId;
   isActive: boolean;
 }
 
@@ -20,6 +22,7 @@ const serializeDocument = (doc: HydratedDocument<IParentCategory>) => {
     id: serialized._id.toString(),
     _id: serialized._id.toString(),
     name: (serialized as IParentCategory).name,
+    vendorId: serialized.vendorId,
     isActive: (serialized as IParentCategory).isActive,
   };
 };
@@ -32,10 +35,15 @@ export type ParentCategoryResponse = {
 
 export async function createParentCategory(
   name: string,
+  vendorId: string,
   isActive: boolean
 ): Promise<ParentCategoryResponse> {
   try {
-    const validation = parentCategorySchema.safeParse({ name, isActive });
+    const validation = parentCategorySchema.safeParse({
+      name,
+      vendorId,
+      isActive,
+    });
 
     if (!validation.success) {
       return {
@@ -52,7 +60,11 @@ export async function createParentCategory(
       };
     }
 
-    const parentCategory = await ParentCategory.create({ name, isActive });
+    const parentCategory = await ParentCategory.create({
+      name,
+      vendorId,
+      isActive,
+    });
     revalidatePath("/vendor/category/parentCategory");
 
     return {
@@ -70,7 +82,20 @@ export async function createParentCategory(
 
 export async function getAllParentCategory(): Promise<ParentCategoryResponse> {
   try {
-    const parentCategory = await ParentCategory.find().sort({ name: 1 });
+    const vendorResponse = await getCurrentVendor();
+
+    if (!vendorResponse.success) {
+      return {
+        success: false,
+        error: "Not authenticated as vendor",
+        data: [],
+      };
+    }
+
+    const vendorId = vendorResponse.data?._id;
+    const parentCategory = await ParentCategory.find({ vendorId }).sort({
+      name: 1,
+    });
     return {
       success: true,
       data: parentCategory
@@ -120,7 +145,7 @@ export async function getParentCategoryById(
 
 export async function updateParentCategory(
   id: string,
-  data: { name: string; isActive: boolean }
+  data: { name: string; vendorId: string; isActive: boolean }
 ): Promise<ParentCategoryResponse> {
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -134,6 +159,7 @@ export async function updateParentCategory(
       id,
       {
         name: data.name,
+        vendorId: data.vendorId,
         isActive: data.isActive,
       },
       { new: true } // Returns updated document
