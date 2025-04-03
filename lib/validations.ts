@@ -249,6 +249,7 @@ export const referralFormSchema = z.object({
   discountType: z.enum(["percentage", "amount"]),
   discountValue: z.number().min(0, "Discount value must be positive"),
   parentCategoryId: z.string().min(1, "Category is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   expiryDate: z.string(),
   maxUses: z.number().int().min(1, "Maximum uses must be at least 1"),
   isActive: z.boolean().default(true),

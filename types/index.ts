@@ -498,6 +498,7 @@ export interface IReferral {
     name: string;
     isActive: boolean;
   };
+  vendorId: Schema.Types.ObjectId;
   expiryDate: Date | string;
   maxUses: number;
   usedCount: number;

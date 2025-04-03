@@ -39,6 +39,11 @@ const referralSchema = new Schema({
     ref: "ParentCategory",
     required: true,
   },
+  vendorId: {
+    type: Schema.Types.ObjectId,
+    ref: "Vendor",
+    required: true,
+  },
   expiryDate: {
     type: Date,
     required: true,
