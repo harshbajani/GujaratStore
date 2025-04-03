@@ -75,14 +75,12 @@ export async function GET(request: NextRequest) {
     }
 
     const vendorResponse = await getCurrentVendor();
-
     if (!vendorResponse.success) {
-      return {
-        success: false,
-        error: "Not authenticated as vendor",
-      };
+      return NextResponse.json(
+        { success: false, error: "Not authenticated as vendor" },
+        { status: 401 }
+      );
     }
-
     const vendorId = vendorResponse.data?._id;
 
     // Get all referrals
