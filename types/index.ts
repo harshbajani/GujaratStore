@@ -109,9 +109,37 @@ export interface IBlog extends Document {
   updatedAt: Date;
 }
 
+export interface IAdminBlog extends Document {
+  _id: Types.ObjectId;
+  imageId: string;
+  user: string;
+  date: string;
+  heading: string;
+  description: string;
+  category: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface TransformedBlog {
   id: string;
   vendorId: string;
+  imageId: string;
+  user: string;
+  date: string;
+  heading: string;
+  description: string;
+  category: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+}
+
+export interface AdminTransformedBlog {
+  id: string;
   imageId: string;
   user: string;
   date: string;
@@ -259,6 +287,16 @@ export type PrimaryCategoryWithPopulatedFields = IPrimaryCategory & {
 export interface IBrand {
   _id?: string;
   vendorId: string;
+  name: string;
+  imageId: string;
+  metaTitle?: string;
+  metaKeywords?: string;
+  metaDescription?: string;
+  __v?: number;
+}
+
+export interface IAdminBrand {
+  _id?: string;
   name: string;
   imageId: string;
   metaTitle?: string;

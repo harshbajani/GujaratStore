@@ -169,6 +169,15 @@ export const brandSchema = z.object({
   metaDescription: z.string().optional(),
 });
 
+export const adminBrandSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
+  imageId: z.string().min(1, "Image is required."),
+  metaTitle: z.string().optional(),
+  metaKeywords: z.string().optional(),
+  metaDescription: z.string().optional(),
+});
+
 // Define the Zod schema for product validation
 export const productSchema = z.object({
   productName: z.string().min(1, "Product name is required"),
