@@ -123,7 +123,7 @@ const EditSecondaryCategoryForm = () => {
         description: "Secondary category updated successfully",
       });
 
-      router.push("/vendor/category/secondaryCategory");
+      router.push("/admin/category/secondaryCategory");
     } catch {
       toast({
         title: "Error",
@@ -284,7 +284,7 @@ const EditSecondaryCategoryForm = () => {
           <Button
             variant="outline"
             type="button"
-            onClick={() => router.push("/vendor/category/secondaryCategory")}
+            onClick={() => router.push("/admin/category/secondaryCategory")}
           >
             Cancel
           </Button>
