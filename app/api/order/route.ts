@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { getCurrentVendor } from "@/lib/actions/vendor.actions";
 import Order from "@/lib/models/order.model";
 import Products from "@/lib/models/product.model";
 import User from "@/lib/models/user.model";
@@ -117,25 +119,34 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    // Establish database connection
     await connectToDB();
-
-    // Get query parameters (for potential filtering)
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const status = searchParams.get("status");
 
-    // Build query object
-    const query: { userId?: string; status?: string } = {};
+    // Try to get the current vendor first.
+    const vendorResponse = await getCurrentVendor();
 
-    // Apply filters if provided
-    if (userId) query.userId = userId;
-    if (status) query.status = status;
+    let query: any = {};
 
-    // Find orders with optional filters
+    // If the vendor is authenticated, filter orders to include only those
+    // that have at least one order item with a matching vendorId.
+    if (vendorResponse.success && vendorResponse.data?._id) {
+      const vendorId = vendorResponse.data._id;
+      query = { "items.vendorId": vendorId };
+
+      // Optionally, if status filtering is provided:
+      const status = searchParams.get("status");
+      if (status) query.status = status;
+    } else {
+      // Otherwise, fall back to user-based filtering (for a customer)
+      const userId = searchParams.get("userId");
+      if (userId) query.userId = userId;
+      const status = searchParams.get("status");
+      if (status) query.status = status;
+    }
+
+    // Find orders matching the query
     const orders = await Order.find(query).sort({ createdAt: -1 });
 
-    // Return the orders data
     return NextResponse.json({ success: true, data: orders }, { status: 200 });
   } catch (error: unknown) {
     return NextResponse.json(

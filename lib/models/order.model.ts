@@ -32,6 +32,11 @@ const orderItemSchema = new Schema({
     type: String,
     required: false,
   },
+  vendorId: {
+    type: Schema.Types.ObjectId,
+    ref: "Vendor",
+    required: true,
+  },
 });
 
 const orderSchema = new Schema(

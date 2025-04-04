@@ -223,8 +223,12 @@ const DashboardPage: React.FC = () => {
           title="Total Revenue"
           value={`₹${salesSummary?.totalRevenue.toFixed(2) || "0.00"}`}
           icon={<Wallet className="h-4 w-4 text-muted-foreground" />}
-          trend={12.5}
-          trendDirection="up"
+          trend={salesSummary?.revenueChangePercent}
+          trendDirection={
+            salesSummary && salesSummary.revenueChangePercent >= 0
+              ? "up"
+              : "down"
+          }
         />
         <DashboardCard
           title="Total Orders"

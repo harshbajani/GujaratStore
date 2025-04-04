@@ -337,6 +337,7 @@ export interface IPriceCalculatorProps {
 export interface IProductResponse {
   _id?: string;
   productName: string;
+  vendorId: string;
   parentCategory: {
     _id: string;
     name: string;
@@ -519,6 +520,7 @@ export interface ISalesSummary {
   averageOrderValue: number;
   monthlyRevenue: { [month: string]: number };
   yearlyRevenue: { [year: number]: number };
+  revenueChangePercent: number;
   topSellingProducts: Array<{
     productId: string;
     productName: string;
