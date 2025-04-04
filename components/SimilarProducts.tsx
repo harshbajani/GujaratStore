@@ -145,7 +145,7 @@ const SimilarProducts = () => {
         }
 
         // Fetch all products in the same category
-        const productsResponse = await fetch("/api/products");
+        const productsResponse = await fetch("/api/products?all=true");
         const productsData = await productsResponse.json();
 
         if (productsData.success) {

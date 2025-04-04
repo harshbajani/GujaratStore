@@ -75,9 +75,10 @@ const AddProductsForm = () => {
     resolver: zodResolver(productSchema),
     defaultValues: {
       productName: "",
+      vendorId: "",
       parentCategory: "",
       primaryCategory: "",
-      secondaryCategory: "", // Note: matches the interface property name
+      secondaryCategory: "",
       attributes: [],
       brands: "",
       gender: "male",
@@ -312,7 +313,17 @@ const AddProductsForm = () => {
           setPrimaryCategory(primaryCategoryResponse as IPrimaryCategory[]);
         }
 
-        if (secondaryCategoryResponse.length > 0) {
+        if (
+          "success" in secondaryCategoryResponse &&
+          secondaryCategoryResponse.success
+        ) {
+          setSecondaryCategory(
+            secondaryCategoryResponse.data as IProductSecondaryCategory[]
+          );
+        } else if (
+          Array.isArray(secondaryCategoryResponse) &&
+          secondaryCategoryResponse.length > 0
+        ) {
           setSecondaryCategory(
             secondaryCategoryResponse as IProductSecondaryCategory[]
           );
@@ -321,8 +332,8 @@ const AddProductsForm = () => {
         if (attributeResponse.success) {
           setAttributes(attributeResponse.data as IAttribute[]);
         }
-        if (brandResponse.length > 0) {
-          setBrands(brandResponse as IBrand[]);
+        if (brandResponse.success && brandResponse.data) {
+          setBrands(brandResponse.data);
         }
         if (sizesResponse.success) {
           setSizes(sizesResponse.data as ISizes[]);
@@ -342,6 +353,27 @@ const AddProductsForm = () => {
       productPreviews.forEach(URL.revokeObjectURL);
     };
   }, [coverPreview, productPreviews]);
+
+  useEffect(() => {
+    const fetchVendor = async () => {
+      try {
+        const userResponse = await fetch("/api/vendor/current");
+        const userData = await userResponse.json();
+
+        if (userData.success && userData.data && userData.data._id) {
+          // Set the vendorId in the form
+          form.setValue("vendorId", userData.data._id);
+          console.log("Vendor ID set:", userData.data._id);
+        } else {
+          console.error("Failed to get vendor ID from response", userData);
+        }
+      } catch (error) {
+        console.error("Error fetching vendor data:", error);
+      }
+    };
+
+    fetchVendor();
+  }, [form]);
 
   return (
     <Form {...form}>

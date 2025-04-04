@@ -258,7 +258,7 @@ const ProductCategoryPage = () => {
       try {
         setLoading(true);
         // Fetch all products
-        const prodResponse = await fetch("/api/products");
+        const prodResponse = await fetch("/api/products?all=true");
         const prodData = await prodResponse.json();
 
         if (prodData.success) {

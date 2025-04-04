@@ -35,6 +35,7 @@ const EditBlog = () => {
   const [postImage, setPostImage] = useState<string | null>(null);
   const [existingImageId, setExistingImageId] = useState<string | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
+  const [vendorId, setVendorId] = useState("");
   const { id } = useParams();
   const router = useRouter();
 
@@ -42,6 +43,7 @@ const EditBlog = () => {
     resolver: zodResolver(blogSchema),
     defaultValues: {
       imageId: "",
+      vendorId: "",
       user: "",
       date: "",
       heading: "",
@@ -82,10 +84,12 @@ const EditBlog = () => {
       console.error("Upload error:", error);
     }
   };
+
   // * data submission
   const handleSubmit = async (data: BlogFormData) => {
     setIsSubmitting(true);
     try {
+      // Handle image ID
       if (!data.imageId && existingImageId) {
         data.imageId = existingImageId;
       }
@@ -93,28 +97,41 @@ const EditBlog = () => {
         data.imageId = existingImageId || "";
       }
 
-      const result = await updateBlog(id as string, data);
-      router.push("/vendor/blogs"); // Redirect after success
+      const userResponse = await fetch("/api/vendor/current");
+      const userData = await userResponse.json();
+
+      if (!userData.success || !userData.data?._id) {
+        throw new Error("Failed to get vendor ID");
+      }
+
+      const result = await updateBlog(id as string, userData.data._id, {
+        ...data,
+        vendorId: userData.data._id, // Include vendorId in update data
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to update blog");
+      }
+
       toast({
         title: "Success",
         description: "Blog edited successfully.",
       });
 
-      if (result) {
-        form.reset();
-      }
+      router.push("/vendor/blogs");
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
         title: "Error",
-        description: "Failed to edit blog.",
+        description: (error as Error).message || "Failed to edit blog.",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-  // * function to fetch data and populate the fields
+
+  // * Update fetchBlog to set vendorId from current vendor
   useEffect(() => {
     const fetchBlog = async () => {
       if (!id) {
@@ -123,7 +140,19 @@ const EditBlog = () => {
       }
 
       try {
+        // Fetch blog data
         const blog = await getBlogById(id as string);
+
+        // Fetch current vendor
+        const userResponse = await fetch("/api/vendor/current");
+        const userData = await userResponse.json();
+
+        if (userData.success && userData.data?._id) {
+          // Set the vendorId in form and state
+          setVendorId(userData.data._id);
+          form.setValue("vendorId", userData.data._id);
+        }
+
         if (blog) {
           // Set the original imageId
           setExistingImageId(blog.imageId);
@@ -134,23 +163,22 @@ const EditBlog = () => {
             const blob = await response.blob();
             const imageUrl = URL.createObjectURL(blob);
             setPostImage(imageUrl);
-            setImagePreviewUrl(URL.createObjectURL(blob));
+            setImagePreviewUrl(imageUrl);
           }
 
+          // Reset form with blog data and current vendor ID
           form.reset({
-            imageId: blog.imageId,
-            user: blog.user || "",
-            date: blog.date || "",
-            heading: blog.heading || "",
-            description: blog.description || "",
-            category: blog.category || "",
-            metaTitle: blog.metaTitle || "",
-            metaDescription: blog.metaDescription || "",
-            metaKeywords: blog.metaKeywords || "",
+            ...blog,
+            vendorId: userData.data._id, // Use current vendor's ID
           });
         }
       } catch (error) {
-        console.error("Failed to fetch blog:", error);
+        console.error("Failed to fetch data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch blog data",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -158,7 +186,6 @@ const EditBlog = () => {
 
     fetchBlog();
 
-    // Cleanup function to revoke object URLs
     return () => {
       if (postImage) {
         URL.revokeObjectURL(postImage);

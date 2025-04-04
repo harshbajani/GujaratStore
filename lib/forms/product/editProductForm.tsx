@@ -73,6 +73,7 @@ const EditProductsForm = () => {
     resolver: zodResolver(productSchema),
     defaultValues: {
       productName: "",
+      vendorId: "",
       parentCategory: "",
       primaryCategory: "",
       secondaryCategory: "", // Note: matches the interface property name
@@ -215,6 +216,8 @@ const EditProductsForm = () => {
           const productSizeIds = product.productSize
             ? product.productSize.map((size: ISizes) => size._id)
             : [];
+
+          const currentVendorId = form.getValues("vendorId");
           // Set form values with null checks
           form.reset({
             ...product,
@@ -223,7 +226,13 @@ const EditProductsForm = () => {
             secondaryCategory: product.secondaryCategory?._id || "",
             brands: product.brands?._id || "",
             productSize: productSizeIds,
+            vendorId: currentVendorId || product.vendorId || "",
           });
+
+          console.log(
+            "VendorId after product load:",
+            form.getValues("vendorId")
+          );
         }
       } catch (error) {
         console.error("Error fetching product:", error);
@@ -247,6 +256,22 @@ const EditProductsForm = () => {
     console.log("Form submission triggered with data:", data);
     try {
       setIsLoading(true);
+
+      const userResponse = await fetch("/api/vendor/current");
+      const userData = await userResponse.json();
+
+      if (userData.success && userData.data && userData.data._id) {
+        data.vendorId = userData.data._id;
+        console.log("Vendor ID set at submission time:", data.vendorId);
+      } else {
+        console.error("Failed to get vendor ID from response", userData);
+        toast({
+          title: "Error",
+          description: "Could not determine vendor ID",
+          variant: "destructive",
+        });
+        return;
+      }
 
       // Handle cover image
       let coverImageId = data.productCoverImage;
@@ -298,8 +323,10 @@ const EditProductsForm = () => {
         _id: params.id,
         productCoverImage: coverImageId,
         productImages: productImageIds,
+        vendorId: data.vendorId,
       };
 
+      console.log("Sending PUT request with vendorId:", finalData.vendorId);
       console.log("Sending PUT request to:", `/api/products/${params.id}`);
       console.log("With data:", finalData);
 
@@ -353,7 +380,17 @@ const EditProductsForm = () => {
           setPrimaryCategory(primaryCategoryResponse as IPrimaryCategory[]);
         }
 
-        if (secondaryCategoryResponse.length > 0) {
+        if (
+          "success" in secondaryCategoryResponse &&
+          secondaryCategoryResponse.success
+        ) {
+          setSecondaryCategory(
+            secondaryCategoryResponse.data as IProductSecondaryCategory[]
+          );
+        } else if (
+          Array.isArray(secondaryCategoryResponse) &&
+          secondaryCategoryResponse.length > 0
+        ) {
           setSecondaryCategory(
             secondaryCategoryResponse as IProductSecondaryCategory[]
           );
@@ -362,8 +399,8 @@ const EditProductsForm = () => {
         if (attributeResponse.success) {
           setAttributes(attributeResponse.data as IAttribute[]);
         }
-        if (brandResponse.length > 0) {
-          setBrands(brandResponse as IBrand[]);
+        if (brandResponse.success && brandResponse.data) {
+          setBrands(brandResponse.data);
         }
         if (sizesResponse.success) {
           setSizes(sizesResponse.data as ISizes[]);
@@ -390,6 +427,40 @@ const EditProductsForm = () => {
     };
   }, [coverPreview, productPreviews]);
 
+  useEffect(() => {
+    // This effect runs after isLoading changes to false (product load complete)
+    if (!isLoading) {
+      const currentVendorId = form.getValues("vendorId");
+
+      if (!currentVendorId) {
+        // If vendorId is still not set, fetch it again
+        const fetchVendorId = async () => {
+          try {
+            const userResponse = await fetch("/api/vendor/current");
+            const userData = await userResponse.json();
+
+            if (userData.success && userData.data && userData.data._id) {
+              form.setValue("vendorId", userData.data._id);
+              console.log("Vendor ID re-set:", userData.data._id);
+            }
+          } catch (error) {
+            console.error("Error re-fetching vendor ID:", error);
+          }
+        };
+
+        fetchVendorId();
+      } else {
+        console.log("VendorId already set:", currentVendorId);
+      }
+    }
+  }, [isLoading, form]);
+
+  // Add this near the top of your component
+  const vendorId = form.watch("vendorId");
+  useEffect(() => {
+    console.log("Current vendorId in form:", vendorId);
+  }, [vendorId]);
+
   if (isLoading) {
     return (
       <div>
@@ -415,6 +486,7 @@ const EditProductsForm = () => {
         }}
         className="space-y-8"
       >
+        <Input type="hidden" {...form.register("vendorId")} />
         <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}

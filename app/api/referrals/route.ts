@@ -2,6 +2,7 @@ import Referral from "@/lib/models/referral.model";
 import { connectToDB } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
+import { getCurrentVendor } from "@/lib/actions/vendor.actions";
 
 const populateConfig = [
   { path: "parentCategory", select: "name isActive" },
@@ -73,8 +74,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: referrals });
     }
 
+    const vendorResponse = await getCurrentVendor();
+    if (!vendorResponse.success) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated as vendor" },
+        { status: 401 }
+      );
+    }
+    const vendorId = vendorResponse.data?._id;
+
     // Get all referrals
-    const referrals = await Referral.find()
+    const referrals = await Referral.find({ vendorId })
       .populate(populateConfig)
       .sort({ createdAt: -1 })
       .lean()

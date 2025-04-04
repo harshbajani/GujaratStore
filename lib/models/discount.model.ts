@@ -39,6 +39,11 @@ const discountSchema = new Schema({
     ref: "ParentCategory",
     required: true,
   },
+  vendorId: {
+    type: Schema.Types.ObjectId,
+    ref: "Vendor",
+    required: true,
+  },
   startDate: {
     type: Date,
     default: Date.now,

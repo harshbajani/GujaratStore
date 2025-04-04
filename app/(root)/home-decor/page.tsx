@@ -196,7 +196,7 @@ const HomeDecorPage = () => {
     const fetchProductsAndUser = async () => {
       try {
         // Fetch products
-        const prodResponse = await fetch("/api/products");
+        const prodResponse = await fetch("/api/products?all=true");
         const prodData = await prodResponse.json();
 
         if (prodData.success) {

@@ -6,8 +6,14 @@ import "@/lib/models/brand.model";
 import "@/lib/models/attribute.model";
 import "@/lib/models/size.model";
 import "@/lib/models/productReview.model";
+import "@/lib/models/vendor.model";
 
 const productSchema = new Schema({
+  vendorId: {
+    type: Schema.Types.ObjectId,
+    ref: "Vendor",
+    required: true,
+  },
   productName: { type: String, required: true },
   parentCategory: {
     type: Schema.Types.ObjectId,

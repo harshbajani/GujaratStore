@@ -25,6 +25,7 @@ import Loader from "@/components/Loader";
 const sizeSchema = z.object({
   label: z.string().min(1, "Label is required"),
   value: z.string().min(1, "Value is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   isActive: z.boolean().default(true),
 });
 
@@ -40,6 +41,7 @@ const EditSizeForm = () => {
     defaultValues: {
       label: "",
       value: "",
+      vendorId: "",
       isActive: true,
     },
   });
@@ -53,10 +55,12 @@ const EditSizeForm = () => {
         const response = await getSizeById(id);
         if (response.success && response.data) {
           const size = response.data as ISize;
+          const currentVendorId = form.getValues("vendorId") || "";
           form.reset({
             label: size.label,
             value: size.value,
             isActive: size.isActive,
+            vendorId: currentVendorId,
           });
         } else {
           toast({
@@ -103,6 +107,27 @@ const EditSizeForm = () => {
       });
     }
   };
+
+  useEffect(() => {
+    const fetchVendor = async () => {
+      try {
+        const userResponse = await fetch("/api/vendor/current");
+        const userData = await userResponse.json();
+
+        if (userData.success && userData.data && userData.data._id) {
+          // Set the vendorId in the form state
+          form.setValue("vendorId", userData.data._id);
+          console.log("Vendor ID set:", userData.data._id);
+        } else {
+          console.error("Failed to get vendor ID from response", userData);
+        }
+      } catch (error) {
+        console.error("Error fetching vendor data:", error);
+      }
+    };
+
+    fetchVendor();
+  }, [form]);
 
   if (loading) {
     return <Loader />;

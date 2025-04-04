@@ -1,3 +1,4 @@
+import { getCurrentVendor } from "@/lib/actions/vendor.actions";
 import Discount from "@/lib/models/discount.model";
 import { connectToDB } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
@@ -13,8 +14,9 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get("id");
     const categoryId = searchParams.get("categoryId");
+    const isPublic = searchParams.get("public") === "true";
 
-    // Get discount by ID
+    // Get discount by ID (applies regardless of context)
     if (id) {
       const discount = await Discount.findById(id)
         .populate(populateConfig)
@@ -27,11 +29,10 @@ export async function GET(request: NextRequest) {
           { status: 404 }
         );
       }
-
       return NextResponse.json({ success: true, data: discount });
     }
 
-    // Get discounts by category ID
+    // Get discounts by category ID (for public, still apply date filtering)
     if (categoryId) {
       const now = new Date();
       const discounts = await Discount.find({
@@ -48,17 +49,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: discounts });
     }
 
-    // Get all discounts
-    const discounts = await Discount.find()
+    // If the request is public, return all active discounts regardless of vendor
+    if (isPublic) {
+      const now = new Date();
+      const discounts = await Discount.find({
+        isActive: true,
+        startDate: { $lte: now },
+        endDate: { $gt: now },
+      })
+        .populate(populateConfig)
+        // Sort first by vendorId then by createdAt descending (or any other order you prefer)
+        .sort({ vendorId: 1, createdAt: -1 })
+        .lean()
+        .exec();
+      return NextResponse.json({ success: true, data: discounts });
+    }
+
+    // For vendor-specific listing, verify vendor identity and filter by vendorId.
+    const vendorResponse = await getCurrentVendor();
+    if (!vendorResponse.success) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated as vendor" },
+        { status: 401 }
+      );
+    }
+    const vendorId = vendorResponse.data?._id;
+
+    const discounts = await Discount.find({ vendorId })
       .populate(populateConfig)
       .sort({ createdAt: -1 })
       .lean()
       .exec();
 
-    return NextResponse.json({
-      success: true,
-      data: discounts,
-    });
+    return NextResponse.json({ success: true, data: discounts });
   } catch (error: unknown) {
     console.error("Error in GET discounts:", error);
     return NextResponse.json(
@@ -72,6 +95,13 @@ export async function POST(request: Request) {
   try {
     await connectToDB();
     const body = await request.json();
+
+    if (!body.vendorId) {
+      const vendorResponse = await getCurrentVendor();
+      if (vendorResponse.success && vendorResponse.data) {
+        body.vendorId = vendorResponse.data._id;
+      }
+    }
 
     const newDiscount = new Discount(body);
     await newDiscount.save();

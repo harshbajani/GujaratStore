@@ -9,6 +9,7 @@ import { IPrimaryCategory } from "@/types";
 import { primaryCategorySchema } from "../validations";
 import ParentCategory from "@/lib/models/parentCategory.model";
 import { parseStringify } from "../utils";
+import { getCurrentVendor } from "./vendor.actions";
 
 // Define TypeScript interface for PrimaryCategory
 export type PrimaryCategoryData = z.infer<typeof primaryCategorySchema>;
@@ -40,10 +41,36 @@ export const createPrimaryCategory = async (data: PrimaryCategoryData) => {
   return serializeDocument(savedCategory);
 };
 
-// * 2. Get All Primary Categories
+// * 2. Get All Primary Categories with vendorId
+export const getAllPrimaryCategoriesWithVendorId = async () => {
+  await connectToDB();
+  const vendorResponse = await getCurrentVendor();
+
+  if (!vendorResponse.success) {
+    return {
+      success: false,
+      error: "Not authenticated as vendor",
+      data: [],
+    };
+  }
+
+  const vendorId = vendorResponse.data?._id;
+
+  const primaryCategories = await PrimaryCategory.find({ vendorId }).populate({
+    path: "parentCategory",
+    select: "name", // Explicitly select name field
+  });
+
+  // Ensure proper serialization
+  return primaryCategories.map((category) => ({
+    ...parseStringify(category), // Serialize
+    id: category._id.toString(), // Ensure id is a string
+  }));
+};
+
+// * 3. Get All Primary Category
 export const getAllPrimaryCategories = async () => {
   await connectToDB();
-
   const primaryCategories = await PrimaryCategory.find().populate({
     path: "parentCategory",
     select: "name", // Explicitly select name field

@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { parentCategorySchema } from "@/lib/validations";
 import { createParentCategory } from "@/lib/actions/parentCategory.actions";
+import { useEffect } from "react";
 
 const AddParentCategoryForm = () => {
   // * hooks
@@ -27,13 +28,14 @@ const AddParentCategoryForm = () => {
     resolver: zodResolver(parentCategorySchema),
     defaultValues: {
       name: "",
+      vendorId: "",
       isActive: true,
     },
   });
   // * data submission
   const onSubmit = async (data: ParentCategoryFormData): Promise<void> => {
     try {
-      await createParentCategory(data.name, data.isActive);
+      await createParentCategory(data.name, data.vendorId, data.isActive);
       toast({
         title: "Success",
         description: "Parent Category added successfully",
@@ -48,6 +50,27 @@ const AddParentCategoryForm = () => {
       });
     }
   };
+
+  useEffect(() => {
+    const fetchVendor = async () => {
+      try {
+        const userResponse = await fetch("/api/vendor/current");
+        const userData = await userResponse.json();
+
+        if (userData.success && userData.data && userData.data._id) {
+          // Set the vendorId in the form
+          form.setValue("vendorId", userData.data._id);
+          console.log("Vendor ID set:", userData.data._id);
+        } else {
+          console.error("Failed to get vendor ID from response", userData);
+        }
+      } catch (error) {
+        console.error("Error fetching vendor data:", error);
+      }
+    };
+
+    fetchVendor();
+  }, [form]);
 
   return (
     <Form {...form}>

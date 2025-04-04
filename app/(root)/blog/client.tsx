@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
-import { getAllBlogs } from "@/lib/actions/blog.actions";
+import { getPublicBlogs } from "@/lib/actions/blog.actions";
 import { features } from "@/constants";
 import { TransformedBlog } from "@/types";
 
@@ -49,7 +49,7 @@ const ClientFeaturesAndBlogs = ({ initialBlog }: any) => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const data = await getAllBlogs(); // Ensure this fetches images as base64
+        const data = await getPublicBlogs(); // Ensure this fetches images as base64
         setBlogs(data);
       } catch (err) {
         console.error("Error fetching blogs:", err);

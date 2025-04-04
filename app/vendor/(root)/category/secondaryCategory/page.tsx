@@ -60,8 +60,12 @@ const SecondaryCategoryPage = () => {
   const fetchAllSecondaryCategories = async () => {
     try {
       setLoading(true);
-      const response = await getAllSecondaryCategories(); // Use await here
-      setData(response); // Directly set the data from the resolved promise
+      const response = await getAllSecondaryCategories();
+      if (Array.isArray(response)) {
+        setData(response);
+      } else if (response.success && Array.isArray(response.data)) {
+        setData(response.data);
+      }
     } catch (error) {
       console.error("Failed to fetch secondary categories:", error);
       toast({

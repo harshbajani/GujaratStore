@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ const AddBlog = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [postImage, setPostImage] = useState("");
   const [imageId, setImageId] = useState("");
+  const [vendorId, setVendorId] = useState("");
 
   // * hooks
   const router = useRouter();
@@ -73,42 +74,62 @@ const AddBlog = () => {
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value || "");
-      });
-      formData.set("imageId", imageId); // Ensure imageId is set
 
-      const result = await createBlog(formData);
+      // Append all form data
+      formData.append("imageId", imageId);
+      formData.append("user", data.user);
+      formData.append("date", data.date);
+      formData.append("heading", data.heading);
+      formData.append("description", data.description);
+      formData.append("category", data.category);
+      formData.append("metaTitle", data.metaTitle);
+      formData.append("metaDescription", data.metaDescription);
+      formData.append("metaKeywords", data.metaKeywords || "");
+
+      const result = await createBlog(formData, vendorId);
 
       if (result.success) {
-        form.reset({
-          heading: "",
-          user: "",
-          date: "",
-          description: "",
-          category: "",
-          metaTitle: "",
-          metaDescription: "",
-          metaKeywords: "",
-        });
-        setPostImage("");
-        setImageId("");
-        router.push("/vendor/blogs"); // Redirect after success
         toast({
           title: "Success",
           description: "Blog added successfully.",
         });
+        router.push("/vendor/blogs");
+      } else {
+        throw new Error(result.error);
       }
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
         title: "Error",
-        description: "Failed to add blog.",
+        description: (error as Error).message || "Failed to add blog.",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    const fetchVendor = async () => {
+      try {
+        const userResponse = await fetch("/api/vendor/current");
+        const userData = await userResponse.json();
+        if (userData.success && userData.data && userData.data._id) {
+          // Set the vendorId in the form and state
+          form.setValue("vendorId", userData.data._id);
+          setVendorId(userData.data._id);
+          console.log("Vendor ID set:", userData.data._id);
+          console.log("Vendor ID set:", userData.data._id);
+        } else {
+          console.error("Failed to get vendor ID from response", userData);
+        }
+      } catch (error) {
+        console.error("Error fetching vendor data:", error);
+      }
+    };
+
+    fetchVendor();
+  }, [form]);
 
   return (
     <section className="sm:px-5 md:px-1 lg:px-2">

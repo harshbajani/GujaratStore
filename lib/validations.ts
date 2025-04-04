@@ -65,6 +65,7 @@ export const profileSchema = z.object({
 
 export const blogSchema = z.object({
   _id: z.string().optional(),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   imageId: z.string().min(1, "Image is required."),
   user: z.string().min(2, "User name is too short."),
   date: z.string().min(1, "Please enter a valid date."),
@@ -132,12 +133,14 @@ export const inquirySchema = z.object({
 
 export const parentCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   isActive: z.boolean().default(true),
 });
 
 export const primaryCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
   parentCategory: z.string().nonempty("Parent category is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   description: z.string().optional(),
   metaTitle: z.string().optional(),
   metaKeywords: z.array(z.string()).optional(),
@@ -147,6 +150,7 @@ export const primaryCategorySchema = z.object({
 
 export const secondaryCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   parentCategory: z.string().nonempty("Parent category is required"),
   primaryCategory: z.string().nonempty("Primary category is required"),
   attributes: z
@@ -158,6 +162,7 @@ export const secondaryCategorySchema = z.object({
 
 export const brandSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   imageId: z.string().min(1, "Image is required."),
   metaTitle: z.string().optional(),
   metaKeywords: z.string().optional(),
@@ -167,6 +172,7 @@ export const brandSchema = z.object({
 // Define the Zod schema for product validation
 export const productSchema = z.object({
   productName: z.string().min(1, "Product name is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   parentCategory: z.string().length(24, "Invalid parent category ID"),
   primaryCategory: z.string().length(24, "Invalid primary category ID"),
   secondaryCategory: z.string().length(24, "Invalid secondary category ID"),
@@ -224,6 +230,7 @@ export const productSchema = z.object({
 
 export const discountFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   description: z.string().optional(),
   discountType: z.enum(["percentage", "amount"]),
   discountValue: z
@@ -242,6 +249,7 @@ export const referralFormSchema = z.object({
   discountType: z.enum(["percentage", "amount"]),
   discountValue: z.number().min(0, "Discount value must be positive"),
   parentCategoryId: z.string().min(1, "Category is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
   expiryDate: z.string(),
   maxUses: z.number().int().min(1, "Maximum uses must be at least 1"),
   isActive: z.boolean().default(true),

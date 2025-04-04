@@ -3,7 +3,7 @@ import { LayoutPanelLeft } from "lucide-react";
 import { withVendorProtection } from "@/app/vendor/HOC";
 import {
   deletePrimaryCategoryById,
-  getAllPrimaryCategories,
+  getAllPrimaryCategoriesWithVendorId,
 } from "@/lib/actions/primaryCategory.actions";
 import React, { useState, useEffect } from "react";
 import { Pencil, Trash2 } from "lucide-react";
@@ -60,8 +60,12 @@ const PrimaryCategoryPage = () => {
   const fetchAllPrimaryCategories = async () => {
     try {
       setLoading(true);
-      const response = await getAllPrimaryCategories(); // Use await here
-      setData(response); // Directly set the data from the resolved promise
+      const response = await getAllPrimaryCategoriesWithVendorId();
+      if ("data" in response) {
+        setData(response.data as PrimaryCategoryWithPopulatedFields[]);
+      } else {
+        setData(response as PrimaryCategoryWithPopulatedFields[]);
+      }
     } catch (error) {
       console.error("Failed to fetch primary categories:", error);
       toast({
