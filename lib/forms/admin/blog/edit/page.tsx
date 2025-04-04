@@ -16,7 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { blogSchema } from "@/lib/validations";
 import Image from "next/image";
-import { updateBlog, getBlogById } from "@/lib/actions/blog.actions";
+import { updateBlog, getBlogById } from "@/lib/actions/admin/blog.actions";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";

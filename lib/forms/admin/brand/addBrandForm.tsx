@@ -1,7 +1,7 @@
 "use client";
-import { createBrand } from "@/lib/actions/brand.actions";
+import { createBrand } from "@/lib/actions/admin/brand.actions";
 import { brandSchema } from "@/lib/validations";
-import { IBrand } from "@/types";
+import { IAdminBrand } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -29,7 +29,7 @@ const AddBrandForm = () => {
   // * hooks
   const router = useRouter();
   const { toast } = useToast();
-  const form = useForm<IBrand>({
+  const form = useForm<IAdminBrand>({
     resolver: zodResolver(brandSchema),
   });
 
@@ -62,7 +62,7 @@ const AddBrandForm = () => {
     }
   };
   // * brand submission
-  const handleSubmit = async (data: IBrand) => {
+  const handleSubmit = async (data: IAdminBrand) => {
     setIsSubmitting(true);
     try {
       const formData = {

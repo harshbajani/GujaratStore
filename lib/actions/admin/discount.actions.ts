@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import Discount, {
   DiscountType,
   DiscountTargetType,
-} from "../models/discount.model";
-import ParentCategory from "../models/parentCategory.model";
+} from "../../models/discount.model";
+import ParentCategory from "../../models/parentCategory.model";
 import { IDiscount } from "@/types";
 
 // Helper function to serialize MongoDB documents

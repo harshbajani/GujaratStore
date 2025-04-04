@@ -16,7 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { blogSchema } from "@/lib/validations";
 import Image from "next/image";
-import { createBlog } from "@/lib/actions/blog.actions";
+import { createBlog } from "@/lib/actions/admin/blog.actions";
 
 //* Dynamically import React Quill (it won't run server-side)
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });

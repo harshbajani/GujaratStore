@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { createSize } from "@/lib/actions/size.actions";
+import { createSize } from "@/lib/actions/admin/size.actions";
 
 // Define form schema using zod
 const sizeSchema = z.object({

@@ -348,6 +348,42 @@ export interface IProduct {
   metaDescription?: string;
 }
 
+export interface IAdminProduct {
+  _id?: string;
+  vendorId: string;
+  productName: string;
+  parentCategory: string; // MongoDB ObjectId as string
+  primaryCategory: string; // MongoDB ObjectId as string
+  secondaryCategory: string; // MongoDB ObjectId as string
+  attributes: Array<{ attributeId: string; value: string }>;
+  brands: string; // MongoDB ObjectId as string
+  productSKU: string;
+  productColor?: string;
+  productSize?: string[];
+  productDescription: string;
+  productImages: (string | File)[];
+  productCoverImage: string | File;
+  mrp: number;
+  basePrice: number;
+  discountType: "percentage" | "amount";
+  gender?: "male" | "female" | "unisex" | "not-applicable";
+  discountValue: number;
+  gstRate: number;
+  gstAmount: number;
+  netPrice: number;
+  deliveryCharges: number;
+  deliveryDays: number;
+  productQuantity: number;
+  productStatus?: boolean;
+  productRating?: number;
+  productReviews?: string[]; // Optional array of MongoDB ObjectIds as strings
+  productWarranty?: string;
+  productReturnPolicy?: string;
+  metaTitle?: string;
+  metaKeywords?: string;
+  metaDescription?: string;
+}
+
 export type ProductWithPopulatedFields = IProduct & {
   id: string; // Ensure you have an id field
   parentCategory: {
