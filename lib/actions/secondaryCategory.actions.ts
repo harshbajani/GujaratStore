@@ -10,6 +10,7 @@ import ParentCategory from "../models/parentCategory.model";
 import Attributes from "../models/attribute.model";
 import PrimaryCategory from "../models/primaryCategory.model";
 import SecondaryCategory from "../models/secondaryCategory.model";
+import { getCurrentVendor } from "./vendor.actions";
 
 export type SecondaryCategoryData = z.infer<typeof secondaryCategorySchema>;
 
@@ -55,7 +56,18 @@ export const createSecondaryCategory = async (data: SecondaryCategoryData) => {
 export const getAllSecondaryCategories = async () => {
   await connectToDB();
 
-  const secondaryCategory = await SecondaryCategory.find()
+  const vendorResponse = await getCurrentVendor();
+
+  if (!vendorResponse.success) {
+    return {
+      success: false,
+      error: "Not authenticated as vendor",
+      data: [],
+    };
+  }
+
+  const vendorId = vendorResponse.data?._id;
+  const secondaryCategory = await SecondaryCategory.find({ vendorId })
     .populate({
       path: "parentCategory",
       select: "name", // Explicitly select name field

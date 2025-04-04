@@ -56,7 +56,12 @@ const BrandPage = () => {
   const fetchBrands = async () => {
     try {
       const response = await getAllBrands();
-      setData(response);
+      if (response.success && response.data) {
+        setData(response.data);
+      } else {
+        console.error("Invalid response format");
+        setData([]);
+      }
     } catch (error) {
       console.error("Failed to fetch brands data:", error);
       toast({

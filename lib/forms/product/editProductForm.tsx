@@ -380,7 +380,17 @@ const EditProductsForm = () => {
           setPrimaryCategory(primaryCategoryResponse as IPrimaryCategory[]);
         }
 
-        if (secondaryCategoryResponse.length > 0) {
+        if (
+          "success" in secondaryCategoryResponse &&
+          secondaryCategoryResponse.success
+        ) {
+          setSecondaryCategory(
+            secondaryCategoryResponse.data as IProductSecondaryCategory[]
+          );
+        } else if (
+          Array.isArray(secondaryCategoryResponse) &&
+          secondaryCategoryResponse.length > 0
+        ) {
           setSecondaryCategory(
             secondaryCategoryResponse as IProductSecondaryCategory[]
           );
@@ -389,8 +399,8 @@ const EditProductsForm = () => {
         if (attributeResponse.success) {
           setAttributes(attributeResponse.data as IAttribute[]);
         }
-        if (brandResponse.length > 0) {
-          setBrands(brandResponse as IBrand[]);
+        if (brandResponse.success && brandResponse.data) {
+          setBrands(brandResponse.data);
         }
         if (sizesResponse.success) {
           setSizes(sizesResponse.data as ISizes[]);

@@ -1,11 +1,11 @@
 import { Metadata } from "next";
-import { getAllBlogs } from "@/lib/actions/blog.actions";
+import { getPublicBlogs } from "@/lib/actions/blog.actions";
 import ClientFeaturesAndBlogs from "./client";
 export const dynamic = "force-dynamic";
 
 // * Generate metadata for the blogs
 export async function generateMetadata(): Promise<Metadata> {
-  const blogs = await getAllBlogs();
+  const blogs = await getPublicBlogs();
   const titles = blogs.map((blog) => blog.metaTitle).join(", ");
   const descriptions = blogs.map((blog) => blog.metaDescription).join(". ");
 
@@ -43,6 +43,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BlogPage() {
-  const initialBlog = await getAllBlogs();
+  const initialBlog = await getPublicBlogs();
   return <ClientFeaturesAndBlogs initialBlog={initialBlog} />;
 }

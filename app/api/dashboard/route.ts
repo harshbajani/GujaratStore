@@ -1,38 +1,51 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from "next/server";
 import Order from "@/lib/models/order.model";
 import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
+import { getCurrentVendor } from "@/lib/actions/vendor.actions";
 import {
   ISalesSummary,
   IOrderStatusBreakdown,
   IProductInventoryStats,
 } from "@/types";
+import mongoose from "mongoose";
 
 export async function GET(request: Request) {
   try {
     await connectToDB();
-
-    // Extract month and year from query parameters
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month");
     const year = searchParams.get("year");
 
-    // Sales Summary
+    // Get current vendor for vendor-specific stats
+    const vendorResponse = await getCurrentVendor();
+    if (!vendorResponse.success || !vendorResponse.data?._id) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated as vendor" },
+        { status: 401 }
+      );
+    }
+    const vendorId = vendorResponse.data._id.toString();
+
+    // Sales Summary: only include orders that have at least one item with this vendorId
     const salesSummary = await calculateSalesSummary(
+      vendorId,
       month ? parseInt(month) : undefined,
       year ? parseInt(year) : undefined
     );
 
-    // Order Status Breakdown
+    // Order Status Breakdown: filter orders by vendor items
     const orderStatusBreakdown = await calculateOrderStatusBreakdown(
+      vendorId,
       month ? parseInt(month) : undefined,
       year ? parseInt(year) : undefined
     );
 
-    // Product Inventory Stats
+    // Product Inventory Stats: only for products that belong to this vendor
     const productInventoryStats = await calculateProductInventoryStats(
+      vendorId,
       month ? parseInt(month) : undefined,
       year ? parseInt(year) : undefined
     );
@@ -48,7 +61,7 @@ export async function GET(request: Request) {
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Dashboard Analytics Error:", error);
     return NextResponse.json(
       {
@@ -61,6 +74,7 @@ export async function GET(request: Request) {
 }
 
 async function calculateSalesSummary(
+  vendorId: string,
   month?: number,
   year?: number
 ): Promise<ISalesSummary> {
@@ -71,16 +85,15 @@ async function calculateSalesSummary(
     const endDate = new Date(year, month + 1, 0);
     query.createdAt = { $gte: startDate, $lte: endDate };
   }
+  // Include only orders that have at least one item from this vendor
+  query["items.vendorId"] = new mongoose.Types.ObjectId(vendorId);
 
-  // Get filtered orders
   const orders = await Order.find(query);
-
-  // Calculate total revenue
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const totalOrders = orders.length;
   const averageOrderValue = totalRevenue / totalOrders || 0;
 
-  // Monthly revenue calculation
+  // Monthly revenue calculation for all orders (for this vendor)
   const months = [
     "Jan",
     "Feb",
@@ -95,23 +108,41 @@ async function calculateSalesSummary(
     "Nov",
     "Dec",
   ];
-  const monthlyRevenue = months.reduce((acc, month) => {
-    acc[month] = 0;
+  const monthlyRevenue = months.reduce((acc, m) => {
+    acc[m] = 0;
     return acc;
   }, {} as { [month: string]: number });
 
-  // Update monthly revenue with actual data
   orders.forEach((order) => {
-    const month = new Date(order.createdAt).toLocaleString("default", {
+    const m = new Date(order.createdAt).toLocaleString("default", {
       month: "short",
     });
-    monthlyRevenue[month] = (monthlyRevenue[month] || 0) + order.total;
+    monthlyRevenue[m] = (monthlyRevenue[m] || 0) + order.total;
   });
 
-  // Yearly revenue calculation
-  const yearlyRevenue = await calculateYearlyRevenue();
+  // Calculate revenue change percentage from last month to current month
+  // Use the current date to determine the months.
+  const currentDate = new Date();
+  const currentMonthStr = currentDate.toLocaleString("default", {
+    month: "short",
+  });
+  const lastMonthDate = new Date(currentDate);
+  lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+  const lastMonthStr = lastMonthDate.toLocaleString("default", {
+    month: "short",
+  });
 
-  // Top selling products
+  const currentRevenue = monthlyRevenue[currentMonthStr] || 0;
+  const lastRevenue = monthlyRevenue[lastMonthStr] || 0;
+  const revenueChangePercent =
+    lastRevenue !== 0
+      ? ((currentRevenue - lastRevenue) / lastRevenue) * 100
+      : 0;
+
+  // Yearly revenue calculation
+  const yearlyRevenue = await calculateYearlyRevenue(vendorId);
+
+  // Top selling products aggregation remains unchanged
   const topSellingProducts = await calculateTopSellingProducts(query);
 
   return {
@@ -121,20 +152,23 @@ async function calculateSalesSummary(
     monthlyRevenue,
     yearlyRevenue,
     topSellingProducts,
+    revenueChangePercent, // Add the calculated percentage change here
   };
 }
 
-async function calculateYearlyRevenue() {
+async function calculateYearlyRevenue(vendorId: string) {
   const currentYear = new Date().getFullYear();
-  const fiveYearsAgo = currentYear - 4; // This will give us last 5 years including current year
+  const fiveYearsAgo = currentYear - 4; // last 5 years including current
+  const vendorObjectId = new mongoose.Types.ObjectId(vendorId);
 
   const yearlyRevenueData = await Order.aggregate([
     {
       $match: {
         createdAt: {
-          $gte: new Date(fiveYearsAgo, 0, 1), // January 1st of 5 years ago
-          $lte: new Date(currentYear, 11, 31), // December 31st of current year
+          $gte: new Date(fiveYearsAgo, 0, 1),
+          $lte: new Date(currentYear, 11, 31),
         },
+        "items.vendorId": vendorObjectId,
       },
     },
     {
@@ -143,18 +177,16 @@ async function calculateYearlyRevenue() {
         totalRevenue: { $sum: "$total" },
       },
     },
-    { $sort: { _id: 1 } }, // Sort by year ascending
+    { $sort: { _id: 1 } },
   ]);
 
-  // Create an object with all years (including those with zero revenue)
   const allYearsRevenue: { [year: number]: number } = {};
-  for (let year = fiveYearsAgo; year <= currentYear; year++) {
-    allYearsRevenue[year] = 0;
+  for (let yr = fiveYearsAgo; yr <= currentYear; yr++) {
+    allYearsRevenue[yr] = 0;
   }
 
-  // Fill in actual revenue data
-  yearlyRevenueData.forEach((year) => {
-    allYearsRevenue[year._id] = year.totalRevenue;
+  yearlyRevenueData.forEach((entry) => {
+    allYearsRevenue[entry._id] = entry.totalRevenue;
   });
 
   return allYearsRevenue;
@@ -185,16 +217,18 @@ async function calculateTopSellingProducts(query: any = {}) {
 }
 
 async function calculateOrderStatusBreakdown(
+  vendorId: string,
   month?: number,
   year?: number
 ): Promise<IOrderStatusBreakdown> {
-  // Build query based on month and year
   const query: any = {};
   if (month !== undefined && year !== undefined) {
     const startDate = new Date(year, month, 1);
     const endDate = new Date(year, month + 1, 0);
     query.createdAt = { $gte: startDate, $lte: endDate };
   }
+  // Convert vendorId to ObjectId so that the match works correctly in aggregation
+  query["items.vendorId"] = new mongoose.Types.ObjectId(vendorId);
 
   const statusBreakdown = await Order.aggregate([
     { $match: query },
@@ -206,43 +240,49 @@ async function calculateOrderStatusBreakdown(
     },
   ]);
 
-  const breakdown = statusBreakdown.reduce(
-    (acc, status) => {
-      acc[status._id] = status.count;
-      return acc;
-    },
-    {
-      confirmed: 0,
-      processing: 0,
-      shipped: 0,
-      delivered: 0,
-      cancelled: 0,
-      returned: 0,
-    }
-  );
+  // Build a default breakdown in case some statuses are missing
+  const breakdown: IOrderStatusBreakdown = {
+    confirmed: 0,
+    processing: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+    returned: 0,
+  };
+
+  statusBreakdown.forEach((entry) => {
+    breakdown[entry._id as keyof IOrderStatusBreakdown] = entry.count;
+  });
 
   return breakdown;
 }
 
 async function calculateProductInventoryStats(
+  vendorId: string,
   month?: number,
   year?: number
 ): Promise<IProductInventoryStats> {
-  // Note: Product inventory stats are typically not time-dependent
-  const totalProducts = await Products.countDocuments();
+  // You can let .countDocuments handle vendorId conversion if needed
+  const totalProducts = await Products.countDocuments({ vendorId });
   const lowStockProducts = await Products.countDocuments({
+    vendorId,
     productQuantity: { $lt: 10 },
   });
   const outOfStockProducts = await Products.countDocuments({
+    vendorId,
     productQuantity: 0,
   });
 
-  // Get products with low stock and their details
   const lowStockProductDetails = await Products.find({
+    vendorId,
     productQuantity: { $lt: 10 },
   }).select("productName productQuantity");
 
-  const inventoryValueTotal = await Products.aggregate([
+  // Convert vendorId to ObjectId for the aggregation pipeline
+  const vendorObjectId = new mongoose.Types.ObjectId(vendorId);
+
+  const inventoryValueTotalAgg = await Products.aggregate([
+    { $match: { vendorId: vendorObjectId } },
     {
       $group: {
         _id: null,
@@ -255,7 +295,7 @@ async function calculateProductInventoryStats(
     totalProducts,
     lowStockProducts,
     outOfStockProducts,
-    inventoryValueTotal: inventoryValueTotal[0]?.totalValue || 0,
+    inventoryValueTotal: inventoryValueTotalAgg[0]?.totalValue || 0,
     lowStockProductDetails: lowStockProductDetails.map((product) => ({
       name: product.productName,
       quantity: product.productQuantity,

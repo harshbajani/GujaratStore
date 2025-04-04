@@ -75,6 +75,7 @@ const CartPage = () => {
           price: item.netPrice,
           coverImage: item.productCoverImage as string,
           deliveryDate: formattedDeliveryDate(item.deliveryDays),
+          vendorId: item.vendorId,
         };
       }),
       subtotal,

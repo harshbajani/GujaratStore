@@ -1,6 +1,6 @@
 import { IAttribute } from "@/lib/actions/attribute.actions";
 import { Address } from "@/lib/validations";
-import { Document, Types } from "mongoose";
+import { Document, Schema, Types } from "mongoose";
 import { ReactNode } from "react";
 import { Control } from "react-hook-form";
 import { z } from "zod";
@@ -95,6 +95,7 @@ export interface CollectionItemProps {
 
 export interface IBlog extends Document {
   _id: Types.ObjectId;
+  vendorId: string;
   imageId: string;
   user: string;
   date: string;
@@ -110,6 +111,7 @@ export interface IBlog extends Document {
 
 export interface TransformedBlog {
   id: string;
+  vendorId: string;
   imageId: string;
   user: string;
   date: string;
@@ -186,12 +188,14 @@ export interface AddressDialogProps {
 export interface AttributeFormData {
   id: string;
   name: string;
+  vendorId: string;
   isActive: boolean;
 }
 
 export interface ParentCategoryFormData {
   id: string;
   name: string;
+  vendorId: string;
   isActive: boolean;
 }
 
@@ -199,6 +203,7 @@ export interface IPrimaryCategory {
   id?: string;
   name: string;
   parentCategory: string;
+  vendorId: string;
   description?: string;
   metaTitle?: string;
   metaKeywords?: string[];
@@ -209,6 +214,7 @@ export interface IPrimaryCategory {
 export interface ISecondaryCategory {
   id?: string;
   name: string;
+  vendorId: string;
   parentCategory: string;
   primaryCategory: string;
   attributes: string[];
@@ -252,6 +258,7 @@ export type PrimaryCategoryWithPopulatedFields = IPrimaryCategory & {
 
 export interface IBrand {
   _id?: string;
+  vendorId: string;
   name: string;
   imageId: string;
   metaTitle?: string;
@@ -330,6 +337,7 @@ export interface IPriceCalculatorProps {
 export interface IProductResponse {
   _id?: string;
   productName: string;
+  vendorId: string;
   parentCategory: {
     _id: string;
     name: string;
@@ -460,6 +468,7 @@ export interface IDiscount {
   id: string;
   _id: string;
   name: string;
+  vendorId: Schema.Types.ObjectId;
   description?: string;
   discountType: DiscountType;
   discountValue: number;
@@ -490,6 +499,7 @@ export interface IReferral {
     name: string;
     isActive: boolean;
   };
+  vendorId: Schema.Types.ObjectId;
   expiryDate: Date | string;
   maxUses: number;
   usedCount: number;
@@ -510,6 +520,7 @@ export interface ISalesSummary {
   averageOrderValue: number;
   monthlyRevenue: { [month: string]: number };
   yearlyRevenue: { [year: number]: number };
+  revenueChangePercent: number;
   topSellingProducts: Array<{
     productId: string;
     productName: string;

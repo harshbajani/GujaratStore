@@ -46,6 +46,7 @@ interface OrderItem {
   price: number;
   size: string;
   color: string;
+  vendorId: string;
 }
 
 interface IOrder {

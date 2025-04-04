@@ -40,6 +40,7 @@ const EditParentCategoryForm = ({
     resolver: zodResolver(parentCategorySchema),
     defaultValues: {
       name: "",
+      vendorId: "",
       isActive: true,
     },
   });
@@ -51,6 +52,7 @@ const EditParentCategoryForm = ({
         if (response.success && response.data) {
           form.reset({
             name: Array.isArray(response.data) ? "" : response.data.name,
+            vendorId: form.getValues("vendorId"),
             isActive: Array.isArray(response.data)
               ? true
               : response.data.isActive,
@@ -97,6 +99,27 @@ const EditParentCategoryForm = ({
       });
     }
   };
+
+  useEffect(() => {
+    const fetchVendor = async () => {
+      try {
+        const userResponse = await fetch("/api/vendor/current");
+        const userData = await userResponse.json();
+
+        if (userData.success && userData.data && userData.data._id) {
+          // Set the vendorId in the form state
+          form.setValue("vendorId", userData.data._id);
+          console.log("Vendor ID set:", userData.data._id);
+        } else {
+          console.error("Failed to get vendor ID from response", userData);
+        }
+      } catch (error) {
+        console.error("Error fetching vendor data:", error);
+      }
+    };
+
+    fetchVendor();
+  }, [form]);
 
   if (loading) {
     return (

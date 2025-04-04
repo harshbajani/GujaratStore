@@ -84,6 +84,7 @@ const ReferralsPage = () => {
     defaultValues: {
       name: "",
       description: "",
+      vendorId: "",
       discountType: "percentage",
       discountValue: 0,
       parentCategoryId: "",
@@ -204,6 +205,7 @@ const ReferralsPage = () => {
     form.reset({
       name: referral.name,
       description: referral.description || "",
+      vendorId: form.getValues("vendorId"),
       discountType: referral.discountType,
       discountValue: referral.discountValue,
       parentCategoryId: referral.parentCategory._id,
@@ -260,6 +262,25 @@ const ReferralsPage = () => {
     );
   });
 
+  useEffect(() => {
+    const fetchVendor = async () => {
+      try {
+        const userResponse = await fetch("/api/vendor/current");
+        const userData = await userResponse.json();
+        if (userData.success && userData.data && userData.data._id) {
+          // Set the vendorId in the form state
+          form.setValue("vendorId", userData.data._id);
+          console.log("Vendor ID set:", userData.data._id);
+        } else {
+          console.error("Failed to get vendor ID from response", userData);
+        }
+      } catch (error) {
+        console.error("Error fetching vendor data:", error);
+      }
+    };
+    fetchVendor();
+  }, [form]);
+
   return (
     <div className="p-2">
       <div className="flex items-center justify-between mb-4">
@@ -275,6 +296,7 @@ const ReferralsPage = () => {
                 form.reset({
                   name: "",
                   description: "",
+                  vendorId: form.getValues("vendorId"),
                   discountType: "percentage",
                   discountValue: 0,
                   parentCategoryId: "",
