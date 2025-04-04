@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { secondaryCategorySchema } from "@/lib/validations";
-import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
+import { adminSecondaryCategorySchema } from "@/lib/validations";
+import {
+  getAllAttributes,
+  IAttribute,
+} from "@/lib/actions/admin/attribute.actions";
 import { toast } from "@/hooks/use-toast";
-import { IPrimaryCategory, ISecondaryCategory } from "@/types";
+import { IAdminPrimaryCategory, IAdminSecondaryCategory } from "@/types";
 import {
   getAllParentCategory,
   IParentCategory,
-} from "@/lib/actions/parentCategory.actions";
+} from "@/lib/actions/admin/parentCategory.actions";
 import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
@@ -33,22 +36,22 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
-import { createSecondaryCategory } from "@/lib/actions/secondaryCategory.actions";
-import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
+import { createSecondaryCategory } from "@/lib/actions/admin/secondaryCategory.actions";
+import { getAllPrimaryCategories } from "@/lib/actions/admin/primaryCategory.actions";
 
 const AddSecondaryCategoryForm = () => {
   // * useStates and hooks
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
   );
-  const [primaryCategory, setPrimaryCategory] = useState<IPrimaryCategory[]>(
-    []
-  );
+  const [primaryCategory, setPrimaryCategory] = useState<
+    IAdminPrimaryCategory[]
+  >([]);
   const [attributes, setAttributes] = useState<IAttribute[]>([]);
   const router = useRouter();
 
-  const form = useForm<ISecondaryCategory>({
-    resolver: zodResolver(secondaryCategorySchema),
+  const form = useForm<IAdminSecondaryCategory>({
+    resolver: zodResolver(adminSecondaryCategorySchema),
     defaultValues: {
       name: "",
       parentCategory: "",
@@ -71,7 +74,9 @@ const AddSecondaryCategoryForm = () => {
         }
 
         if (primaryCategoryResponse.length > 0) {
-          setPrimaryCategory(primaryCategoryResponse as IPrimaryCategory[]);
+          setPrimaryCategory(
+            primaryCategoryResponse as IAdminPrimaryCategory[]
+          );
         }
 
         if (attributeResponse.success) {
@@ -89,7 +94,7 @@ const AddSecondaryCategoryForm = () => {
     fetchData();
   }, []);
   // * form submission
-  const onSubmit = async (data: ISecondaryCategory) => {
+  const onSubmit = async (data: IAdminSecondaryCategory) => {
     try {
       await createSecondaryCategory({
         ...data,

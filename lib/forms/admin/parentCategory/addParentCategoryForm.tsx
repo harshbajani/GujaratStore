@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ParentCategoryFormData } from "@/types";
+import { AdminParentCategoryFormData } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -16,29 +16,29 @@ import {
 } from "@/components/ui/form";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { parentCategorySchema } from "@/lib/validations";
-import { createParentCategory } from "@/lib/actions/parentCategory.actions";
+import { adminParentCategorySchema } from "@/lib/validations";
+import { createParentCategory } from "@/lib/actions/admin/parentCategory.actions";
 
 const AddParentCategoryForm = () => {
   // * hooks
   const router = useRouter();
   const { toast } = useToast();
-  const form = useForm<ParentCategoryFormData>({
-    resolver: zodResolver(parentCategorySchema),
+  const form = useForm<AdminParentCategoryFormData>({
+    resolver: zodResolver(adminParentCategorySchema),
     defaultValues: {
       name: "",
       isActive: true,
     },
   });
   // * data submission
-  const onSubmit = async (data: ParentCategoryFormData): Promise<void> => {
+  const onSubmit = async (data: AdminParentCategoryFormData): Promise<void> => {
     try {
       await createParentCategory(data.name, data.isActive);
       toast({
         title: "Success",
         description: "Parent Category added successfully",
       });
-      router.push("/vendor/category/parentCategory");
+      router.push("/admin/category/parentCategory");
     } catch (error) {
       console.error(error);
       toast({

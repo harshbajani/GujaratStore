@@ -5,13 +5,15 @@ import { connectToDB } from "../../mongodb";
 import { parseStringify } from "../../utils";
 import { HydratedDocument } from "mongoose";
 import { ISecondaryCategory } from "@/types";
-import { secondaryCategorySchema } from "../../validations";
+import { adminSecondaryCategorySchema } from "../../validations";
 import ParentCategory from "../../models/parentCategory.model";
 import Attributes from "../../models/attribute.model";
 import PrimaryCategory from "../../models/primaryCategory.model";
 import SecondaryCategory from "../../models/secondaryCategory.model";
 
-export type SecondaryCategoryData = z.infer<typeof secondaryCategorySchema>;
+export type SecondaryCategoryData = z.infer<
+  typeof adminSecondaryCategorySchema
+>;
 
 export const serializeDocument = async (
   doc: HydratedDocument<ISecondaryCategory>
@@ -25,7 +27,7 @@ export const createSecondaryCategory = async (data: SecondaryCategoryData) => {
   await connectToDB();
 
   // Validate incoming data
-  const validatedData = secondaryCategorySchema.parse(data);
+  const validatedData = adminSecondaryCategorySchema.parse(data);
 
   // Ensure ParentCategory and Attributes exist
   const parentCategoryExists = await ParentCategory.findById(
@@ -99,7 +101,7 @@ export const updateSecondaryCategoryById = async (
   // Ensure database connection
   await connectToDB();
 
-  const validatedData = secondaryCategorySchema.partial().parse(data);
+  const validatedData = adminSecondaryCategorySchema.partial().parse(data);
 
   // Check if parentCategory exists, if provided
   if (validatedData.parentCategory) {

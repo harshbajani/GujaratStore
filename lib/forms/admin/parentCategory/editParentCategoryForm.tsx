@@ -16,12 +16,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { parentCategorySchema } from "@/lib/validations";
+import { adminParentCategorySchema } from "@/lib/validations";
 import {
   getParentCategoryById,
   updateParentCategory,
-} from "@/lib/actions/parentCategory.actions";
-import { ParentCategoryFormData } from "@/types";
+} from "@/lib/actions/admin/parentCategory.actions";
+import { AdminParentCategoryFormData } from "@/types";
 import Loader from "@/components/Loader";
 
 interface EditParentCategoryFormProps {
@@ -36,8 +36,8 @@ const EditParentCategoryForm = ({
   const router = useRouter();
   const { toast } = useToast();
 
-  const form = useForm<ParentCategoryFormData>({
-    resolver: zodResolver(parentCategorySchema),
+  const form = useForm<AdminParentCategoryFormData>({
+    resolver: zodResolver(adminParentCategorySchema),
     defaultValues: {
       name: "",
       isActive: true,
@@ -77,7 +77,7 @@ const EditParentCategoryForm = ({
     fetchParentCategory();
   }, [parentCategoryId, form, toast]);
   // * form submission
-  const onSubmit = async (data: ParentCategoryFormData) => {
+  const onSubmit = async (data: AdminParentCategoryFormData) => {
     try {
       const response = await updateParentCategory(parentCategoryId, data);
       if (response.success) {
@@ -85,7 +85,7 @@ const EditParentCategoryForm = ({
           title: "Success",
           description: "Parent category updated successfully",
         });
-        router.push("/vendor/category/parentCategory");
+        router.push("/admin/category/parentCategory");
       } else {
         throw new Error(response.error);
       }

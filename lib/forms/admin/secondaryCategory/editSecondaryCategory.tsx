@@ -2,19 +2,19 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { secondaryCategorySchema } from "@/lib/validations";
+import { adminSecondaryCategorySchema } from "@/lib/validations";
 import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
 import { toast } from "@/hooks/use-toast";
-import { IPrimaryCategory, ISecondaryCategory } from "@/types";
+import { IAdminPrimaryCategory, IAdminSecondaryCategory } from "@/types";
 import {
   getAllParentCategory,
   IParentCategory,
-} from "@/lib/actions/parentCategory.actions";
+} from "@/lib/actions/admin/parentCategory.actions";
 import {
   updateSecondaryCategoryById,
   getSecondaryCategoryById,
-} from "@/lib/actions/secondaryCategory.actions";
-import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
+} from "@/lib/actions/admin/secondaryCategory.actions";
+import { getAllPrimaryCategories } from "@/lib/actions/admin/primaryCategory.actions";
 import { useRouter, useParams } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
@@ -47,13 +47,13 @@ const EditSecondaryCategoryForm = () => {
     []
   );
   const [primaryCategories, setPrimaryCategories] = useState<
-    IPrimaryCategory[]
+    IAdminPrimaryCategory[]
   >([]);
   const [attributes, setAttributes] = useState<IAttribute[]>([]);
   const router = useRouter();
 
-  const form = useForm<ISecondaryCategory>({
-    resolver: zodResolver(secondaryCategorySchema),
+  const form = useForm<IAdminSecondaryCategory>({
+    resolver: zodResolver(adminSecondaryCategorySchema),
     defaultValues: {
       name: "",
       parentCategory: "",
@@ -77,7 +77,9 @@ const EditSecondaryCategoryForm = () => {
         }
 
         if (primaryCategoryResponse.length > 0) {
-          setPrimaryCategories(primaryCategoryResponse as IPrimaryCategory[]);
+          setPrimaryCategories(
+            primaryCategoryResponse as IAdminPrimaryCategory[]
+          );
         }
 
         if (attributeResponse.success) {
@@ -106,7 +108,7 @@ const EditSecondaryCategoryForm = () => {
     fetchData();
   }, [id, form]);
   // * form submission
-  const onSubmit = async (data: ISecondaryCategory) => {
+  const onSubmit = async (data: IAdminSecondaryCategory) => {
     try {
       await updateSecondaryCategoryById(id as string, {
         ...data,

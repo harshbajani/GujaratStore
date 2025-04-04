@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { primaryCategorySchema } from "@/lib/validations";
+import { adminPrimaryCategorySchema } from "@/lib/validations";
 import { toast } from "@/hooks/use-toast";
-import { IPrimaryCategory } from "@/types";
+import { IAdminPrimaryCategory } from "@/types";
 import {
   getAllParentCategory,
   IParentCategory,
-} from "@/lib/actions/parentCategory.actions";
-import { createPrimaryCategory } from "@/lib/actions/primaryCategory.actions";
+} from "@/lib/actions/admin/parentCategory.actions";
+import { createPrimaryCategory } from "@/lib/actions/admin/primaryCategory.actions";
 import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
@@ -40,8 +40,8 @@ const AddPrimaryCategoryForm = () => {
   );
   const router = useRouter();
 
-  const form = useForm<IPrimaryCategory>({
-    resolver: zodResolver(primaryCategorySchema),
+  const form = useForm<IAdminPrimaryCategory>({
+    resolver: zodResolver(adminPrimaryCategorySchema),
     defaultValues: {
       name: "",
       parentCategory: "",
@@ -73,7 +73,7 @@ const AddPrimaryCategoryForm = () => {
     fetchData();
   }, []);
   // * submit primary category data
-  const onSubmit = async (data: IPrimaryCategory) => {
+  const onSubmit = async (data: IAdminPrimaryCategory) => {
     try {
       await createPrimaryCategory({
         ...data,
@@ -84,7 +84,7 @@ const AddPrimaryCategoryForm = () => {
         description: "Primary category added successfully",
       });
 
-      router.push("/vendor/category/primaryCategory");
+      router.push("/admin/category/primaryCategory");
     } catch {
       toast({
         title: "Error",
@@ -237,7 +237,7 @@ const AddPrimaryCategoryForm = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => router.push("/vendor/category/primaryCategory")}
+            onClick={() => router.push("/admin/category/primaryCategory")}
           >
             Cancel
           </Button>
