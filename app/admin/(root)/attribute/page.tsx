@@ -147,7 +147,7 @@ const AttributePage = () => {
               size="icon"
               className="hover:bg-gray-100"
               onClick={() =>
-                router.push(`/vendor/attribute/edit/${attribute.id}`)
+                router.push(`/admin/attribute/edit/${attribute.id}`)
               }
             >
               <Pencil className="h-4 w-4 text-gray-600" />
@@ -212,7 +212,7 @@ const AttributePage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/vendor/attribute/add">
+            <Link href="/admin/attribute/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Attribute
               </Button>

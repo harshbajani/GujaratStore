@@ -93,7 +93,7 @@ const AddBlog = () => {
         });
         setPostImage("");
         setImageId("");
-        router.push("/vendor/blogs"); // Redirect after success
+        router.push("/admin/blogs"); // Redirect after success
         toast({
           title: "Success",
           description: "Blog added successfully.",
@@ -276,7 +276,7 @@ const AddBlog = () => {
                 {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/vendor/blogs">Cancel</Link>
+                <Link href="/admin/blogs">Cancel</Link>
               </Button>
             </div>
           </form>

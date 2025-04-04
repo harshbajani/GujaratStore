@@ -1,5 +1,5 @@
 "use client";
-import { withVendorProtection } from "@/app/vendor/HOC";
+
 import EditBlog from "@/lib/forms/admin/blog/edit/page";
 import { PencilLine } from "lucide-react";
 import React from "react";
@@ -18,4 +18,4 @@ const EditBlogPage = () => {
   );
 };
 
-export default withVendorProtection(EditBlogPage);
+export default EditBlogPage;

@@ -303,10 +303,13 @@ const EditProductsForm = () => {
         productImages: productImageIds,
       };
 
-      console.log("Sending PUT request to:", `/api/products/${params.id}`);
+      console.log(
+        "Sending PUT request to:",
+        `/api/admin/products/${params.id}`
+      );
       console.log("With data:", finalData);
 
-      const response = await fetch(`/api/products/${params.id}`, {
+      const response = await fetch(`/api/admin/products/${params.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -325,7 +328,7 @@ const EditProductsForm = () => {
         title: "Success",
         description: "Product updated successfully",
       });
-      router.push("/vendor/products");
+      router.push("/admin/products");
     } catch (error) {
       console.error("Error during update:", error);
       toast({
@@ -895,7 +898,7 @@ const EditProductsForm = () => {
           <Button
             variant="outline"
             type="button"
-            onClick={() => router.push("/vendor/products")}
+            onClick={() => router.push("/admin/products")}
           >
             Cancel
           </Button>

@@ -6,9 +6,9 @@ import PrimaryCategory from "@/lib/models/primaryCategory.model";
 
 // Import referenced models for population
 import { IPrimaryCategory } from "@/types";
-import { primaryCategorySchema } from "../validations";
+import { primaryCategorySchema } from "../../validations";
 import ParentCategory from "@/lib/models/parentCategory.model";
-import { parseStringify } from "../utils";
+import { parseStringify } from "../../utils";
 
 // Define TypeScript interface for PrimaryCategory
 export type PrimaryCategoryData = z.infer<typeof primaryCategorySchema>;

@@ -90,7 +90,7 @@ const EditSizeForm = () => {
           title: "Success",
           description: "Size updated successfully",
         });
-        router.push("/vendor/size");
+        router.push("/admin/size");
       } else {
         throw new Error(response.error || "Update failed");
       }

@@ -145,7 +145,7 @@ const SizePage = () => {
               variant="ghost"
               size="icon"
               className="hover:bg-gray-100"
-              onClick={() => router.push(`/vendor/size/edit/${size._id}`)}
+              onClick={() => router.push(`/admin/size/edit/${size._id}`)}
             >
               <Pencil className="h-4 w-4 text-gray-600" />
             </Button>
@@ -209,7 +209,7 @@ const SizePage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/vendor/size/add">
+            <Link href="/admin/size/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Size
               </Button>

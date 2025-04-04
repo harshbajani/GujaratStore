@@ -203,7 +203,7 @@ const BlogsPage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/vendor/blogs/add">
+            <Link href="/admin/blogs/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Blog
               </Button>

@@ -71,7 +71,7 @@ const EditBrandForm = () => {
     try {
       const formData = { ...data, imageId };
 
-      const response = await fetch(`/api/vendor/brand/${id}`, {
+      const response = await fetch(`/api/admin/brand/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -83,7 +83,7 @@ const EditBrandForm = () => {
 
       if (response.ok) {
         form.reset(); // Clear the form
-        router.push("/vendor/brand"); // Redirect after success
+        router.push("/admin/brand"); // Redirect after success
         toast({
           title: "Success",
           description: "Brand edited successfully.",
@@ -242,7 +242,7 @@ const EditBrandForm = () => {
                 {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/vendor/brand">Cancel</Link>
+                <Link href="/admin/brand">Cancel</Link>
               </Button>
             </div>
           </form>

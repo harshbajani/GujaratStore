@@ -86,7 +86,7 @@ const EditAttributeForm = () => {
           title: "Success",
           description: "Attribute updated successfully",
         });
-        router.push("/vendor/attribute");
+        router.push("/admin/attribute");
       } else {
         throw new Error(response.error);
       }

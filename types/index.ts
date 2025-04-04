@@ -561,6 +561,28 @@ export interface IDiscount {
   updatedAt: Date;
 }
 
+export interface IAdminDiscount {
+  id: string;
+  _id: string;
+  name: string;
+  description?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  targetType: "category";
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface IReferral {
   _id: string;
   name: string;

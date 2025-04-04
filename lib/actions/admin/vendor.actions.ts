@@ -5,8 +5,8 @@ import { getServerSession } from "next-auth";
 
 import { ActionResponse, IVendor, VendorResponse } from "@/types/index";
 import { revalidatePath } from "next/cache";
-import Vendor from "../models/vendor.model";
-import { authOptions } from "../nextAuthConfig";
+import Vendor from "../../models/vendor.model";
+import { authOptions } from "../../nextAuthConfig";
 
 // Helper function to convert MongoDB user to safe user response
 const sanitizeUser = (user: IVendor): VendorResponse => {

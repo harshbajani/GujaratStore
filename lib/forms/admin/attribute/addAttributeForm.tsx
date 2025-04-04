@@ -44,7 +44,7 @@ const AddAttributeForm = () => {
         title: "Success",
         description: "Attribute added successfully",
       });
-      router.push("/vendor/attribute");
+      router.push("/admin/attribute");
     } catch (error) {
       console.error(error);
       toast({

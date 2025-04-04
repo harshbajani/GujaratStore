@@ -7,12 +7,12 @@ import Discount, {
   DiscountTargetType,
 } from "../../models/discount.model";
 import ParentCategory from "../../models/parentCategory.model";
-import { IDiscount } from "@/types";
+import { IAdminDiscount } from "@/types";
 
 // Helper function to serialize MongoDB documents
 const serializeDocument = (
-  doc: HydratedDocument<IDiscount>
-): IDiscount | null => {
+  doc: HydratedDocument<IAdminDiscount>
+): IAdminDiscount | null => {
   if (!doc) return null;
   const serialized = doc.toJSON ? doc.toJSON() : doc;
   return {
@@ -43,7 +43,7 @@ const serializeDocument = (
 
 export type DiscountResponse = {
   success: boolean;
-  data?: IDiscount | IDiscount[] | null;
+  data?: IAdminDiscount | IAdminDiscount[] | null;
   error?: string;
 };
 
@@ -116,7 +116,7 @@ export async function getAllDiscounts(): Promise<DiscountResponse> {
       success: true,
       data: discounts
         .map(serializeDocument)
-        .filter((disc): disc is IDiscount => disc !== null),
+        .filter((disc): disc is IAdminDiscount => disc !== null),
     };
   } catch (error) {
     console.error("Get discounts error:", error);

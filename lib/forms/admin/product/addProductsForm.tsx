@@ -245,7 +245,7 @@ const AddProductsForm = () => {
       };
 
       // Submit to API
-      const response = await fetch("/api/products", {
+      const response = await fetch("/api/admin/products", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -264,7 +264,7 @@ const AddProductsForm = () => {
         title: "Success",
         description: "Product added successfully",
       });
-      router.push("/vendor/products");
+      router.push("/admin/products");
       console.log("Submission successful:", result);
     } catch (error) {
       console.error("Submission error:", error);
@@ -804,7 +804,7 @@ const AddProductsForm = () => {
           <Button
             variant="outline"
             type="button"
-            onClick={() => router.push("/vendor/products")}
+            onClick={() => router.push("/admin/products")}
           >
             Cancel
           </Button>

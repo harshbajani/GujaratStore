@@ -48,7 +48,7 @@ const AddSizeForm = () => {
           title: "Success",
           description: "Size created successfully",
         });
-        router.push("/vendor/size");
+        router.push("/admin/size");
       } else {
         throw new Error(response.error || "Size creation failed");
       }

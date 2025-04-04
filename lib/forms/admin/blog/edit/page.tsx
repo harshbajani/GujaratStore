@@ -94,7 +94,7 @@ const EditBlog = () => {
       }
 
       const result = await updateBlog(id as string, data);
-      router.push("/vendor/blogs"); // Redirect after success
+      router.push("/admin/blogs"); // Redirect after success
       toast({
         title: "Success",
         description: "Blog edited successfully.",
@@ -339,7 +339,7 @@ const EditBlog = () => {
               {isSubmitting ? "Submitting..." : "Submit"}
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/vendor/blogs">Cancel</Link>
+              <Link href="/admin/blogs">Cancel</Link>
             </Button>
           </div>
         </form>

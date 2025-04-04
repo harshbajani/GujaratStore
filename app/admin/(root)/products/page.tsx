@@ -189,7 +189,7 @@ const ProductsPage = () => {
               variant="ghost"
               size="icon"
               className="hover:bg-gray-100"
-              onClick={() => router.push(`/vendor/products/edit/${product.id}`)}
+              onClick={() => router.push(`/admin/products/edit/${product.id}`)}
             >
               <Pencil className="h-4 w-4 text-gray-600" />
             </Button>
@@ -255,7 +255,7 @@ const ProductsPage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/vendor/products/add">
+            <Link href="/admin/products/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Product
               </Button>

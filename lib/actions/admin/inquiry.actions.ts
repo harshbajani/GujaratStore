@@ -1,7 +1,7 @@
 "use server";
 import mongoose from "mongoose";
-import Inquiry from "../models/inquiry.model";
-import { connectToDB } from "../mongodb";
+import Inquiry from "../../models/inquiry.model";
+import { connectToDB } from "../../mongodb";
 
 export const getAllInquiry = async () => {
   await connectToDB();

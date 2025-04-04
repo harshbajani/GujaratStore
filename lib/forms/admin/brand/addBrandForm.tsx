@@ -79,7 +79,7 @@ const AddBrandForm = () => {
         });
         setPostImage("");
         setImageId("");
-        router.push("/vendor/brand");
+        router.push("/admin/brand");
         toast({
           title: "Success",
           description: "Brand added successfully",
@@ -197,7 +197,7 @@ const AddBrandForm = () => {
                 {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/vendor/brand">Cancel</Link>
+                <Link href="/admin/brand">Cancel</Link>
               </Button>
             </div>
           </form>

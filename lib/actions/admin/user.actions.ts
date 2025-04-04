@@ -6,7 +6,7 @@ import { getServerSession } from "next-auth";
 
 import { ActionResponse, IUser, UserResponse } from "@/types/index";
 import { revalidatePath } from "next/cache";
-import { authOptions } from "../nextAuthConfig";
+import { authOptions } from "../../nextAuthConfig";
 
 // Helper function to convert MongoDB user to safe user response
 const sanitizeUser = (user: IUser): UserResponse => {
