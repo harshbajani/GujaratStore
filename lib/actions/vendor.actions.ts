@@ -18,6 +18,41 @@ const sanitizeUser = (user: IVendor): VendorResponse => {
   };
 };
 
+export async function getAllVendors(): Promise<
+  ActionResponse<VendorResponse[]>
+> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // You can change the role check depending on your requirements.
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated or not authorized",
+      };
+    }
+
+    await connectToDB();
+
+    const vendors = await Vendor.find({}).lean();
+    const sanitizedVendors = vendors.map((vendor) =>
+      sanitizeUser(vendor as IVendor)
+    );
+
+    return {
+      success: true,
+      message: "Vendors fetched successfully",
+      data: sanitizedVendors,
+    };
+  } catch (error) {
+    console.error("Error fetching vendors:", error);
+    return {
+      success: false,
+      message: "Failed to fetch vendors",
+    };
+  }
+}
+
 // Get current user details
 export async function getCurrentVendor(): Promise<
   ActionResponse<VendorResponse>
@@ -169,6 +204,46 @@ export async function updateVendorProfile(
     return {
       success: false,
       message: "Failed to update profile",
+    };
+  }
+}
+
+export async function deleteVendor(
+  vendorId: string
+): Promise<ActionResponse<null>> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Change role check if needed
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated or not authorized",
+      };
+    }
+
+    await connectToDB();
+
+    const deletedVendor = await Vendor.findByIdAndDelete(vendorId);
+    if (!deletedVendor) {
+      return {
+        success: false,
+        message: "Vendor not found",
+      };
+    }
+
+    // Optionally, revalidate relevant paths if needed
+    revalidatePath("/admin/vendor");
+
+    return {
+      success: true,
+      message: "Vendor deleted successfully",
+    };
+  } catch (error) {
+    console.error("Error deleting vendor:", error);
+    return {
+      success: false,
+      message: "Failed to delete vendor",
     };
   }
 }

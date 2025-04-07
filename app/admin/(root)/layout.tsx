@@ -9,7 +9,6 @@ import {
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/toaster";
 import { User2 } from "lucide-react";
-import Link from "next/link";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -63,11 +62,6 @@ const AdminDashboardLayout = ({ children }: { children: React.ReactNode }) => {
                   <User2 className="w-6 h-6 text-muted-foreground" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin/account" className="flex items-center">
-                      Account Settings
-                    </Link>
-                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={handleSignOut}
                     className="text-red-500"
