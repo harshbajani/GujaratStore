@@ -6,14 +6,12 @@ import {
   updateVendorById,
   deleteVendor,
 } from "@/lib/actions/admin/vendor.actions";
+import { RouteParams } from "@/types";
 
 // GET /api/admin/vendor/[id]
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function GET(request: Request, { params }: RouteParams) {
   await connectToDB();
+  const id = (await params).id;
 
   const result = await getVendorById(id);
   if (result.success) {
@@ -24,12 +22,9 @@ export async function GET(
 }
 
 // PUT /api/admin/vendor/[id]
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request, { params }: RouteParams) {
   await connectToDB();
-  const { id } = params;
+  const id = (await params).id;
   const data = await request.json();
 
   const result = await updateVendorById(id, data);
@@ -41,12 +36,9 @@ export async function PUT(
 }
 
 // DELETE /api/admin/vendor/[id]
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, { params }: RouteParams) {
   await connectToDB();
-  const { id } = params;
+  const id = (await params).id;
 
   const result = await deleteVendor(id);
   if (result.success) {
