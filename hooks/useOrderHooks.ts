@@ -204,3 +204,31 @@ export const useUserDetails = (userId?: string) => {
     fetchUser,
   };
 };
+
+// Hook for fetching vendor store details
+export const useVendorStoreDetails = (vendorId: string) => {
+  const [vendor, setVendor] = useState<{ storeName: string } | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchVendor = async () => {
+      try {
+        const response = await fetch(`/api/vendor/${vendorId}`);
+        const data = await response.json();
+        if (data.success) {
+          setVendor(data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching vendor:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (vendorId) {
+      fetchVendor();
+    }
+  }, [vendorId]);
+
+  return { vendor, loading };
+};

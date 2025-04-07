@@ -36,12 +36,14 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
+import { useUserDetails } from "@/hooks/useOrderHooks";
 
 interface OrderItem {
   productId: string;
   productName: string;
   productImage: string;
   quantity: number;
+  vendorId: string;
   price: number;
   size: string;
   color: string;
@@ -127,6 +129,17 @@ const updateOrderStatus = async (id: string, status: string) => {
     console.error("Error updating order status:", error);
     throw error;
   }
+};
+
+// Add this new component above the OrdersPage component
+const UserCell = ({ userId }: { userId: string }) => {
+  const { user, loading } = useUserDetails(userId);
+
+  if (loading) {
+    return <div className="animate-pulse bg-gray-200 h-4 w-24 rounded" />;
+  }
+
+  return <div className="font-medium">{user?.name || "Unknown User"}</div>;
 };
 
 const OrdersPage = () => {
@@ -239,6 +252,11 @@ const OrdersPage = () => {
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("orderId")}</div>
       ),
+    },
+    {
+      accessorKey: "userId",
+      header: "Customer",
+      cell: ({ row }) => <UserCell userId={row.getValue("userId")} />,
     },
     {
       accessorKey: "createdAt",
