@@ -24,7 +24,7 @@ import { z } from "zod";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { resendOTP, signUp, verifyOTP } from "../actions/vendorAuth.actions";
+import { resendOTP, signUp, verifyOTP } from "../../actions/vendorAuth.actions";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";

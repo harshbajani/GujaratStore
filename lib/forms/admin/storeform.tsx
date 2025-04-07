@@ -28,7 +28,7 @@ import {
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { storeSchema } from "../validations";
+import { storeSchema } from "../../validations";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RegionDropdown } from "react-country-region-selector";
@@ -36,7 +36,7 @@ import {
   createStore,
   getStore,
   updateStore,
-} from "../actions/storeProfile.actions";
+} from "../../actions/storeProfile.actions";
 import { useToast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
 import { useRouter } from "next/navigation";

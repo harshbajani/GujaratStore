@@ -21,7 +21,7 @@ import {
 import { useForm } from "react-hook-form";
 import { AddressDialogProps } from "@/types";
 import { useEffect, useState } from "react";
-import { Address } from "../validations";
+import { Address } from "../../validations";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 
