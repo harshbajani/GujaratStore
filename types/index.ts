@@ -644,6 +644,31 @@ export interface IReferral {
   updatedAt: Date | string;
 }
 
+export interface IAdminReferral {
+  _id: string;
+  name: string;
+  description?: string;
+  code: string;
+  discountType: "percentage" | "amount";
+  discountValue: number;
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  expiryDate: Date | string;
+  maxUses: number;
+  usedCount: number;
+  isActive: boolean;
+  createdBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
 // Interfaces for different dashboard metrics
 export interface ISalesSummary {
   totalRevenue: number;

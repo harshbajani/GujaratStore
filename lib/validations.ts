@@ -289,3 +289,14 @@ export const referralFormSchema = z.object({
   maxUses: z.number().int().min(1, "Maximum uses must be at least 1"),
   isActive: z.boolean().default(true),
 });
+
+export const adminReferralFormSchema = z.object({
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  description: z.string().optional(),
+  discountType: z.enum(["percentage", "amount"]),
+  discountValue: z.number().min(0, "Discount value must be positive"),
+  parentCategoryId: z.string().min(1, "Category is required"),
+  expiryDate: z.string(),
+  maxUses: z.number().int().min(1, "Maximum uses must be at least 1"),
+  isActive: z.boolean().default(true),
+});
