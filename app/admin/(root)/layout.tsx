@@ -11,9 +11,37 @@ import { Toaster } from "@/components/ui/toaster";
 import { User2 } from "lucide-react";
 import Link from "next/link";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { toast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 const AdminDashboardLayout = ({ children }: { children: React.ReactNode }) => {
-  const handleSignOut = () => {};
+  const router = useRouter();
+  const handleSignOut = async () => {
+    try {
+      // Call API endpoint to clear the cookie
+      const response = await fetch("/api/admin/auth", {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Signed out",
+          description: "You have been signed out of the admin dashboard",
+          variant: "default",
+        });
+
+        // Redirect to login page
+        router.push("/admin/login");
+        router.refresh(); // Refresh to apply cookie changes
+      }
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <SidebarProvider>

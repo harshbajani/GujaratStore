@@ -55,10 +55,25 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (path.startsWith("/admin")) {
+    // Check if admin auth cookie exists
+    const adminAuthCookie = request.cookies.get("admin_auth_token");
+
+    // If accessing admin routes without auth cookie, redirect to login
+    if (!adminAuthCookie && path !== "/admin/sign-in") {
+      return NextResponse.redirect(new URL("/admin/sign-in", request.url));
+    }
+
+    // If already authenticated and trying to access login page, redirect to admin dashboard
+    if (adminAuthCookie && path === "/admin/sign-in") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
 // Configure which paths the middleware should run on
 export const config = {
-  matcher: ["/vendor/:path*"],
+  matcher: ["/vendor/:path*", "/admin/:path*"],
 };
