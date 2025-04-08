@@ -36,7 +36,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
-import { useUserDetails } from "@/hooks/useOrderHooks";
+import { useUsers } from "@/hooks/useUsers"; // Updated hook import
 
 interface OrderItem {
   productId: string;
@@ -131,12 +131,16 @@ const updateOrderStatus = async (id: string, status: string) => {
   }
 };
 
-// Add this new component above the OrdersPage component
+// Updated component using the new hook to fetch user details
 const UserCell = ({ userId }: { userId: string }) => {
-  const { user, loading } = useUserDetails(userId);
+  const { data: user, error, isLoading } = useUsers(userId);
 
-  if (loading) {
+  if (isLoading) {
     return <div className="animate-pulse bg-gray-200 h-4 w-24 rounded" />;
+  }
+
+  if (error) {
+    return <div className="text-red-600">Error</div>;
   }
 
   return <div className="font-medium">{user?.name || "Unknown User"}</div>;

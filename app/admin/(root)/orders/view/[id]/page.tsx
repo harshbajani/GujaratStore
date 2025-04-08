@@ -23,11 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Loader from "@/components/Loader";
 import Image from "next/image";
-import {
-  useOrder,
-  useShippingAddress,
-  useUserDetails,
-} from "@/hooks/useOrderHooks";
+import { useOrder, useShippingAddress } from "@/hooks/useOrderHooks";
+import { useUsers } from "@/hooks/useUsers"; // Updated hook import
 
 const ViewOrderPage = () => {
   const params = useParams();
@@ -39,7 +36,12 @@ const ViewOrderPage = () => {
   const { address, loading: addressLoading } = useShippingAddress(
     order?.addressId
   );
-  const { user: userDetails } = useUserDetails(order?.userId);
+  // Replace the old hook with the new useUsers hook
+  const {
+    data: user,
+    error: userError,
+    isLoading: userLoading,
+  } = useUsers(order?.userId || "");
 
   const getImageUrl = (imageId: string | File) => `/api/files/${imageId}`;
 
@@ -307,13 +309,19 @@ const ViewOrderPage = () => {
             <CardTitle>Shipping Details</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
-            {userDetails && (
+            {userLoading ? (
+              <p>Loading customer details...</p>
+            ) : userError ? (
+              <p className="text-red-600">Failed to load customer details</p>
+            ) : user ? (
               <div className="space-y-2">
                 <h4 className="font-bold">Customer Details</h4>
-                <p>Name: {userDetails.name}</p>
-                <p>Email: {userDetails.email}</p>
-                <p>Phone: {userDetails.phone}</p>
+                <p>Name: {user.name}</p>
+                <p>Email: {user.email}</p>
+                <p>Phone: {user.phone}</p>
               </div>
+            ) : (
+              <p>No customer details available.</p>
             )}
             <h4 className="font-bold mt-4">Customer Address</h4>
             {addressLoading ? (

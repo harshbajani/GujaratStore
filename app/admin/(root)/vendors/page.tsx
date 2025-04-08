@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import {
   Table,
@@ -27,7 +27,6 @@ import { useRouter } from "next/navigation";
 import Loader from "@/components/Loader";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { deleteVendor, getAllVendors } from "@/lib/actions/vendor.actions";
 import {
   Select,
   SelectContent,
@@ -35,7 +34,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// Assume you have an action to fetch all vendors (create one if needed)
+import { deleteVendor } from "@/lib/actions/vendor.actions";
+import { useVendors } from "@/hooks/useVendors";
 
 interface IVendor {
   _id: string;
@@ -43,48 +43,24 @@ interface IVendor {
   email: string;
   phone: string;
   isVerified: boolean;
-  // Add more fields as needed (store, role, etc.)
+  // Additional fields as needed
 }
 
 const VendorPage = () => {
-  const [data, setData] = useState<IVendor[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-
   const router = useRouter();
   const { toast } = useToast();
 
-  const fetchAllVendors = async () => {
-    try {
-      setLoading(true);
-      const response = await getAllVendors();
-      if (!response.success) {
-        throw new Error(response.message);
-      }
-      setData(
-        Array.isArray(response.data)
-          ? response.data.map((vendor) => ({
-              ...vendor,
-              _id: vendor._id.toString(),
-            }))
-          : []
-      );
-    } catch (error) {
-      console.error("Failed to fetch vendors:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch vendors",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use the custom hook to fetch vendor data.
+  const { data: vendors, isLoading, error, mutate } = useVendors<IVendor[]>();
+
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
   const handleDelete = async (id: string) => {
     try {
@@ -92,7 +68,8 @@ const VendorPage = () => {
       if (!response.success) {
         throw new Error(response.message);
       }
-      await fetchAllVendors();
+      // Revalidate vendor data after deletion.
+      mutate();
       toast({
         title: "Success",
         description: "Vendor deleted successfully!",
@@ -108,10 +85,6 @@ const VendorPage = () => {
       });
     }
   };
-
-  useEffect(() => {
-    fetchAllVendors();
-  }, []);
 
   const columns: ColumnDef<IVendor>[] = [
     {
@@ -174,7 +147,7 @@ const VendorPage = () => {
   ];
 
   const table = useReactTable({
-    data,
+    data: vendors || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -194,8 +167,12 @@ const VendorPage = () => {
   const currentPage = table.getState().pagination.pageIndex + 1;
   const pageNumbers = Array.from({ length: pageCount }, (_, i) => i + 1);
 
-  if (loading) {
+  if (isLoading) {
     return <Loader />;
+  }
+
+  if (error) {
+    return <div>Error loading vendors.</div>;
   }
 
   return (
@@ -276,16 +253,12 @@ const VendorPage = () => {
               <Select
                 value={pagination.pageSize.toString()}
                 onValueChange={(value) =>
-                  setPagination({
-                    pageIndex: 0,
-                    pageSize: Number(value),
-                  })
+                  setPagination({ pageIndex: 0, pageSize: Number(value) })
                 }
               >
                 <SelectTrigger className="w-[70px]">
                   <SelectValue placeholder={pagination.pageSize} />
                 </SelectTrigger>
-
                 <SelectContent>
                   {[10, 20, 50, 100].map((size) => (
                     <SelectItem key={size} value={size.toString()}>
@@ -305,7 +278,6 @@ const VendorPage = () => {
               >
                 Previous
               </Button>
-
               <div className="flex gap-1">
                 {pageNumbers.map((pageNumber) => (
                   <Button
@@ -323,7 +295,6 @@ const VendorPage = () => {
                   </Button>
                 ))}
               </div>
-
               <Button
                 variant="outline"
                 size="sm"

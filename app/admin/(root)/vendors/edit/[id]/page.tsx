@@ -21,6 +21,8 @@ import { updateVendorById } from "@/lib/actions/admin/vendor.actions";
 import Link from "next/link";
 import { RegionDropdown } from "react-country-region-selector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// Import the new hook to fetch a vendor (expects an id)
+import { useVendors } from "@/hooks/useVendors";
 
 // Combined schema for vendor profile and store details
 const vendorAdminSchema = z.object({
@@ -49,7 +51,8 @@ const vendorAdminSchema = z.object({
 type VendorAdminFormValues = z.infer<typeof vendorAdminSchema>;
 
 const EditVendorAdminForm = () => {
-  const { id } = useParams() as { id: string }; // vendor ID from URL
+  // Get vendor id from URL parameters.
+  const { id } = useParams() as { id: string };
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState<boolean>(true);
@@ -77,37 +80,30 @@ const EditVendorAdminForm = () => {
     },
   });
 
-  // Fetch vendor data (including store details) by vendor ID and populate the form
-  useEffect(() => {
-    const fetchVendorData = async () => {
-      try {
-        const response = await fetch(`/api/admin/vendor/${id}`);
-        const result = await response.json();
-        if (result.success && result.data) {
-          form.reset(result.data);
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Vendor not found",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching vendor:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch vendor details",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Use the new useVendor hook to load vendor details.
+  // This hook should call `/api/admin/vendor?id=${id}` under the hood.
+  const {
+    data: vendor,
+    isLoading: vendorLoading,
+    error: vendorError,
+  } = useVendors(id);
 
-    if (id) {
-      fetchVendorData();
+  // When vendor data is loaded, populate the form.
+  useEffect(() => {
+    if (vendor) {
+      // Assuming your API returns the vendor object directly (adjust if needed)
+      form.reset(vendor);
+      setLoading(false);
     }
-  }, [id, form, toast]);
+    if (vendorError) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch vendor details",
+      });
+      setLoading(false);
+    }
+  }, [vendor, vendorError, form, toast]);
 
   const onSubmit = async (data: VendorAdminFormValues) => {
     setLoading(true);
@@ -134,7 +130,7 @@ const EditVendorAdminForm = () => {
     }
   };
 
-  if (loading) {
+  if (loading || vendorLoading) {
     return <Loader />;
   }
 

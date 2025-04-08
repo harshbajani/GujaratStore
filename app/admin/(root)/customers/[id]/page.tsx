@@ -23,9 +23,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
-import { IOrder } from "@/types";
-import { useUserDetails } from "@/hooks/useOrderHooks"; // Import the hook
+import { IAddress, IOrder } from "@/types";
+
 import { getCustomerOrders } from "@/lib/utils";
+import { useUsers } from "@/hooks/useUsers";
 
 const CustomerDetailPage = () => {
   const [orders, setOrders] = useState<IOrder[]>([]);
@@ -36,7 +37,7 @@ const CustomerDetailPage = () => {
   const customerId = params.id as string;
 
   // Use the hook instead of the direct fetch function
-  const { user: customer, loading, error } = useUserDetails(customerId);
+  const { data: customer, isLoading: loading, error } = useUsers(customerId);
 
   const fetchCustomerOrders = async () => {
     try {
@@ -200,21 +201,23 @@ const CustomerDetailPage = () => {
                   <p className="text-sm text-gray-500">Saved Addresses</p>
                   {customer.addresses && customer.addresses.length > 0 ? (
                     <div className="mt-2 space-y-3">
-                      {customer.addresses.map((address, index) => (
-                        <div
-                          key={index}
-                          className="p-3 border rounded-md text-sm"
-                        >
-                          <p className="font-medium">
-                            {address.address_line_1}
-                          </p>
-                          <p>{address.address_line_2}</p>
-                          <p>
-                            {address.locality}, {address.state}{" "}
-                            {address.pincode}
-                          </p>
-                        </div>
-                      ))}
+                      {customer.addresses.map(
+                        (address: IAddress, index: number) => (
+                          <div
+                            key={index}
+                            className="p-3 border rounded-md text-sm"
+                          >
+                            <p className="font-medium">
+                              {address.address_line_1}
+                            </p>
+                            <p>{address.address_line_2}</p>
+                            <p>
+                              {address.locality}, {address.state}{" "}
+                              {address.pincode}
+                            </p>
+                          </div>
+                        )
+                      )}
                     </div>
                   ) : (
                     <p className="text-gray-500">No saved addresses</p>

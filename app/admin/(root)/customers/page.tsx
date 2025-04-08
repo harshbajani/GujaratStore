@@ -38,6 +38,8 @@ import Loader from "@/components/Loader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IOrder } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { useUsers } from "@/hooks/useUsers"; // New hook import
+import Link from "next/link";
 
 interface IUser {
   _id: string;
@@ -47,7 +49,7 @@ interface IUser {
   orderCount: number;
   totalSpent: number;
   lastOrderDate: string;
-  firstOrderDate: string; // Added to track the date of the first order
+  firstOrderDate: string;
 }
 
 interface ICustomerStats {
@@ -57,28 +59,6 @@ interface ICustomerStats {
   averageOrderValue: number;
   yearlyNewCustomers: { [year: number]: number };
 }
-
-// Function to get customer details by ID
-const getCustomerById = async (id: string) => {
-  try {
-    const response = await fetch(`/api/admin/user/${id}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch customer details");
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching customer details:", error);
-    throw error;
-  }
-};
 
 const CustomersPage = () => {
   const [customers, setCustomers] = useState<IUser[]>([]);
@@ -100,7 +80,7 @@ const CustomersPage = () => {
   // State for month/year selection for historical stats
   const [selectedMonth, setSelectedMonth] = useState<number>(
     new Date().getMonth()
-  ); // 0-indexed month
+  );
   const [selectedYear, setSelectedYear] = useState<number>(
     new Date().getFullYear()
   );
@@ -108,15 +88,16 @@ const CustomersPage = () => {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Fetch all unique customers and compute stats
+  // Fetch all users via the new hook.
+  const { data: allUsers, isLoading: usersLoading } = useUsers();
+
+  // Fetch orders and compute customer stats after users data is available.
   const fetchAllCustomers = async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/admin/order", {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
 
       if (!response.ok) {
@@ -124,59 +105,50 @@ const CustomersPage = () => {
       }
 
       const ordersData = await response.json();
-
       if (!ordersData.success) {
         throw new Error(ordersData.error || "Failed to fetch orders");
       }
 
       const orders = Array.isArray(ordersData.data) ? ordersData.data : [];
 
-      // Process orders to extract unique customers
+      // Process orders to extract unique customers using data from allUsers.
       const uniqueCustomers = new Map();
-
       for (const order of orders) {
         if (!uniqueCustomers.has(order.userId)) {
-          // Fetch user details
-          try {
-            const userResponse = await getCustomerById(order.userId);
-            if (userResponse && userResponse.success) {
-              // Get all orders for this customer
-              const customerOrders = orders.filter(
-                (o: IOrder) => o.userId === order.userId
-              );
-
-              // Calculate total spent
-              const totalSpent = customerOrders.reduce(
-                (sum: number, o: IOrder) => sum + (o.total || 0),
-                0
-              );
-
-              // Sort orders to determine first and last order dates
-              const sortedOrders = [...customerOrders].sort(
-                (a: IOrder, b: IOrder) =>
-                  new Date(a.createdAt).getTime() -
-                  new Date(b.createdAt).getTime()
-              );
-              const firstOrderDate = sortedOrders[0].createdAt;
-              const lastOrderDate =
-                sortedOrders[sortedOrders.length - 1].createdAt;
-
-              uniqueCustomers.set(order.userId, {
-                _id: order.userId,
-                name: userResponse.data.name,
-                email: userResponse.data.email,
-                phone: userResponse.data.phone,
-                orderCount: customerOrders.length,
-                totalSpent: totalSpent,
-                lastOrderDate: lastOrderDate,
-                firstOrderDate: firstOrderDate,
-              });
-            }
-          } catch (error) {
-            console.error(
-              `Error fetching details for customer ${order.userId}:`,
-              error
+          // Use the new hook's data to locate the user's info.
+          const user = allUsers?.find((u: IUser) => u._id === order.userId);
+          if (user) {
+            // Filter orders for the customer.
+            const customerOrders = orders.filter(
+              (o: IOrder) => o.userId === order.userId
             );
+
+            // Calculate total spent.
+            const totalSpent = customerOrders.reduce(
+              (sum: number, o: IOrder) => sum + (o.total || 0),
+              0
+            );
+
+            // Determine first and last order dates.
+            const sortedOrders = [...customerOrders].sort(
+              (a: IOrder, b: IOrder) =>
+                new Date(a.createdAt).getTime() -
+                new Date(b.createdAt).getTime()
+            );
+            const firstOrderDate = sortedOrders[0].createdAt;
+            const lastOrderDate =
+              sortedOrders[sortedOrders.length - 1].createdAt;
+
+            uniqueCustomers.set(order.userId, {
+              _id: order.userId,
+              name: user.name,
+              email: user.email,
+              phone: user.phone,
+              orderCount: customerOrders.length,
+              totalSpent,
+              lastOrderDate,
+              firstOrderDate,
+            });
           }
         }
       }
@@ -184,16 +156,13 @@ const CustomersPage = () => {
       const customersArray = Array.from(uniqueCustomers.values());
       setCustomers(customersArray);
 
-      // Calculate overall stats
-
-      // Active customers: those who placed an order in the last 30 days
+      // Calculate overall customer stats.
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const activeCustomers = customersArray.filter(
         (customer) => new Date(customer.lastOrderDate) > thirtyDaysAgo
       ).length;
 
-      // New customers for the current month: those whose first order is within the current month
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -202,14 +171,12 @@ const CustomersPage = () => {
         return firstOrder >= startOfMonth && firstOrder < endOfMonth;
       }).length;
 
-      // Calculate year-wise new customers (all time)
       const yearlyNewCustomers = customersArray.reduce((acc, customer) => {
         const year = new Date(customer.firstOrderDate).getFullYear();
         acc[year] = (acc[year] || 0) + 1;
         return acc;
       }, {} as { [year: number]: number });
 
-      // Average order value calculation
       const totalOrders = customersArray.reduce(
         (sum, customer) => sum + customer.orderCount,
         0
@@ -240,11 +207,14 @@ const CustomersPage = () => {
     }
   };
 
+  // Wait until the new hook returns all users before processing orders.
   useEffect(() => {
-    fetchAllCustomers();
-  }, []);
+    if (!usersLoading && allUsers) {
+      fetchAllCustomers();
+    }
+  }, [usersLoading, allUsers]);
 
-  // Compute new customers count for the selected month/year using all historical orders
+  // Compute new customers count for the selected month/year.
   const newCustomersForSelectedMonth = useMemo(() => {
     if (!customers.length) return 0;
     const startOfSelectedMonth = new Date(selectedYear, selectedMonth, 1);
@@ -268,12 +238,36 @@ const CustomersPage = () => {
     {
       accessorKey: "email",
       header: "Email",
-      cell: ({ row }) => <div>{row.getValue("email")}</div>,
+      cell: ({ row }) => {
+        const email = row.getValue("email");
+        return (
+          <div>
+            <Link
+              href={`mailto:${email}`}
+              className="text-blue-600 hover:underline"
+            >
+              {row.getValue("email")}
+            </Link>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "phone",
       header: "Phone",
-      cell: ({ row }) => <div>{row.getValue("phone")}</div>,
+      cell: ({ row }) => {
+        const phone = row.getValue("phone");
+        return (
+          <div>
+            <Link
+              href={`callto:${phone}`}
+              className="text-blue-600 hover:underline"
+            >
+              {row.getValue("phone")}
+            </Link>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "orderCount",
@@ -340,7 +334,7 @@ const CustomersPage = () => {
   const currentPage = table.getState().pagination.pageIndex + 1;
   const pageNumbers = Array.from({ length: pageCount }, (_, i) => i + 1);
 
-  if (loading) {
+  if (loading || usersLoading) {
     return <Loader />;
   }
 
@@ -425,7 +419,6 @@ const CustomersPage = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">
@@ -439,7 +432,6 @@ const CustomersPage = () => {
             <p className="text-xs text-gray-500">Last 30 days</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">
@@ -453,7 +445,6 @@ const CustomersPage = () => {
             <p className="text-xs text-gray-500">Current Month</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">
@@ -488,8 +479,6 @@ const CustomersPage = () => {
             </p>
           </CardContent>
         </Card>
-
-        {/* Yearly New Customers Section */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">
@@ -532,7 +521,6 @@ const CustomersPage = () => {
             </div>
           </div>
 
-          {/* Wrap the Table with a container that has overflow-auto and a fixed max height */}
           <div className="border rounded-lg overflow-auto max-h-[500px]">
             <Table>
               <TableHeader>
@@ -585,10 +573,7 @@ const CustomersPage = () => {
               <Select
                 value={pagination.pageSize.toString()}
                 onValueChange={(value) => {
-                  setPagination({
-                    pageIndex: 0,
-                    pageSize: Number(value),
-                  });
+                  setPagination({ pageIndex: 0, pageSize: Number(value) });
                 }}
               >
                 <SelectTrigger className="w-[70px]">
@@ -613,7 +598,6 @@ const CustomersPage = () => {
               >
                 Previous
               </Button>
-
               <div className="flex gap-1">
                 {pageNumbers.map((pageNumber) => (
                   <Button
@@ -631,7 +615,6 @@ const CustomersPage = () => {
                   </Button>
                 ))}
               </div>
-
               <Button
                 variant="outline"
                 size="sm"
