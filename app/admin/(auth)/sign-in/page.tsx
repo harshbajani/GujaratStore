@@ -44,7 +44,8 @@ const AdminLoginPage = () => {
           variant: "default",
         });
 
-        router.push("/admin");
+        router.push("/admin/dashboard");
+        window.location.href = "/admin/dashboard";
         router.refresh(); // Refresh to apply cookie changes
       } else {
         toast({
