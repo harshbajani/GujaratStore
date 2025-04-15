@@ -109,9 +109,37 @@ export interface IBlog extends Document {
   updatedAt: Date;
 }
 
+export interface IAdminBlog extends Document {
+  _id: Types.ObjectId;
+  imageId: string;
+  user: string;
+  date: string;
+  heading: string;
+  description: string;
+  category: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface TransformedBlog {
   id: string;
   vendorId: string;
+  imageId: string;
+  user: string;
+  date: string;
+  heading: string;
+  description: string;
+  category: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+}
+
+export interface AdminTransformedBlog {
+  id: string;
   imageId: string;
   user: string;
   date: string;
@@ -199,6 +227,12 @@ export interface ParentCategoryFormData {
   isActive: boolean;
 }
 
+export interface AdminParentCategoryFormData {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
 export interface IPrimaryCategory {
   id?: string;
   name: string;
@@ -211,10 +245,31 @@ export interface IPrimaryCategory {
   isActive: boolean;
 }
 
+export interface IAdminPrimaryCategory {
+  id?: string;
+  name: string;
+  parentCategory: string;
+  description?: string;
+  metaTitle?: string;
+  metaKeywords?: string[];
+  metaDescription?: string;
+  isActive: boolean;
+}
+
 export interface ISecondaryCategory {
   id?: string;
   name: string;
   vendorId: string;
+  parentCategory: string;
+  primaryCategory: string;
+  attributes: string[];
+  description?: string;
+  isActive: boolean;
+}
+
+export interface IAdminSecondaryCategory {
+  id?: string;
+  name: string;
   parentCategory: string;
   primaryCategory: string;
   attributes: string[];
@@ -256,9 +311,27 @@ export type PrimaryCategoryWithPopulatedFields = IPrimaryCategory & {
   };
 };
 
+export type AdminPrimaryCategoryWithPopulatedFields = IAdminPrimaryCategory & {
+  id: string; // Ensure you have an id field
+  parentCategory: {
+    _id: string;
+    name: string;
+  };
+};
+
 export interface IBrand {
   _id?: string;
   vendorId: string;
+  name: string;
+  imageId: string;
+  metaTitle?: string;
+  metaKeywords?: string;
+  metaDescription?: string;
+  __v?: number;
+}
+
+export interface IAdminBrand {
+  _id?: string;
   name: string;
   imageId: string;
   metaTitle?: string;
@@ -275,6 +348,42 @@ export interface ISizes {
 }
 
 export interface IProduct {
+  _id?: string;
+  vendorId: string;
+  productName: string;
+  parentCategory: string; // MongoDB ObjectId as string
+  primaryCategory: string; // MongoDB ObjectId as string
+  secondaryCategory: string; // MongoDB ObjectId as string
+  attributes: Array<{ attributeId: string; value: string }>;
+  brands: string; // MongoDB ObjectId as string
+  productSKU: string;
+  productColor?: string;
+  productSize?: string[];
+  productDescription: string;
+  productImages: (string | File)[];
+  productCoverImage: string | File;
+  mrp: number;
+  basePrice: number;
+  discountType: "percentage" | "amount";
+  gender?: "male" | "female" | "unisex" | "not-applicable";
+  discountValue: number;
+  gstRate: number;
+  gstAmount: number;
+  netPrice: number;
+  deliveryCharges: number;
+  deliveryDays: number;
+  productQuantity: number;
+  productStatus?: boolean;
+  productRating?: number;
+  productReviews?: string[]; // Optional array of MongoDB ObjectIds as strings
+  productWarranty?: string;
+  productReturnPolicy?: string;
+  metaTitle?: string;
+  metaKeywords?: string;
+  metaDescription?: string;
+}
+
+export interface IAdminProduct {
   _id?: string;
   vendorId: string;
   productName: string;
@@ -487,6 +596,28 @@ export interface IDiscount {
   updatedAt: Date;
 }
 
+export interface IAdminDiscount {
+  id: string;
+  _id: string;
+  name: string;
+  description?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  targetType: "category";
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface IReferral {
   _id: string;
   name: string;
@@ -500,6 +631,31 @@ export interface IReferral {
     isActive: boolean;
   };
   vendorId: Schema.Types.ObjectId;
+  expiryDate: Date | string;
+  maxUses: number;
+  usedCount: number;
+  isActive: boolean;
+  createdBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+export interface IAdminReferral {
+  _id: string;
+  name: string;
+  description?: string;
+  code: string;
+  discountType: "percentage" | "amount";
+  discountValue: number;
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
   expiryDate: Date | string;
   maxUses: number;
   usedCount: number;

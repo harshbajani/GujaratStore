@@ -17,6 +17,7 @@ import {
   PencilLine,
   Ruler,
   Link,
+  Store,
 } from "lucide-react";
 export const NavLinks = [
   {
@@ -626,6 +627,82 @@ export const vendorSidebarLinks = [
   {
     label: "Discount",
     route: "/vendor/discounts",
+    icon: Percent,
+  },
+];
+
+export const adminSidebarLinks = [
+  {
+    label: "Dashboard",
+    route: "/admin/dashboard",
+    icon: ChartPie,
+  },
+  {
+    label: "Attribute",
+    route: "/admin/attribute",
+    icon: Tag,
+  },
+  {
+    label: "Brand",
+    route: "/admin/brand",
+    icon: Star,
+  },
+  {
+    label: "Sizes",
+    route: "/admin/size",
+    icon: Ruler,
+  },
+  {
+    label: "Categories",
+    route: [
+      {
+        route: "/admin/category/parentCategory",
+        label: "Parent Category",
+      },
+      {
+        route: "/admin/category/primaryCategory",
+        label: "Primary Category",
+      },
+      {
+        route: "/admin/category/secondaryCategory",
+        label: "Secondary Category",
+      },
+    ],
+    icon: LayoutPanelLeft,
+  },
+  {
+    label: "Products",
+    route: "/admin/products",
+    icon: ShoppingCart,
+  },
+  {
+    label: "Orders",
+    route: "/admin/orders",
+    icon: ClipboardList,
+  },
+  {
+    label: "Blogs",
+    route: "/admin/blogs",
+    icon: PencilLine,
+  },
+  {
+    label: "Vendors",
+    route: "/admin/vendors",
+    icon: Store,
+  },
+  {
+    label: "Customers",
+    route: "/admin/customers",
+    icon: Users,
+  },
+  {
+    label: "Referrals",
+    route: "/admin/referrals",
+    icon: Link,
+  },
+  {
+    label: "Discount",
+    route: "/admin/discounts",
     icon: Percent,
   },
 ];

@@ -137,10 +137,26 @@ export const parentCategorySchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+export const adminParentCategorySchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  vendorId: z.string().min(24, "Invalid VendorId"),
+  isActive: z.boolean().default(true),
+});
+
 export const primaryCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
   parentCategory: z.string().nonempty("Parent category is required"),
   vendorId: z.string().min(24, "Invalid VendorId"),
+  description: z.string().optional(),
+  metaTitle: z.string().optional(),
+  metaKeywords: z.array(z.string()).optional(),
+  metaDescription: z.string().optional(),
+  isActive: z.boolean().default(true),
+});
+
+export const adminPrimaryCategorySchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  parentCategory: z.string().nonempty("Parent category is required"),
   description: z.string().optional(),
   metaTitle: z.string().optional(),
   metaKeywords: z.array(z.string()).optional(),
@@ -160,9 +176,28 @@ export const secondaryCategorySchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+export const adminSecondaryCategorySchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  parentCategory: z.string().nonempty("Parent category is required"),
+  primaryCategory: z.string().nonempty("Primary category is required"),
+  attributes: z
+    .array(z.string())
+    .nonempty("At least one attribute is required"),
+  description: z.string().optional(),
+  isActive: z.boolean().default(true),
+});
+
 export const brandSchema = z.object({
   name: z.string().min(1, "Name is required"),
   vendorId: z.string().min(24, "Invalid VendorId"),
+  imageId: z.string().min(1, "Image is required."),
+  metaTitle: z.string().optional(),
+  metaKeywords: z.string().optional(),
+  metaDescription: z.string().optional(),
+});
+
+export const adminBrandSchema = z.object({
+  name: z.string().min(1, "Name is required"),
   imageId: z.string().min(1, "Image is required."),
   metaTitle: z.string().optional(),
   metaKeywords: z.string().optional(),
@@ -250,6 +285,17 @@ export const referralFormSchema = z.object({
   discountValue: z.number().min(0, "Discount value must be positive"),
   parentCategoryId: z.string().min(1, "Category is required"),
   vendorId: z.string().min(24, "Invalid VendorId"),
+  expiryDate: z.string(),
+  maxUses: z.number().int().min(1, "Maximum uses must be at least 1"),
+  isActive: z.boolean().default(true),
+});
+
+export const adminReferralFormSchema = z.object({
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  description: z.string().optional(),
+  discountType: z.enum(["percentage", "amount"]),
+  discountValue: z.number().min(0, "Discount value must be positive"),
+  parentCategoryId: z.string().min(1, "Category is required"),
   expiryDate: z.string(),
   maxUses: z.number().int().min(1, "Maximum uses must be at least 1"),
   isActive: z.boolean().default(true),
