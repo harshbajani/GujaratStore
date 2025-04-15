@@ -1,0 +1,10 @@
+# .dockerignore
+.git
+.github
+.next
+node_modules
+.env*
+!.env.example
+.vscode
+README.md
+.gitignore
