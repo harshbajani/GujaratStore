@@ -321,7 +321,6 @@ export type AdminPrimaryCategoryWithPopulatedFields = IAdminPrimaryCategory & {
 
 export interface IBrand {
   _id?: string;
-  vendorId: string;
   name: string;
   imageId: string;
   metaTitle?: string;

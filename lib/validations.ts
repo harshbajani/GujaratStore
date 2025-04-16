@@ -189,7 +189,6 @@ export const adminSecondaryCategorySchema = z.object({
 
 export const brandSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  vendorId: z.string().min(24, "Invalid VendorId"),
   imageId: z.string().min(1, "Image is required."),
   metaTitle: z.string().optional(),
   metaKeywords: z.string().optional(),
