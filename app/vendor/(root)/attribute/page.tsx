@@ -45,7 +45,6 @@ import Loader from "@/components/Loader";
 type Attribute = {
   id: string;
   name: string;
-  vendorId: string;
   isActive: boolean;
 };
 
