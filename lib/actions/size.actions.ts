@@ -18,7 +18,6 @@ const serializeSize = (doc: ISize | null): object | null => {
     id: serialized._id.toString(),
     _id: serialized._id.toString(),
     label: serialized.label,
-    vendorId: serialized.vendorId,
     value: serialized.value,
     isActive: serialized.isActive,
   };
@@ -27,11 +26,11 @@ const serializeSize = (doc: ISize | null): object | null => {
 export async function createSize(
   label: string,
   value: string,
-  vendorId: string,
+
   isActive: boolean = true
 ): Promise<SizeResponse> {
   try {
-    const size = new Size({ label, value, vendorId, isActive });
+    const size = new Size({ label, value, isActive });
     const savedSize = await size.save();
     return { success: true, data: serializeSize(savedSize)! };
   } catch (error: unknown) {
@@ -69,8 +68,7 @@ export async function getAllSizes(): Promise<SizeResponse> {
       };
     }
 
-    const vendorId = vendorResponse.data?._id;
-    const sizes = await Size.find({ isActive: true, vendorId });
+    const sizes = await Size.find({});
     const plainSizes = sizes.map((s) => serializeSize(s));
     return { success: true, data: plainSizes };
   } catch (error: unknown) {
@@ -83,7 +81,7 @@ export async function getAllSizes(): Promise<SizeResponse> {
 
 export async function updateSize(
   id: string,
-  data: { label?: string; value?: string; vendorId: string; isActive?: boolean }
+  data: { label?: string; value?: string; isActive?: boolean }
 ): Promise<SizeResponse> {
   try {
     const size = await Size.findByIdAndUpdate(id, data, { new: true });
