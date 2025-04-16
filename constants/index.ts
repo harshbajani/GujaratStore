@@ -581,24 +581,24 @@ export const vendorSidebarLinks = [
     route: "/vendor/size",
     icon: Ruler,
   },
-  {
-    label: "Categories",
-    route: [
-      {
-        route: "/vendor/category/parentCategory",
-        label: "Parent Category",
-      },
-      {
-        route: "/vendor/category/primaryCategory",
-        label: "Primary Category",
-      },
-      {
-        route: "/vendor/category/secondaryCategory",
-        label: "Secondary Category",
-      },
-    ],
-    icon: LayoutPanelLeft,
-  },
+  // {
+  //   label: "Categories",
+  //   route: [
+  //     {
+  //       route: "/vendor/category/parentCategory",
+  //       label: "Parent Category",
+  //     },
+  //     {
+  //       route: "/vendor/category/primaryCategory",
+  //       label: "Primary Category",
+  //     },
+  //     {
+  //       route: "/vendor/category/secondaryCategory",
+  //       label: "Secondary Category",
+  //     },
+  //   ],
+  //   icon: LayoutPanelLeft,
+  // },
   {
     label: "Products",
     route: "/vendor/products",

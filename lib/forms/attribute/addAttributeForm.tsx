@@ -18,11 +18,9 @@ import {
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { createAttribute } from "@/lib/actions/attribute.actions";
-import { useEffect } from "react";
 
 const attributeSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  vendorId: z.string().min(24, "Invalid VendorId"),
   isActive: z.boolean().default(true),
 });
 
@@ -34,7 +32,6 @@ const AddAttributeForm = () => {
     resolver: zodResolver(attributeSchema),
     defaultValues: {
       name: "",
-      vendorId: "",
       isActive: true,
     },
   });
@@ -42,7 +39,7 @@ const AddAttributeForm = () => {
   // * Form Submit
   const onSubmit = async (data: AttributeFormData): Promise<void> => {
     try {
-      await createAttribute(data.name, data.vendorId, data.isActive);
+      await createAttribute(data.name, data.isActive);
       toast({
         title: "Success",
         description: "Attribute added successfully",
@@ -57,27 +54,6 @@ const AddAttributeForm = () => {
       });
     }
   };
-
-  useEffect(() => {
-    const fetchVendor = async () => {
-      try {
-        const userResponse = await fetch("/api/vendor/current");
-        const userData = await userResponse.json();
-
-        if (userData.success && userData.data && userData.data._id) {
-          // Set the vendorId in the form
-          form.setValue("vendorId", userData.data._id);
-          console.log("Vendor ID set:", userData.data._id);
-        } else {
-          console.error("Failed to get vendor ID from response", userData);
-        }
-      } catch (error) {
-        console.error("Error fetching vendor data:", error);
-      }
-    };
-
-    fetchVendor();
-  }, [form]);
 
   return (
     <Form {...form}>

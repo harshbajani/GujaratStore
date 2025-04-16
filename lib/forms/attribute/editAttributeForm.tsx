@@ -26,7 +26,6 @@ import { useToast } from "@/hooks/use-toast";
 
 const attributeSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  vendorId: z.string().min(24, "Invalid VendorId"),
   isActive: z.boolean().default(true),
 });
 
@@ -41,7 +40,6 @@ const EditAttributeForm = () => {
     resolver: zodResolver(attributeSchema),
     defaultValues: {
       name: "",
-      vendorId: "",
       isActive: true,
     },
   });
@@ -51,8 +49,6 @@ const EditAttributeForm = () => {
     const fetchAttribute = async () => {
       try {
         const response = await getAttributeById(id as string);
-        const userResponse = await fetch("/api/vendor/current");
-        const userData = await userResponse.json();
 
         if (response.success && response.data) {
           const attributeData = Array.isArray(response.data)
@@ -62,7 +58,6 @@ const EditAttributeForm = () => {
           // Set the form data with the vendor ID from current vendor
           form.reset({
             name: attributeData.name,
-            vendorId: userData.data._id, // Use vendor ID from current vendor
             isActive: attributeData.isActive,
           });
         }
@@ -83,15 +78,6 @@ const EditAttributeForm = () => {
   // * Form submission handler
   const onSubmit = async (data: AttributeFormData) => {
     try {
-      const userResponse = await fetch("/api/vendor/current");
-      const userData = await userResponse.json();
-
-      if (userData.success && userData.data && userData.data._id) {
-        // Always use the current vendor's ID
-        data.vendorId = userData.data._id;
-        console.log("Using vendor ID:", data.vendorId);
-      }
-
       const response = await updateAttribute(id as string, data);
 
       if (response.success) {
