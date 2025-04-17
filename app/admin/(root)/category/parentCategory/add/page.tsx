@@ -1,5 +1,5 @@
 import { LayoutPanelLeft } from "lucide-react";
-import AddParentCategoryForm from "@/lib/forms/admin/parentCategory/addParentCategoryForm";
+import AddParentCategoryForm from "@/lib/forms/parentCategory/addParentCategoryForm";
 
 const AddParentCategory = () => {
   return (

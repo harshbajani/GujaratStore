@@ -7,11 +7,6 @@ const primaryCategorySchema = new Schema({
     ref: "ParentCategory", // Reference to ParentCategory
     required: true,
   },
-  vendorId: {
-    type: Schema.Types.ObjectId,
-    ref: "Vendor",
-    required: true,
-  },
   description: { type: String, default: "" },
   metaTitle: { type: String, default: "" },
   metaKeywords: { type: [String], default: [] },

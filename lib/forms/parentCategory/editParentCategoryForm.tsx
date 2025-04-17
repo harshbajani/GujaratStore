@@ -20,8 +20,8 @@ import { parentCategorySchema } from "@/lib/validations";
 import {
   getParentCategoryById,
   updateParentCategory,
-} from "@/lib/actions/parentCategory.actions";
-import { ParentCategoryFormData } from "@/types";
+} from "@/lib/actions/admin/parentCategory.actions";
+import { AdminParentCategoryFormData } from "@/types";
 import Loader from "@/components/Loader";
 
 interface EditParentCategoryFormProps {
@@ -36,11 +36,10 @@ const EditParentCategoryForm = ({
   const router = useRouter();
   const { toast } = useToast();
 
-  const form = useForm<ParentCategoryFormData>({
+  const form = useForm<AdminParentCategoryFormData>({
     resolver: zodResolver(parentCategorySchema),
     defaultValues: {
       name: "",
-      vendorId: "",
       isActive: true,
     },
   });
@@ -52,7 +51,6 @@ const EditParentCategoryForm = ({
         if (response.success && response.data) {
           form.reset({
             name: Array.isArray(response.data) ? "" : response.data.name,
-            vendorId: form.getValues("vendorId"),
             isActive: Array.isArray(response.data)
               ? true
               : response.data.isActive,
@@ -79,7 +77,7 @@ const EditParentCategoryForm = ({
     fetchParentCategory();
   }, [parentCategoryId, form, toast]);
   // * form submission
-  const onSubmit = async (data: ParentCategoryFormData) => {
+  const onSubmit = async (data: AdminParentCategoryFormData) => {
     try {
       const response = await updateParentCategory(parentCategoryId, data);
       if (response.success) {
@@ -87,7 +85,7 @@ const EditParentCategoryForm = ({
           title: "Success",
           description: "Parent category updated successfully",
         });
-        router.push("/vendor/category/parentCategory");
+        router.push("/admin/category/parentCategory");
       } else {
         throw new Error(response.error);
       }
@@ -99,27 +97,6 @@ const EditParentCategoryForm = ({
       });
     }
   };
-
-  useEffect(() => {
-    const fetchVendor = async () => {
-      try {
-        const userResponse = await fetch("/api/vendor/current");
-        const userData = await userResponse.json();
-
-        if (userData.success && userData.data && userData.data._id) {
-          // Set the vendorId in the form state
-          form.setValue("vendorId", userData.data._id);
-          console.log("Vendor ID set:", userData.data._id);
-        } else {
-          console.error("Failed to get vendor ID from response", userData);
-        }
-      } catch (error) {
-        console.error("Error fetching vendor data:", error);
-      }
-    };
-
-    fetchVendor();
-  }, [form]);
 
   if (loading) {
     return (

@@ -6,12 +6,12 @@ import PrimaryCategory from "@/lib/models/primaryCategory.model";
 
 // Import referenced models for population
 import { IAdminPrimaryCategory } from "@/types";
-import { adminPrimaryCategorySchema } from "../../validations";
+import { primaryCategorySchema } from "../../validations";
 import ParentCategory from "@/lib/models/parentCategory.model";
 import { parseStringify } from "../../utils";
 
 // Define TypeScript interface for PrimaryCategory
-export type PrimaryCategoryData = z.infer<typeof adminPrimaryCategorySchema>;
+export type PrimaryCategoryData = z.infer<typeof primaryCategorySchema>;
 
 // Helper function to serialize MongoDB documents (to prevent serialize errors)
 export const serializeDocument = async (
@@ -26,7 +26,7 @@ export const createPrimaryCategory = async (data: PrimaryCategoryData) => {
   await connectToDB();
 
   // Validate incoming data
-  const validatedData = adminPrimaryCategorySchema.parse(data);
+  const validatedData = primaryCategorySchema.parse(data);
 
   // Ensure ParentCategory and Attributes exist
   const parentCategoryExists = await ParentCategory.findById(
@@ -78,7 +78,7 @@ export const updatePrimaryCategoryById = async (
   // Ensure database connection
   await connectToDB();
 
-  const validatedData = adminPrimaryCategorySchema.partial().parse(data);
+  const validatedData = primaryCategorySchema.partial().parse(data);
 
   // Check if parentCategory exists, if provided
   if (validatedData.parentCategory) {

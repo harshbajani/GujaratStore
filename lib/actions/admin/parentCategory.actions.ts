@@ -35,9 +35,11 @@ export async function createParentCategory(
   isActive: boolean
 ): Promise<ParentCategoryResponse> {
   try {
+    console.log("Incoming data:", { name, isActive });
     const validation = parentCategorySchema.safeParse({ name, isActive });
 
     if (!validation.success) {
+      console.log("Validation error:", validation.error.errors);
       return {
         success: false,
         error: validation.error.errors[0].message,
@@ -53,7 +55,7 @@ export async function createParentCategory(
     }
 
     const parentCategory = await ParentCategory.create({ name, isActive });
-    revalidatePath("/vendor/category/parentCategory");
+    revalidatePath("/admin/category/parentCategory");
 
     return {
       success: true,
@@ -146,7 +148,7 @@ export async function updateParentCategory(
       };
     }
 
-    revalidatePath("/vendor/category/parentCategory");
+    revalidatePath("/admin/category/parentCategory");
     return {
       success: true,
       data: serializeDocument(updatedParentCategory),
@@ -180,7 +182,7 @@ export async function deleteParentCategory(
       };
     }
 
-    revalidatePath("/vendor/category/parentCategory");
+    revalidatePath("/admin/category/parentCategory");
     return {
       success: true,
       data: serializeDocument(parentCategory),

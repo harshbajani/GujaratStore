@@ -133,28 +133,10 @@ export const inquirySchema = z.object({
 
 export const parentCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
-  vendorId: z.string().min(24, "Invalid VendorId"),
-  isActive: z.boolean().default(true),
-});
-
-export const adminParentCategorySchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  vendorId: z.string().min(24, "Invalid VendorId"),
   isActive: z.boolean().default(true),
 });
 
 export const primaryCategorySchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  parentCategory: z.string().nonempty("Parent category is required"),
-  vendorId: z.string().min(24, "Invalid VendorId"),
-  description: z.string().optional(),
-  metaTitle: z.string().optional(),
-  metaKeywords: z.array(z.string()).optional(),
-  metaDescription: z.string().optional(),
-  isActive: z.boolean().default(true),
-});
-
-export const adminPrimaryCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
   parentCategory: z.string().nonempty("Parent category is required"),
   description: z.string().optional(),
@@ -166,7 +148,6 @@ export const adminPrimaryCategorySchema = z.object({
 
 export const secondaryCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
-  vendorId: z.string().min(24, "Invalid VendorId"),
   parentCategory: z.string().nonempty("Parent category is required"),
   primaryCategory: z.string().nonempty("Primary category is required"),
   attributes: z

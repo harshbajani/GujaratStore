@@ -237,18 +237,6 @@ export interface IPrimaryCategory {
   id?: string;
   name: string;
   parentCategory: string;
-  vendorId: string;
-  description?: string;
-  metaTitle?: string;
-  metaKeywords?: string[];
-  metaDescription?: string;
-  isActive: boolean;
-}
-
-export interface IAdminPrimaryCategory {
-  id?: string;
-  name: string;
-  parentCategory: string;
   description?: string;
   metaTitle?: string;
   metaKeywords?: string[];
@@ -257,17 +245,6 @@ export interface IAdminPrimaryCategory {
 }
 
 export interface ISecondaryCategory {
-  id?: string;
-  name: string;
-  vendorId: string;
-  parentCategory: string;
-  primaryCategory: string;
-  attributes: string[];
-  description?: string;
-  isActive: boolean;
-}
-
-export interface IAdminSecondaryCategory {
   id?: string;
   name: string;
   parentCategory: string;
@@ -304,14 +281,6 @@ export type SecondaryCategoryWithPopulatedFields = ISecondaryCategory & {
 };
 
 export type PrimaryCategoryWithPopulatedFields = IPrimaryCategory & {
-  id: string; // Ensure you have an id field
-  parentCategory: {
-    _id: string;
-    name: string;
-  };
-};
-
-export type AdminPrimaryCategoryWithPopulatedFields = IAdminPrimaryCategory & {
   id: string; // Ensure you have an id field
   parentCategory: {
     _id: string;
