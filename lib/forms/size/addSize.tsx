@@ -17,13 +17,11 @@ import {
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { createSize } from "@/lib/actions/size.actions";
-import { useEffect } from "react";
 
 // Define form schema using zod
 const sizeSchema = z.object({
   label: z.string().min(1, "Label is required"),
   value: z.string().min(1, "Value is required"),
-  vendorId: z.string().min(24, "Invalid VendorId"),
   isActive: z.boolean().default(true),
 });
 
@@ -38,19 +36,13 @@ const AddSizeForm = () => {
     defaultValues: {
       label: "",
       value: "",
-      vendorId: "",
       isActive: true,
     },
   });
 
   const onSubmit = async (data: SizeFormData): Promise<void> => {
     try {
-      const response = await createSize(
-        data.label,
-        data.value,
-        data.vendorId,
-        data.isActive
-      );
+      const response = await createSize(data.label, data.value, data.isActive);
       if (response.success) {
         toast({
           title: "Success",
@@ -69,27 +61,6 @@ const AddSizeForm = () => {
       });
     }
   };
-
-  useEffect(() => {
-    const fetchVendor = async () => {
-      try {
-        const userResponse = await fetch("/api/vendor/current");
-        const userData = await userResponse.json();
-
-        if (userData.success && userData.data && userData.data._id) {
-          // Set the vendorId in the form
-          form.setValue("vendorId", userData.data._id);
-          console.log("Vendor ID set:", userData.data._id);
-        } else {
-          console.error("Failed to get vendor ID from response", userData);
-        }
-      } catch (error) {
-        console.error("Error fetching vendor data:", error);
-      }
-    };
-
-    fetchVendor();
-  }, [form]);
 
   return (
     <Form {...form}>

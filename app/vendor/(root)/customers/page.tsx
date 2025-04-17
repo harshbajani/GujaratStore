@@ -39,6 +39,7 @@ import Loader from "@/components/Loader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IOrder } from "@/types";
 import { formatDate } from "@/lib/utils";
+import Link from "next/link";
 
 interface IUser {
   _id: string;
@@ -269,12 +270,36 @@ const CustomersPage = () => {
     {
       accessorKey: "email",
       header: "Email",
-      cell: ({ row }) => <div>{row.getValue("email")}</div>,
+      cell: ({ row }) => {
+        const email = row.getValue("email");
+        return (
+          <div>
+            <Link
+              href={`mailto:${email}`}
+              className="text-blue-600 hover:underline"
+            >
+              {row.getValue("email")}
+            </Link>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "phone",
       header: "Phone",
-      cell: ({ row }) => <div>{row.getValue("phone")}</div>,
+      cell: ({ row }) => {
+        const phone = row.getValue("phone");
+        return (
+          <div>
+            <Link
+              href={`callto:${phone}`}
+              className="text-blue-600 hover:underline"
+            >
+              {row.getValue("phone")}
+            </Link>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "orderCount",

@@ -45,7 +45,6 @@ const AddPrimaryCategoryForm = () => {
     defaultValues: {
       name: "",
       parentCategory: "",
-      vendorId: "",
       description: "",
       metaTitle: "",
       metaKeywords: [],
@@ -85,7 +84,7 @@ const AddPrimaryCategoryForm = () => {
         description: "Primary category added successfully",
       });
 
-      router.push("/vendor/category/primaryCategory");
+      // router.push("/admin/category/primaryCategory");
     } catch {
       toast({
         title: "Error",
@@ -94,27 +93,6 @@ const AddPrimaryCategoryForm = () => {
       });
     }
   };
-
-  useEffect(() => {
-    const fetchVendor = async () => {
-      try {
-        const userResponse = await fetch("/api/vendor/current");
-        const userData = await userResponse.json();
-
-        if (userData.success && userData.data && userData.data._id) {
-          // Set the vendorId in the form
-          form.setValue("vendorId", userData.data._id);
-          console.log("Vendor ID set:", userData.data._id);
-        } else {
-          console.error("Failed to get vendor ID from response", userData);
-        }
-      } catch (error) {
-        console.error("Error fetching vendor data:", error);
-      }
-    };
-
-    fetchVendor();
-  }, [form]);
 
   return (
     <Form {...form}>
@@ -259,7 +237,7 @@ const AddPrimaryCategoryForm = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => router.push("/vendor/category/primaryCategory")}
+            onClick={() => router.push("/admin/category/primaryCategory")}
           >
             Cancel
           </Button>

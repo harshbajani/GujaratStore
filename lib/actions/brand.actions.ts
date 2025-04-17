@@ -7,7 +7,6 @@ import { ObjectId } from "mongodb";
 import { IBrand } from "@/types";
 import { Types } from "mongoose";
 import { z } from "zod";
-import { getCurrentVendor } from "./vendor.actions";
 
 type BrandFormData = z.infer<typeof brandSchema>;
 
@@ -17,11 +16,11 @@ export interface BrandResponse {
   error?: string;
 }
 
-export async function createBrand(data: BrandFormData, vendorId: string) {
+export async function createBrand(data: BrandFormData) {
   try {
     await connectToDB();
     const validatedData = brandSchema.parse(data);
-    const brand = await Brand.create({ ...validatedData, vendorId });
+    const brand = await Brand.create({ ...validatedData });
     return { success: true, brand };
   } catch (error) {
     console.log("Brand creation failed", error);
@@ -32,21 +31,7 @@ export async function createBrand(data: BrandFormData, vendorId: string) {
 export async function getAllBrands(): Promise<BrandResponse> {
   try {
     await connectToDB();
-    const vendorResponse = await getCurrentVendor();
-
-    if (!vendorResponse.success) {
-      return {
-        success: false,
-        error: "Not authenticated as vendor",
-        data: [],
-      };
-    }
-
-    const vendorId = vendorResponse.data?._id;
-    const brands = await Brand.find({ vendorId })
-      .sort({ createdAt: -1 })
-      .lean()
-      .exec();
+    const brands = await Brand.find({}).sort({ createdAt: -1 }).lean().exec();
 
     const transformedBrands = await Promise.all(
       brands.map(async (brand) => {
@@ -55,7 +40,6 @@ export async function getAllBrands(): Promise<BrandResponse> {
           ...brand,
           _id: (brand._id as Types.ObjectId).toString(),
           name: brand.name,
-          vendorId: brand.vendorId,
           imageId: image.buffer.toString("base64"),
           metaTitle: brand.metaTitle,
           metaKeywords: brand.metaKeywords,
@@ -94,7 +78,6 @@ export async function getBrandById(id: string): Promise<IBrand | null> {
     const image = await getFileById(brand.imageId);
     const transformedBrand = {
       name: brand.name,
-      vendorId: brand.vendorId,
       imageId: image.buffer.toString("base64"),
       metaTitle: brand.metaTitle,
       metaKeywords: brand.metaKeywords,

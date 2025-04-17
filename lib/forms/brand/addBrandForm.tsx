@@ -3,7 +3,7 @@ import { createBrand } from "@/lib/actions/brand.actions";
 import { brandSchema } from "@/lib/validations";
 import { IBrand } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,6 @@ const AddBrandForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [postImage, setPostImage] = useState("");
   const [imageId, setImageId] = useState("");
-  const [vendorId, setVendorId] = useState("");
   // * hooks
   const router = useRouter();
   const { toast } = useToast();
@@ -70,11 +69,10 @@ const AddBrandForm = () => {
         ...data,
         imageId: imageId,
       };
-      const result = await createBrand(formData, vendorId);
+      const result = await createBrand(formData);
       if (result.success) {
         form.reset({
           name: "",
-          vendorId: "",
           metaTitle: "",
           metaDescription: "",
           metaKeywords: "",
@@ -98,28 +96,6 @@ const AddBrandForm = () => {
       setIsSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    const fetchVendor = async () => {
-      try {
-        const userResponse = await fetch("/api/vendor/current");
-        const userData = await userResponse.json();
-
-        if (userData.success && userData.data && userData.data._id) {
-          // Set the vendorId in the form
-          form.setValue("vendorId", userData.data._id);
-          setVendorId(userData.data._id);
-          console.log("Vendor ID set:", userData.data._id);
-        } else {
-          console.error("Failed to get vendor ID from response", userData);
-        }
-      } catch (error) {
-        console.error("Error fetching vendor data:", error);
-      }
-    };
-
-    fetchVendor();
-  }, [form]);
 
   return (
     <section className="sm:px-5 md:px-1 lg:px-2">

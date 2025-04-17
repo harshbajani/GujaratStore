@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getAllBlogs, getBlogById } from "@/lib/actions/blog.actions";
+import { getPublicBlogs, getBlogById } from "@/lib/actions/blog.actions";
 import Loader from "@/components/Loader";
 import { TransformedBlog } from "@/types/index";
 
@@ -29,7 +29,7 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
       try {
         const blogData = await getBlogById(initialBlog?.id as string);
         setBlog(blogData);
-        const allBlogs = await getAllBlogs();
+        const allBlogs = await getPublicBlogs();
         const filtered = allBlogs
           .filter((b) => b.id !== initialBlog?.id)
           .slice(0, 2);

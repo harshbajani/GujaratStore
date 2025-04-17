@@ -4,14 +4,12 @@ import { revalidatePath } from "next/cache";
 import Attributes from "@/lib/models/attribute.model";
 import mongoose from "mongoose";
 import { z } from "zod";
-import { getCurrentVendor } from "./vendor.actions";
 
 // Define the attribute interface
 export interface IAttribute {
   id: string;
   _id: string;
   name: string;
-  vendorId: string;
   isActive: boolean;
 }
 
@@ -23,7 +21,6 @@ const serializeDocument = (doc: mongoose.Document): IAttribute | null => {
     id: serialized._id.toString(),
     _id: serialized._id.toString(),
     name: (serialized as IAttribute).name,
-    vendorId: (serialized as IAttribute).vendorId.toString(),
     isActive: (serialized as IAttribute).isActive,
   };
 };
@@ -42,19 +39,10 @@ export type AttributeResponse = {
 
 export async function createAttribute(
   name: string,
-  vendorId: string,
   isActive: boolean
 ): Promise<AttributeResponse> {
   try {
     // Get the current vendor first
-    const vendorResponse = await getCurrentVendor();
-
-    if (!vendorResponse.success) {
-      return {
-        success: false,
-        error: "Not authenticated as vendor",
-      };
-    }
 
     const validation = attributeSchema.safeParse({ name, isActive });
 
@@ -65,11 +53,7 @@ export async function createAttribute(
       };
     }
 
-    // Use the vendorId from getCurrentVendor
-    const existingAttribute = await Attributes.findOne({
-      name,
-      vendorId: vendorResponse?.data?._id,
-    });
+    const existingAttribute = await Attributes.findOne({ name });
 
     if (existingAttribute) {
       return {
@@ -80,7 +64,6 @@ export async function createAttribute(
 
     const attribute = await Attributes.create({
       name,
-      vendorId: vendorResponse?.data?._id,
       isActive,
     });
 
@@ -101,20 +84,7 @@ export async function createAttribute(
 
 export async function getAllAttributes(): Promise<AttributeResponse> {
   try {
-    // Get the current vendor first
-    const vendorResponse = await getCurrentVendor();
-
-    if (!vendorResponse.success) {
-      return {
-        success: false,
-        error: "Not authenticated as vendor",
-      };
-    }
-
-    const vendorId = vendorResponse.data?._id;
-
-    // Fetch only attributes for current vendor
-    const attributes = await Attributes.find({ vendorId }).sort({ name: 1 });
+    const attributes = await Attributes.find({}).sort({ name: 1 });
 
     return {
       success: true,
@@ -164,7 +134,7 @@ export async function getAttributeById(id: string): Promise<AttributeResponse> {
 // Add this after other attribute actions
 export async function updateAttribute(
   id: string,
-  data: { name: string; vendorId: string; isActive: boolean }
+  data: { name: string; isActive: boolean }
 ): Promise<AttributeResponse> {
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -173,9 +143,6 @@ export async function updateAttribute(
         error: "Invalid attribute ID",
       };
     }
-
-    // Convert the vendorId string to ObjectId
-    const vendorObjectId = new mongoose.Types.ObjectId(data.vendorId);
 
     // First check if attribute exists
     const existingAttribute = await Attributes.findById(id);
@@ -192,7 +159,6 @@ export async function updateAttribute(
       id,
       {
         name: data.name,
-        vendorId: vendorObjectId,
         isActive: data.isActive,
       },
       { new: true }
