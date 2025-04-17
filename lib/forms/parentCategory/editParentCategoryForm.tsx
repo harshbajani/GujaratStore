@@ -21,7 +21,7 @@ import {
   getParentCategoryById,
   updateParentCategory,
 } from "@/lib/actions/parentCategory.actions";
-import { AdminParentCategoryFormData } from "@/types";
+import { ParentCategoryFormData } from "@/types";
 import Loader from "@/components/Loader";
 
 interface EditParentCategoryFormProps {
@@ -36,7 +36,7 @@ const EditParentCategoryForm = ({
   const router = useRouter();
   const { toast } = useToast();
 
-  const form = useForm<AdminParentCategoryFormData>({
+  const form = useForm<ParentCategoryFormData>({
     resolver: zodResolver(parentCategorySchema),
     defaultValues: {
       name: "",
@@ -77,7 +77,7 @@ const EditParentCategoryForm = ({
     fetchParentCategory();
   }, [parentCategoryId, form, toast]);
   // * form submission
-  const onSubmit = async (data: AdminParentCategoryFormData) => {
+  const onSubmit = async (data: ParentCategoryFormData) => {
     try {
       const response = await updateParentCategory(parentCategoryId, data);
       if (response.success) {

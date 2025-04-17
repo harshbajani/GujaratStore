@@ -157,26 +157,7 @@ export const secondaryCategorySchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-export const adminSecondaryCategorySchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  parentCategory: z.string().nonempty("Parent category is required"),
-  primaryCategory: z.string().nonempty("Primary category is required"),
-  attributes: z
-    .array(z.string())
-    .nonempty("At least one attribute is required"),
-  description: z.string().optional(),
-  isActive: z.boolean().default(true),
-});
-
 export const brandSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  imageId: z.string().min(1, "Image is required."),
-  metaTitle: z.string().optional(),
-  metaKeywords: z.string().optional(),
-  metaDescription: z.string().optional(),
-});
-
-export const adminBrandSchema = z.object({
   name: z.string().min(1, "Name is required"),
   imageId: z.string().min(1, "Image is required."),
   metaTitle: z.string().optional(),

@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AdminParentCategoryFormData } from "@/types";
+import { ParentCategoryFormData } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -23,7 +23,7 @@ const AddParentCategoryForm = () => {
   // * hooks
   const router = useRouter();
   const { toast } = useToast();
-  const form = useForm<AdminParentCategoryFormData>({
+  const form = useForm<ParentCategoryFormData>({
     resolver: zodResolver(parentCategorySchema),
     defaultValues: {
       name: "",
@@ -31,7 +31,7 @@ const AddParentCategoryForm = () => {
     },
   });
   // * data submission
-  const onSubmit = async (data: AdminParentCategoryFormData): Promise<void> => {
+  const onSubmit = async (data: ParentCategoryFormData): Promise<void> => {
     try {
       const response = await createParentCategory(data.name, data.isActive);
 

@@ -223,11 +223,10 @@ export interface AttributeFormData {
 export interface ParentCategoryFormData {
   id: string;
   name: string;
-  vendorId: string;
   isActive: boolean;
 }
 
-export interface AdminParentCategoryFormData {
+export interface ParentCategoryFormData {
   id: string;
   name: string;
   isActive: boolean;

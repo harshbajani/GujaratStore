@@ -44,7 +44,7 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 import PriceCalculator from "@/components/PriceCalculator";
 import { Switch } from "@/components/ui/switch";
-import { getAllBrands } from "@/lib/actions/admin/brand.actions";
+import { getAllBrands } from "@/lib/actions/brand.actions";
 import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
@@ -324,8 +324,8 @@ const AddProductsForm = () => {
         if (attributeResponse.success) {
           setAttributes(attributeResponse.data as IAttribute[]);
         }
-        if (brandResponse.length > 0) {
-          setBrands(brandResponse as IAdminBrand[]);
+        if (brandResponse.success && brandResponse.data) {
+          setBrands(brandResponse.data);
         }
         if (sizesResponse.success) {
           setSizes(sizesResponse.data as ISizes[]);
