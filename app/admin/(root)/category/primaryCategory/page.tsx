@@ -3,7 +3,7 @@ import { LayoutPanelLeft } from "lucide-react";
 import {
   deletePrimaryCategoryById,
   getAllPrimaryCategories,
-} from "@/lib/actions/admin/primaryCategory.actions";
+} from "@/lib/actions/primaryCategory.actions";
 import React, { useState, useEffect } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import {

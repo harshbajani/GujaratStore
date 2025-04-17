@@ -11,7 +11,7 @@ import { IPrimaryCategory, ISecondaryCategory } from "@/types";
 import {
   getAllParentCategory,
   IParentCategory,
-} from "@/lib/actions/admin/parentCategory.actions";
+} from "@/lib/actions/parentCategory.actions";
 import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
@@ -36,8 +36,8 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
-import { createSecondaryCategory } from "@/lib/actions/admin/secondaryCategory.actions";
-import { getAllPrimaryCategories } from "@/lib/actions/admin/primaryCategory.actions";
+import { createSecondaryCategory } from "@/lib/actions/secondaryCategory.actions";
+import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
 
 const AddSecondaryCategoryForm = () => {
   // * useStates and hooks

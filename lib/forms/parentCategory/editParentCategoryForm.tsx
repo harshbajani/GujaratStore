@@ -20,7 +20,7 @@ import { parentCategorySchema } from "@/lib/validations";
 import {
   getParentCategoryById,
   updateParentCategory,
-} from "@/lib/actions/admin/parentCategory.actions";
+} from "@/lib/actions/parentCategory.actions";
 import { AdminParentCategoryFormData } from "@/types";
 import Loader from "@/components/Loader";
 

@@ -40,7 +40,7 @@ import { SecondaryCategoryWithPopulatedFields } from "@/types";
 import {
   deleteSecondaryCategoryById,
   getAllSecondaryCategories,
-} from "@/lib/actions/admin/secondaryCategory.actions";
+} from "@/lib/actions/secondaryCategory.actions";
 
 const SecondaryCategoryPage = () => {
   // * useStates and hooks

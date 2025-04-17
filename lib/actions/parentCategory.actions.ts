@@ -2,8 +2,8 @@
 
 import mongoose, { HydratedDocument } from "mongoose";
 import { revalidatePath } from "next/cache";
-import { parentCategorySchema } from "../../validations";
-import ParentCategory from "../../models/parentCategory.model";
+import { parentCategorySchema } from "../validations";
+import ParentCategory from "../models/parentCategory.model";
 
 export interface IParentCategory {
   id: string;

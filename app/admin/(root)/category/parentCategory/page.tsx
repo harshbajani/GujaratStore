@@ -39,7 +39,7 @@ import Loader from "@/components/Loader";
 import {
   deleteParentCategory,
   getAllParentCategory,
-} from "@/lib/actions/admin/parentCategory.actions";
+} from "@/lib/actions/parentCategory.actions";
 
 type ParentCategory = {
   id: string;

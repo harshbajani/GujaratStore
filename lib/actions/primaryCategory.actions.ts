@@ -5,17 +5,17 @@ import { connectToDB } from "@/lib/mongodb";
 import PrimaryCategory from "@/lib/models/primaryCategory.model";
 
 // Import referenced models for population
-import { IAdminPrimaryCategory } from "@/types";
-import { primaryCategorySchema } from "../../validations";
+import { IPrimaryCategory } from "@/types";
+import { primaryCategorySchema } from "../validations";
 import ParentCategory from "@/lib/models/parentCategory.model";
-import { parseStringify } from "../../utils";
+import { parseStringify } from "../utils";
 
 // Define TypeScript interface for PrimaryCategory
 export type PrimaryCategoryData = z.infer<typeof primaryCategorySchema>;
 
 // Helper function to serialize MongoDB documents (to prevent serialize errors)
 export const serializeDocument = async (
-  doc: HydratedDocument<IAdminPrimaryCategory>
+  doc: HydratedDocument<IPrimaryCategory>
 ) => {
   return parseStringify(doc);
 };

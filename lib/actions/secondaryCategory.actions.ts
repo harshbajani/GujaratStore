@@ -1,15 +1,15 @@
 "use server";
 
 import { z } from "zod";
-import { connectToDB } from "../../mongodb";
-import { parseStringify } from "../../utils";
+import { connectToDB } from "../mongodb";
+import { parseStringify } from "../utils";
 import { HydratedDocument } from "mongoose";
 import { ISecondaryCategory } from "@/types";
-import { secondaryCategorySchema } from "../../validations";
-import ParentCategory from "../../models/parentCategory.model";
-import Attributes from "../../models/attribute.model";
-import PrimaryCategory from "../../models/primaryCategory.model";
-import SecondaryCategory from "../../models/secondaryCategory.model";
+import { secondaryCategorySchema } from "../validations";
+import ParentCategory from "../models/parentCategory.model";
+import Attributes from "../models/attribute.model";
+import PrimaryCategory from "../models/primaryCategory.model";
+import SecondaryCategory from "../models/secondaryCategory.model";
 
 export type SecondaryCategoryData = z.infer<typeof secondaryCategorySchema>;
 

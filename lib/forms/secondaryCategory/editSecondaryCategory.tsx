@@ -9,12 +9,12 @@ import { IPrimaryCategory, ISecondaryCategory } from "@/types";
 import {
   getAllParentCategory,
   IParentCategory,
-} from "@/lib/actions/admin/parentCategory.actions";
+} from "@/lib/actions/parentCategory.actions";
 import {
   updateSecondaryCategoryById,
   getSecondaryCategoryById,
-} from "@/lib/actions/admin/secondaryCategory.actions";
-import { getAllPrimaryCategories } from "@/lib/actions/admin/primaryCategory.actions";
+} from "@/lib/actions/secondaryCategory.actions";
+import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
 import { useRouter, useParams } from "next/navigation";
 
 import { Input } from "@/components/ui/input";

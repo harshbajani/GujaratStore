@@ -8,11 +8,11 @@ import { IPrimaryCategory } from "@/types";
 import {
   getAllParentCategory,
   IParentCategory,
-} from "@/lib/actions/admin/parentCategory.actions";
+} from "@/lib/actions/parentCategory.actions";
 import {
   updatePrimaryCategoryById,
   getPrimaryCategoryById,
-} from "@/lib/actions/admin/primaryCategory.actions";
+} from "@/lib/actions/primaryCategory.actions";
 import { useRouter, useParams } from "next/navigation";
 
 import { Input } from "@/components/ui/input";

@@ -7,8 +7,8 @@ import { IPrimaryCategory } from "@/types";
 import {
   getAllParentCategory,
   IParentCategory,
-} from "@/lib/actions/admin/parentCategory.actions";
-import { createPrimaryCategory } from "@/lib/actions/admin/primaryCategory.actions";
+} from "@/lib/actions/parentCategory.actions";
+import { createPrimaryCategory } from "@/lib/actions/primaryCategory.actions";
 import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";

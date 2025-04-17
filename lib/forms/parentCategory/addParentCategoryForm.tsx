@@ -17,7 +17,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { parentCategorySchema } from "@/lib/validations";
-import { createParentCategory } from "@/lib/actions/admin/parentCategory.actions";
+import { createParentCategory } from "@/lib/actions/parentCategory.actions";
 
 const AddParentCategoryForm = () => {
   // * hooks

@@ -21,8 +21,8 @@ import {
   getAllParentCategory,
   IParentCategory,
 } from "@/lib/actions/parentCategory.actions";
-import { getAllPrimaryCategories } from "@/lib/actions/admin/primaryCategory.actions";
-import { getAllSecondaryCategories } from "@/lib/actions/admin/secondaryCategory.actions";
+import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
+import { getAllSecondaryCategories } from "@/lib/actions/secondaryCategory.actions";
 import React, { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
