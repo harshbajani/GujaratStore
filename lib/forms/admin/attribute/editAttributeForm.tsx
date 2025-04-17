@@ -20,7 +20,7 @@ import {
 import {
   getAttributeById,
   updateAttribute,
-} from "@/lib/actions/admin/attribute.actions";
+} from "@/lib/actions/attribute.actions";
 import { AttributeFormData } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,25 +49,22 @@ const EditAttributeForm = () => {
     const fetchAttribute = async () => {
       try {
         const response = await getAttributeById(id as string);
+
         if (response.success && response.data) {
+          const attributeData = Array.isArray(response.data)
+            ? response.data[0]
+            : response.data;
+
           form.reset({
-            name: Array.isArray(response.data) ? "" : response.data.name,
-            isActive: Array.isArray(response.data)
-              ? true
-              : response.data.isActive,
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: response.error || "Failed to fetch attribute",
-            variant: "destructive",
+            name: attributeData.name,
+            isActive: attributeData.isActive,
           });
         }
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching data:", error);
         toast({
           title: "Error",
-          description: "Failed to fetch attribute",
+          description: "Failed to fetch attribute data",
           variant: "destructive",
         });
       } finally {
@@ -81,6 +78,7 @@ const EditAttributeForm = () => {
   const onSubmit = async (data: AttributeFormData) => {
     try {
       const response = await updateAttribute(id as string, data);
+
       if (response.success) {
         toast({
           title: "Success",
@@ -90,10 +88,10 @@ const EditAttributeForm = () => {
       } else {
         throw new Error(response.error);
       }
-    } catch {
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update attribute",
+        description: (error as Error).message || "Failed to update attribute",
         variant: "destructive",
       });
     }

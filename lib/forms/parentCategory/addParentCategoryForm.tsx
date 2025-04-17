@@ -18,7 +18,6 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { parentCategorySchema } from "@/lib/validations";
 import { createParentCategory } from "@/lib/actions/parentCategory.actions";
-import { useEffect } from "react";
 
 const AddParentCategoryForm = () => {
   // * hooks
@@ -28,49 +27,37 @@ const AddParentCategoryForm = () => {
     resolver: zodResolver(parentCategorySchema),
     defaultValues: {
       name: "",
-      vendorId: "",
       isActive: true,
     },
   });
   // * data submission
   const onSubmit = async (data: ParentCategoryFormData): Promise<void> => {
     try {
-      await createParentCategory(data.name, data.vendorId, data.isActive);
+      const response = await createParentCategory(data.name, data.isActive);
+
+      if (!response.success) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: response.error || "Failed to create category",
+        });
+        return;
+      }
       toast({
         title: "Success",
         description: "Parent Category added successfully",
       });
-      router.push("/vendor/category/parentCategory");
+      router.push("/admin/category/parentCategory");
     } catch (error) {
-      console.error(error);
+      console.error("Form submission error:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Something went wrong",
+        description:
+          error instanceof Error ? error.message : "Something went wrong",
       });
     }
   };
-
-  useEffect(() => {
-    const fetchVendor = async () => {
-      try {
-        const userResponse = await fetch("/api/vendor/current");
-        const userData = await userResponse.json();
-
-        if (userData.success && userData.data && userData.data._id) {
-          // Set the vendorId in the form
-          form.setValue("vendorId", userData.data._id);
-          console.log("Vendor ID set:", userData.data._id);
-        } else {
-          console.error("Failed to get vendor ID from response", userData);
-        }
-      } catch (error) {
-        console.error("Error fetching vendor data:", error);
-      }
-    };
-
-    fetchVendor();
-  }, [form]);
 
   return (
     <Form {...form}>

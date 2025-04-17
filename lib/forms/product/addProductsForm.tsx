@@ -313,17 +313,7 @@ const AddProductsForm = () => {
           setPrimaryCategory(primaryCategoryResponse as IPrimaryCategory[]);
         }
 
-        if (
-          "success" in secondaryCategoryResponse &&
-          secondaryCategoryResponse.success
-        ) {
-          setSecondaryCategory(
-            secondaryCategoryResponse.data as IProductSecondaryCategory[]
-          );
-        } else if (
-          Array.isArray(secondaryCategoryResponse) &&
-          secondaryCategoryResponse.length > 0
-        ) {
+        if (secondaryCategoryResponse.length > 0) {
           setSecondaryCategory(
             secondaryCategoryResponse as IProductSecondaryCategory[]
           );

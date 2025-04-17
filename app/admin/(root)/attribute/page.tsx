@@ -39,7 +39,7 @@ import Loader from "@/components/Loader";
 import {
   deleteAttribute,
   getAllAttributes,
-} from "@/lib/actions/admin/attribute.actions";
+} from "@/lib/actions/attribute.actions";
 
 type Attribute = {
   id: string;

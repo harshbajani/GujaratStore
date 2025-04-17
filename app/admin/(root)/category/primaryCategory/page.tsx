@@ -3,7 +3,7 @@ import { LayoutPanelLeft } from "lucide-react";
 import {
   deletePrimaryCategoryById,
   getAllPrimaryCategories,
-} from "@/lib/actions/admin/primaryCategory.actions";
+} from "@/lib/actions/primaryCategory.actions";
 import React, { useState, useEffect } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import {
@@ -40,13 +40,11 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
-import { AdminPrimaryCategoryWithPopulatedFields } from "@/types";
+import { PrimaryCategoryWithPopulatedFields } from "@/types";
 
 const PrimaryCategoryPage = () => {
   // * useStates and hooks
-  const [data, setData] = useState<AdminPrimaryCategoryWithPopulatedFields[]>(
-    []
-  );
+  const [data, setData] = useState<PrimaryCategoryWithPopulatedFields[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -98,7 +96,7 @@ const PrimaryCategoryPage = () => {
     fetchAllPrimaryCategories();
   }, []);
 
-  const columns: ColumnDef<AdminPrimaryCategoryWithPopulatedFields>[] = [
+  const columns: ColumnDef<PrimaryCategoryWithPopulatedFields>[] = [
     {
       accessorKey: "name",
       header: "Name",

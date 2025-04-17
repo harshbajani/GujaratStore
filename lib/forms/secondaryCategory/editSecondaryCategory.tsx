@@ -56,7 +56,6 @@ const EditSecondaryCategoryForm = () => {
     resolver: zodResolver(secondaryCategorySchema),
     defaultValues: {
       name: "",
-      vendorId: "",
       parentCategory: "",
       primaryCategory: "",
       attributes: [],
@@ -88,7 +87,6 @@ const EditSecondaryCategoryForm = () => {
         if (categoryResponse) {
           form.reset({
             ...categoryResponse,
-            vendorId: form.getValues("vendorId"),
             parentCategory: categoryResponse.parentCategory?._id || "",
             primaryCategory: categoryResponse.primaryCategory?._id || "",
             attributes: categoryResponse.attributes.map(
@@ -123,7 +121,7 @@ const EditSecondaryCategoryForm = () => {
         description: "Secondary category updated successfully",
       });
 
-      router.push("/vendor/category/secondaryCategory");
+      router.push("/admin/category/secondaryCategory");
     } catch {
       toast({
         title: "Error",
@@ -132,27 +130,6 @@ const EditSecondaryCategoryForm = () => {
       });
     }
   };
-
-  useEffect(() => {
-    const fetchVendor = async () => {
-      try {
-        const userResponse = await fetch("/api/vendor/current");
-        const userData = await userResponse.json();
-
-        if (userData.success && userData.data && userData.data._id) {
-          // Set the vendorId in the form
-          form.setValue("vendorId", userData.data._id);
-          console.log("Vendor ID set:", userData.data._id);
-        } else {
-          console.error("Failed to get vendor ID from response", userData);
-        }
-      } catch (error) {
-        console.error("Error fetching vendor data:", error);
-      }
-    };
-
-    fetchVendor();
-  }, [form]);
 
   return (
     <Form {...form}>
@@ -305,7 +282,7 @@ const EditSecondaryCategoryForm = () => {
           <Button
             variant="outline"
             type="button"
-            onClick={() => router.push("/vendor/category/secondaryCategory")}
+            onClick={() => router.push("/admin/category/secondaryCategory")}
           >
             Cancel
           </Button>

@@ -1,7 +1,7 @@
 "use client";
 import { Star } from "lucide-react";
 import Loader from "@/components/Loader";
-import { IAdminBrand } from "@/types";
+import { IBrand } from "@/types";
 import React, { useState, useEffect } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import {
@@ -36,11 +36,11 @@ import {
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { deleteBrand, getAllBrands } from "@/lib/actions/admin/brand.actions";
+import { deleteBrand, getAllBrands } from "@/lib/actions/brand.actions";
 
 const BrandPage = () => {
   // * useStates and hooks
-  const [data, setData] = useState<IAdminBrand[]>([]);
+  const [data, setData] = useState<IBrand[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -55,7 +55,12 @@ const BrandPage = () => {
   const fetchBrands = async () => {
     try {
       const response = await getAllBrands();
-      setData(response);
+      if (response.success && response.data) {
+        setData(response.data);
+      } else {
+        console.error("Invalid response format");
+        setData([]);
+      }
     } catch (error) {
       console.error("Failed to fetch brands data:", error);
       toast({
@@ -91,7 +96,7 @@ const BrandPage = () => {
     fetchBrands();
   }, []);
 
-  const columns: ColumnDef<IAdminBrand>[] = [
+  const columns: ColumnDef<IBrand>[] = [
     {
       accessorKey: "name",
       header: "Title",

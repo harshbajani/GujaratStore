@@ -1,5 +1,5 @@
 "use client";
-import EditSecondaryCategoryForm from "@/lib/forms/admin/secondaryCategory/editSecondaryCategory";
+import EditSecondaryCategoryForm from "@/lib/forms/secondaryCategory/editSecondaryCategory";
 import { LayoutPanelLeft } from "lucide-react";
 import React from "react";
 

@@ -57,7 +57,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format } from "date-fns";
-import { getAllParentCategory } from "@/lib/actions/admin/parentCategory.actions";
+import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { toast } from "@/hooks/use-toast";
 import { IParentCategory, IAdminReferral } from "@/types";
 import Loader from "@/components/Loader";

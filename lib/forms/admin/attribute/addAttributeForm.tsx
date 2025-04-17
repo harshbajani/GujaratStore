@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { createAttribute } from "@/lib/actions/admin/attribute.actions";
+import { createAttribute } from "@/lib/actions/attribute.actions";
 
 const attributeSchema = z.object({
   name: z.string().min(1, "Name is required"),

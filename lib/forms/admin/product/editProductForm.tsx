@@ -21,8 +21,8 @@ import {
   getAllParentCategory,
   IParentCategory,
 } from "@/lib/actions/parentCategory.actions";
-import { getAllPrimaryCategories } from "@/lib/actions/admin/primaryCategory.actions";
-import { getAllSecondaryCategories } from "@/lib/actions/admin/secondaryCategory.actions";
+import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
+import { getAllSecondaryCategories } from "@/lib/actions/secondaryCategory.actions";
 import React, { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,10 +33,7 @@ import {
   IProductSecondaryCategory,
   ISizes,
 } from "@/types";
-import {
-  getAllAttributes,
-  IAttribute,
-} from "@/lib/actions/admin/attribute.actions";
+import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
 import { useParams, useRouter } from "next/navigation";
 import { productSchema } from "@/lib/validations";
 import dynamic from "next/dynamic";
@@ -44,7 +41,7 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 import PriceCalculator from "@/components/PriceCalculator";
 import { Switch } from "@/components/ui/switch";
-import { getAllBrands } from "@/lib/actions/admin/brand.actions";
+import { getAllBrands } from "@/lib/actions/brand.actions";
 import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
@@ -368,8 +365,8 @@ const EditProductsForm = () => {
         if (attributeResponse.success) {
           setAttributes(attributeResponse.data as IAttribute[]);
         }
-        if (brandResponse.length > 0) {
-          setBrands(brandResponse as IAdminBrand[]);
+        if (brandResponse.success && brandResponse.data) {
+          setBrands(brandResponse.data);
         }
         if (sizesResponse.success) {
           setSizes(sizesResponse.data as ISizes[]);

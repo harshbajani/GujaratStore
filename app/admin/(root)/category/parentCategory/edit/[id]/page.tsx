@@ -1,5 +1,5 @@
 "use client";
-import EditParentCategoryForm from "@/lib/forms/admin/parentCategory/editParentCategoryForm";
+import EditParentCategoryForm from "@/lib/forms/parentCategory/editParentCategoryForm";
 import { LayoutPanelLeft } from "lucide-react";
 import { useParams } from "next/navigation";
 

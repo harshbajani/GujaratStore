@@ -1,5 +1,5 @@
 "use client";
-import AddPrimaryCategoryForm from "@/lib/forms/admin/primaryCategory/addPrimaryCategory";
+import AddPrimaryCategoryForm from "@/lib/forms/primaryCategory/addPrimaryCategory";
 import { LayoutPanelLeft } from "lucide-react";
 import React from "react";
 

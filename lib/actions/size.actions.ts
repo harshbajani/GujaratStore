@@ -1,7 +1,6 @@
 "use server";
 
 import Size, { ISize } from "@/lib/models/size.model";
-import { getCurrentVendor } from "./vendor.actions";
 
 export type SizeResponse = {
   success: boolean;
@@ -58,16 +57,6 @@ export async function getSizeById(id: string): Promise<SizeResponse> {
 
 export async function getAllSizes(): Promise<SizeResponse> {
   try {
-    const vendorResponse = await getCurrentVendor();
-
-    if (!vendorResponse.success) {
-      return {
-        success: false,
-        error: "Not authenticated as vendor",
-        data: [],
-      };
-    }
-
     const sizes = await Size.find({});
     const plainSizes = sizes.map((s) => serializeSize(s));
     return { success: true, data: plainSizes };

@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import Attributes from "@/lib/models/attribute.model";
 import mongoose from "mongoose";
 import { z } from "zod";
-import { getCurrentVendor } from "./vendor.actions";
 
 // Define the attribute interface
 export interface IAttribute {
@@ -44,14 +43,6 @@ export async function createAttribute(
 ): Promise<AttributeResponse> {
   try {
     // Get the current vendor first
-    const vendorResponse = await getCurrentVendor();
-
-    if (!vendorResponse.success) {
-      return {
-        success: false,
-        error: "Not authenticated as vendor",
-      };
-    }
 
     const validation = attributeSchema.safeParse({ name, isActive });
 

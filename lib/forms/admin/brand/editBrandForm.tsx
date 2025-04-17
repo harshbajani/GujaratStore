@@ -1,7 +1,7 @@
 "use client";
-import { getBrandById } from "@/lib/actions/admin/brand.actions";
+import { getBrandById } from "@/lib/actions/brand.actions";
 import { brandSchema } from "@/lib/validations";
-import { IAdminBrand } from "@/types";
+import { IBrand } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -33,7 +33,7 @@ const EditBrandForm = () => {
   const { id } = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const form = useForm<IAdminBrand>({
+  const form = useForm<IBrand>({
     resolver: zodResolver(brandSchema),
   });
 
@@ -66,7 +66,7 @@ const EditBrandForm = () => {
     }
   };
   // * brand update submission
-  const handleSubmit = async (data: IAdminBrand) => {
+  const handleSubmit = async (data: IBrand) => {
     setIsSubmitting(true);
     try {
       const formData = { ...data, imageId };
@@ -83,7 +83,7 @@ const EditBrandForm = () => {
 
       if (response.ok) {
         form.reset(); // Clear the form
-        router.push("/admin/brand"); // Redirect after success
+        router.push("/admin/brand");
         toast({
           title: "Success",
           description: "Brand edited successfully.",
