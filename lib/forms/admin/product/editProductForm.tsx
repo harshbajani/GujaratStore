@@ -33,10 +33,7 @@ import {
   IProductSecondaryCategory,
   ISizes,
 } from "@/types";
-import {
-  getAllAttributes,
-  IAttribute,
-} from "@/lib/actions/admin/attribute.actions";
+import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
 import { useParams, useRouter } from "next/navigation";
 import { productSchema } from "@/lib/validations";
 import dynamic from "next/dynamic";

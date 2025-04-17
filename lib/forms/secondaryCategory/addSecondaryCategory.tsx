@@ -2,10 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { secondaryCategorySchema } from "@/lib/validations";
-import {
-  getAllAttributes,
-  IAttribute,
-} from "@/lib/actions/admin/attribute.actions";
+import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
 import { toast } from "@/hooks/use-toast";
 import { IPrimaryCategory, ISecondaryCategory } from "@/types";
 import {
