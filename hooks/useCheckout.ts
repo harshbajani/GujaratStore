@@ -495,8 +495,49 @@ export function useCheckout() {
       body: JSON.stringify(orderPayload),
     })
       .then((response) => response.json())
-      .then((data) => {
+      .then(async (data) => {
         if (data.success) {
+          // Get the selected address details
+          const selectedAddressDetails = state.userData?.addresses.find(
+            (address) => address._id === state.selectedAddress
+          );
+
+          if (!selectedAddressDetails) {
+            throw new Error("Selected address not found");
+          }
+
+          // Prepare email data
+          const emailData = {
+            orderId,
+            items: state.checkoutData?.items,
+            subtotal: state.checkoutData?.subtotal,
+            deliveryCharges: state.checkoutData?.deliveryCharges,
+            discountAmount: state.checkoutData?.discountAmount || 0,
+            total: state.checkoutData?.total,
+            paymentOption: state.paymentOption,
+            createdAt: new Date().toISOString(),
+            address: selectedAddressDetails,
+            userName: state.userData?.name,
+            userEmail: state.userData?.email,
+          };
+
+          try {
+            // Send order confirmation email
+            await fetch("/api/order-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(emailData),
+            });
+            console.log("Order confirmation email sent successfully");
+          } catch (emailError) {
+            console.error(
+              "Failed to send order confirmation email:",
+              emailError
+            );
+            // Don't block the order confirmation process if email fails
+          }
+
+          // Continue with order confirmation process
           sessionStorage.removeItem("checkoutData");
           dispatch({ type: "SET_CONFIRMED_ORDER_ID", payload: orderId });
           dispatch({ type: "SET_CONFIRMATION_OPEN", payload: true });
