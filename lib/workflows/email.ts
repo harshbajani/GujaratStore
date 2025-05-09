@@ -61,13 +61,12 @@ export const sendOrderConfirmationEmail = async (orderData: OrderEmailData) => {
       <td style="padding: 15px 0; border-bottom: 1px solid #eee;">
         <div style="display: flex; align-items: center;">
           <div style="width: 60px; margin-right: 15px;">
-            <img src="${
-              process.env.NEXT_PUBLIC_BASE_URL
-            }/_next/image?url=%2Fapi%2Ffiles%2F${
+            <img src="${process.env
+              .NEXT_PUBLIC_APP_BASE_URL!}/_next/image?url=%2Fapi%2Ffiles%2F${
         item.coverImage
-      }&w=600&q=75" alt="${
+      }&w=256&q=75" alt="${
         item.productName
-      }" style="width: 100%; border-radius: 4px;" />
+      }" style="width:60px; border-radius:4px;" />
           </div>
           <div>
             <p style="margin: 0; font-weight: bold;">${item.productName}</p>
