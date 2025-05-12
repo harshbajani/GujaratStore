@@ -37,12 +37,14 @@ import useProductFilter from "@/hooks/useProductFilter";
 
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 import ProductFilterSidebar from "@/components/ProductFilterSidebar";
+import { useCart } from "@/context/CartContext";
 
 const FurnishingsPage = () => {
   const [products, setProducts] = useState<IProductResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("featured");
+  const { cartItems, addToCart, removeFromCart } = useCart();
 
   // State for filter metadata
   const [primaryCategories, setPrimaryCategories] = useState<
@@ -122,40 +124,10 @@ const FurnishingsPage = () => {
 
   // Toggle cart: add if not in cart, remove if already in cart.
   const handleToggleCart = async (product: IProductResponse) => {
-    try {
-      let response;
-      if (product.inCart) {
-        // Remove from cart
-        response = await fetch("/api/user/cart", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: product._id }),
-        });
-      } else {
-        // Add to cart
-        response = await fetch("/api/user/cart", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: product._id }),
-        });
-      }
-      const data = await response.json();
-      console.log("Cart toggle response:", data);
-      if (!data.success && data.message === "Not authenticated") {
-        toast({
-          title: "Error",
-          description: "Please log in to add to cart!",
-          variant: "destructive",
-        });
-        return;
-      }
-      setProducts((prev) =>
-        prev.map((p) =>
-          p._id === product._id ? { ...p, inCart: !p.inCart } : p
-        )
-      );
-    } catch (err) {
-      console.error("Error toggling cart:", err);
+    if (cartItems.some((ci) => ci._id === product._id)) {
+      await removeFromCart(product._id!);
+    } else {
+      await addToCart(product._id!);
     }
   };
 
@@ -190,7 +162,10 @@ const FurnishingsPage = () => {
   }
 
   // Apply sorting to filteredProducts
-  const sortedProducts = applySorting(filteredProducts, sortBy);
+  const sortedProducts = applySorting(filteredProducts, sortBy).map((p) => ({
+    ...p,
+    inCart: cartItems.some((ci) => ci._id === p._id),
+  }));
 
   useEffect(() => {
     const fetchProductsAndUser = async () => {

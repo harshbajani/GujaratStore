@@ -25,7 +25,7 @@ import { signOut as nextAuthSignOut, useSession } from "next-auth/react";
 import { signOut as serverSignOut } from "@/lib/actions/auth.actions";
 import { useRouter } from "next/navigation";
 import SearchDropdown from "./SearchDropdown";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/context/CartContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 
 // Define the search result type
