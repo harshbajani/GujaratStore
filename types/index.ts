@@ -590,13 +590,7 @@ export interface IReferral {
   name: string;
   description?: string;
   code: string;
-  discountType: "percentage" | "amount";
-  discountValue: number;
-  parentCategory: {
-    _id: string;
-    name: string;
-    isActive: boolean;
-  };
+  rewardPoints: number;
   vendorId: Schema.Types.ObjectId;
   expiryDate: Date | string;
   maxUses: number;

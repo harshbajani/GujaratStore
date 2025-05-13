@@ -242,13 +242,22 @@ export const discountFormSchema = z.object({
 export const referralFormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   description: z.string().optional(),
-  discountType: z.enum(["percentage", "amount"]),
-  discountValue: z.number().min(0, "Discount value must be positive"),
-  parentCategoryId: z.string().min(1, "Category is required"),
-  vendorId: z.string().min(24, "Invalid VendorId"),
-  expiryDate: z.string(),
-  maxUses: z.number().int().min(1, "Maximum uses must be at least 1"),
-  isActive: z.boolean().default(true),
+  vendorId: z.string().min(1, "Vendor ID is required"),
+  rewardPoints: z
+    .number()
+    .min(10, "Reward points must be at least 10")
+    .max(10000, "Reward points cannot exceed 10,000"),
+  expiryDate: z.string().min(1, "Expiry date is required"),
+  maxUses: z.number().min(1, "Maximum uses must be at least 1"),
+  isActive: z.boolean(),
+});
+
+export const redeemPointsSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  pointsToRedeem: z
+    .number()
+    .min(10, "Must redeem at least 10 points")
+    .max(10000, "Cannot redeem more than 10,000 points"),
 });
 
 export const adminReferralFormSchema = z.object({

@@ -1,12 +1,5 @@
 import mongoose, { Schema } from "mongoose";
 import { nanoid } from "nanoid";
-import "./parentCategory.model";
-
-// Define enum for discount types
-export enum DiscountType {
-  PERCENTAGE = "percentage",
-  AMOUNT = "amount",
-}
 
 const referralSchema = new Schema({
   name: {
@@ -24,20 +17,11 @@ const referralSchema = new Schema({
     unique: true,
     default: () => nanoid(8), // Generate a random 8-character code
   },
-  discountType: {
-    type: String,
-    enum: Object.values(DiscountType),
-    required: true,
-  },
-  discountValue: {
+  rewardPoints: {
     type: Number,
     required: true,
     min: 0,
-  },
-  parentCategory: {
-    type: Schema.Types.ObjectId,
-    ref: "ParentCategory",
-    required: true,
+    default: 100,
   },
   vendorId: {
     type: Schema.Types.ObjectId,
@@ -75,16 +59,11 @@ const referralSchema = new Schema({
   },
 });
 
-// Remove duplicate indexes
-referralSchema.index({ parentCategory: 1 });
+// Indexes
 referralSchema.index({ isActive: 1 });
 referralSchema.index({ expiryDate: 1 });
-
-// Compound indexes
-referralSchema.index({ parentCategory: 1, isActive: 1 });
 referralSchema.index({ code: 1, isActive: 1 });
 
 const Referral =
   mongoose.models.Referral || mongoose.model("Referral", referralSchema);
-
 export default Referral;
