@@ -16,8 +16,8 @@ import {
   LayoutPanelLeft,
   PencilLine,
   Ruler,
-  Link,
   Store,
+  GiftIcon,
 } from "lucide-react";
 export const NavLinks = [
   {
@@ -622,7 +622,7 @@ export const vendorSidebarLinks = [
   {
     label: "Referrals",
     route: "/vendor/referrals",
-    icon: Link,
+    icon: GiftIcon,
   },
   {
     label: "Discount",
@@ -698,7 +698,7 @@ export const adminSidebarLinks = [
   {
     label: "Referrals",
     route: "/admin/referrals",
-    icon: Link,
+    icon: GiftIcon,
   },
   {
     label: "Discount",

@@ -12,6 +12,7 @@ import OrderConfirmationDialog from "@/components/OrderConfirmationDialog";
 import DiscountSection from "@/components/Discount";
 import AccordionSection from "@/components/AccordionSection";
 import { useCheckout } from "@/hooks/useCheckout"; // Adjust the import path as needed
+import { RewardRedemptionComponent } from "@/components/RewardPointsSection";
 
 const CheckoutPage = () => {
   const {
@@ -29,6 +30,10 @@ const CheckoutPage = () => {
       paymentOption,
       isConfirmationOpen,
       confirmedOrderId,
+      // Add the new reward-related state
+      pointsToRedeem,
+      rewardDiscountAmount,
+      loadingRewardRedemption,
     },
     dispatch,
     updateQuantity,
@@ -37,6 +42,8 @@ const CheckoutPage = () => {
     confirmOrder,
     toggleSection,
     getReferralDiscountDetails,
+    // Add the new reward points handler
+    handleRedeemRewardPoints,
   } = useCheckout();
 
   const { referralDiscount, referralDiscountType, referralCode } =
@@ -44,6 +51,11 @@ const CheckoutPage = () => {
 
   if (loading) return <Loader />;
   if (!checkoutData || !userData) return null;
+
+  // Helper function to set points to redeem
+  const setPointsToRedeem = (points: number) => {
+    dispatch({ type: "SET_POINTS_TO_REDEEM", payload: points });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -235,10 +247,10 @@ const CheckoutPage = () => {
               </RadioGroup>
             </AccordionSection>
 
-            {/* Discount Code */}
+            {/* Discount Code and Reward Points Section */}
             <AccordionSection
               id="discount"
-              title="DISCOUNT CODE"
+              title="DISCOUNT & REWARDS"
               index={5}
               expandedSection={expandedSection}
               onToggle={toggleSection}
@@ -252,6 +264,16 @@ const CheckoutPage = () => {
                 discountAmount={discountAmount}
                 discountInfo={discountInfo}
                 loadingDiscount={loadingDiscount}
+              />
+
+              {/* Add the Reward Redemption Component */}
+              <RewardRedemptionComponent
+                userData={userData}
+                pointsToRedeem={pointsToRedeem}
+                setPointsToRedeem={setPointsToRedeem}
+                handleRedeemRewardPoints={handleRedeemRewardPoints}
+                rewardDiscountAmount={rewardDiscountAmount}
+                loadingRewardRedemption={loadingRewardRedemption}
               />
             </AccordionSection>
           </div>
@@ -291,6 +313,16 @@ const CheckoutPage = () => {
                       {referralDiscountType === "percentage" && " (%)"}
                     </span>
                     <span>- ₹{referralDiscount.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
+
+                {/* Add the reward points discount display */}
+                {rewardDiscountAmount > 0 && (
+                  <div className="flex justify-between text-blue-600">
+                    <span>Reward Points ({pointsToRedeem} points)</span>
+                    <span>
+                      - ₹{rewardDiscountAmount.toLocaleString("en-IN")}
+                    </span>
                   </div>
                 )}
 

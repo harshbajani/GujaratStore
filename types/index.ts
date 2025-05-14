@@ -30,6 +30,7 @@ export interface IUser {
   password: string;
   addresses: IAddress[];
   referral?: string;
+  rewardPoints?: number;
   referralUsed?: string;
   role: "user";
   isVerified: boolean;
@@ -590,13 +591,7 @@ export interface IReferral {
   name: string;
   description?: string;
   code: string;
-  discountType: "percentage" | "amount";
-  discountValue: number;
-  parentCategory: {
-    _id: string;
-    name: string;
-    isActive: boolean;
-  };
+  rewardPoints: number;
   vendorId: Schema.Types.ObjectId;
   expiryDate: Date | string;
   maxUses: number;
