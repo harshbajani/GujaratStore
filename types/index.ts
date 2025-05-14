@@ -30,6 +30,7 @@ export interface IUser {
   password: string;
   addresses: IAddress[];
   referral?: string;
+  rewardPoints?: number;
   referralUsed?: string;
   role: "user";
   isVerified: boolean;
