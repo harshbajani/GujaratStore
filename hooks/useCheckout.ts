@@ -21,6 +21,10 @@ interface CheckoutState {
   confirmedOrderId: string;
   appliedDiscountCode: string;
   originalTotal: number;
+  // New reward points fields
+  pointsToRedeem: number;
+  rewardDiscountAmount: number;
+  loadingRewardRedemption: boolean;
 }
 
 // Define our action types
@@ -40,7 +44,11 @@ type Action =
   | { type: "SET_CONFIRMED_ORDER_ID"; payload: string }
   | { type: "SET_APPLIED_DISCOUNT_CODE"; payload: string }
   | { type: "SET_ORIGINAL_TOTAL"; payload: number }
-  | { type: "UPDATE_CHECKOUT_DATA"; payload: CheckoutData };
+  | { type: "UPDATE_CHECKOUT_DATA"; payload: CheckoutData }
+  // New reward points actions
+  | { type: "SET_POINTS_TO_REDEEM"; payload: number }
+  | { type: "SET_REWARD_DISCOUNT_AMOUNT"; payload: number }
+  | { type: "SET_LOADING_REWARD_REDEMPTION"; payload: boolean };
 
 const initialState: CheckoutState = {
   checkoutData: null,
@@ -58,6 +66,10 @@ const initialState: CheckoutState = {
   confirmedOrderId: "",
   appliedDiscountCode: "",
   originalTotal: 0,
+  // Initialize new reward points fields
+  pointsToRedeem: 0,
+  rewardDiscountAmount: 0,
+  loadingRewardRedemption: false,
 };
 
 function checkoutReducer(state: CheckoutState, action: Action): CheckoutState {
@@ -94,6 +106,13 @@ function checkoutReducer(state: CheckoutState, action: Action): CheckoutState {
       return { ...state, originalTotal: action.payload };
     case "UPDATE_CHECKOUT_DATA":
       return { ...state, checkoutData: action.payload };
+    // Handle new reward points actions
+    case "SET_POINTS_TO_REDEEM":
+      return { ...state, pointsToRedeem: action.payload };
+    case "SET_REWARD_DISCOUNT_AMOUNT":
+      return { ...state, rewardDiscountAmount: action.payload };
+    case "SET_LOADING_REWARD_REDEMPTION":
+      return { ...state, loadingRewardRedemption: action.payload };
     default:
       return state;
   }
@@ -236,6 +255,30 @@ export function useCheckout() {
 
         dispatch({ type: "SET_USER_DATA", payload: userData.data });
 
+        // Fetch user's reward points from the API
+        if (userData.data?._id) {
+          try {
+            const rewardPointsResponse = await fetch(
+              `/api/rewards/redeem?userId=${userData.data._id}`
+            );
+            const rewardPointsData = await rewardPointsResponse.json();
+
+            if (rewardPointsData.success) {
+              // Update user data with actual reward points from the API
+              dispatch({
+                type: "SET_USER_DATA",
+                payload: {
+                  ...userData.data,
+                  rewardPoints: rewardPointsData.data.rewardPoints,
+                },
+              });
+            }
+          } catch (rewardError) {
+            console.error("Error fetching reward points:", rewardError);
+            // Continue with the rest of the process even if reward points fetch fails
+          }
+        }
+
         const storedData = sessionStorage.getItem("checkoutData");
         if (!storedData) {
           router.push("/cart");
@@ -317,7 +360,8 @@ export function useCheckout() {
       total:
         subtotal +
         state.checkoutData.deliveryCharges -
-        (state.checkoutData.discountAmount || 0),
+        (state.checkoutData.discountAmount || 0) -
+        state.rewardDiscountAmount,
     };
 
     updateCheckoutData(newCheckoutData);
@@ -364,7 +408,8 @@ export function useCheckout() {
         total:
           subtotal +
           state.checkoutData.deliveryCharges -
-          (state.checkoutData.discountAmount || 0),
+          (state.checkoutData.discountAmount || 0) -
+          state.rewardDiscountAmount,
       };
 
       updateCheckoutData(newCheckoutData);
@@ -414,7 +459,8 @@ export function useCheckout() {
         const baseTotal = state.appliedDiscountCode
           ? state.originalTotal
           : state.checkoutData.total;
-        const newTotal = baseTotal - result.discountAmount;
+        const newTotal =
+          baseTotal - result.discountAmount - state.rewardDiscountAmount;
 
         dispatch({
           type: "SET_DISCOUNT_AMOUNT",
@@ -461,6 +507,87 @@ export function useCheckout() {
     }
   };
 
+  // Redeem reward points
+  const handleRedeemRewardPoints = async () => {
+    if (!state.userData || !state.checkoutData || state.pointsToRedeem <= 0)
+      return;
+
+    // Validate points to redeem
+    if (state.pointsToRedeem > (state.userData.rewardPoints || 0)) {
+      toast({
+        title: "Warning",
+        description: "You don't have enough reward points",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    dispatch({ type: "SET_LOADING_REWARD_REDEMPTION", payload: true });
+    try {
+      const response = await fetch("/api/rewards/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: state.userData._id,
+          pointsToRedeem: state.pointsToRedeem,
+        }),
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local state with the redemption results
+        dispatch({
+          type: "SET_REWARD_DISCOUNT_AMOUNT",
+          payload: result.data.discountAmount,
+        });
+
+        // Update user's reward points in state
+        dispatch({
+          type: "SET_USER_DATA",
+          payload: {
+            ...state.userData,
+            rewardPoints: result.data.remainingPoints,
+          },
+        });
+
+        // Update checkout data with reward discount
+        const newTotal =
+          state.checkoutData.subtotal +
+          state.checkoutData.deliveryCharges -
+          (state.checkoutData.discountAmount || 0) -
+          result.data.discountAmount;
+
+        const updatedCheckoutData: CheckoutData = {
+          ...state.checkoutData,
+          total: newTotal,
+        };
+
+        updateCheckoutData(updatedCheckoutData);
+
+        toast({
+          title: "Success",
+          description: `Redeemed ${state.pointsToRedeem} points for ₹${result.data.discountAmount} discount`,
+          className: "bg-green-500 text-white",
+        });
+      } else {
+        toast({
+          title: "Redemption Failed",
+          description: result.error || "Failed to redeem reward points",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error redeeming reward points:", error);
+      toast({
+        title: "Error",
+        description: "Failed to redeem reward points",
+        variant: "destructive",
+      });
+    } finally {
+      dispatch({ type: "SET_LOADING_REWARD_REDEMPTION", payload: false });
+    }
+  };
+
   // Confirm the order
   const confirmOrder = () => {
     if (!state.selectedAddress || !state.checkoutData || !state.userData) {
@@ -484,6 +611,8 @@ export function useCheckout() {
       deliveryCharges: state.checkoutData.deliveryCharges,
       discountAmount: state.checkoutData.discountAmount || 0,
       discountCode: state.checkoutData.discountCode || "",
+      rewardDiscountAmount: state.rewardDiscountAmount || 0,
+      pointsRedeemed: state.pointsToRedeem || 0,
       total: state.checkoutData.total,
       addressId: state.selectedAddress,
       paymentOption: state.paymentOption,
@@ -513,6 +642,8 @@ export function useCheckout() {
             subtotal: state.checkoutData?.subtotal,
             deliveryCharges: state.checkoutData?.deliveryCharges,
             discountAmount: state.checkoutData?.discountAmount || 0,
+            rewardDiscountAmount: state.rewardDiscountAmount || 0,
+            pointsRedeemed: state.pointsToRedeem || 0,
             total: state.checkoutData?.total,
             paymentOption: state.paymentOption,
             createdAt: new Date().toISOString(),
@@ -590,6 +721,7 @@ export function useCheckout() {
     updateQuantity,
     removeItem,
     handleApplyDiscount,
+    handleRedeemRewardPoints,
     confirmOrder,
     toggleSection,
     getReferralDiscountDetails,

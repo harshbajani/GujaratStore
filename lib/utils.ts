@@ -193,3 +193,17 @@ const getCustomerOrders = async (userId: string) => {
     throw error;
   }
 };
+
+// Format price in Indian Rupees
+export function formatPrice(amount: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+// Other utility functions can be added here as needed
+export function clampValue(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}

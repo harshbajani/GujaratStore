@@ -52,8 +52,10 @@ export async function signUp(data: SignUpData): Promise<ActionResponse> {
     // Store OTP
     await OTP.create({ email: data.email, otp });
 
-    // Handle referral - simplified approach to ensure it's always stored
+    // Handle referral and reward points
+    let rewardPoints = 0;
     let referralMessage = "";
+
     if (data.referral) {
       try {
         const referralResponse = await fetch(
@@ -62,16 +64,13 @@ export async function signUp(data: SignUpData): Promise<ActionResponse> {
 
         if (referralResponse.ok) {
           const referralData = await referralResponse.json();
-          if (referralData.success) {
-            referralMessage = " with referral discount";
+          if (referralData.success && referralData.data) {
+            // Get the reward points from the referral
+            rewardPoints = referralData.data.rewardPoints;
+            referralMessage = ` with ${rewardPoints} reward points`;
             console.log(
-              "Valid referral found and will be applied:",
-              data.referral
-            );
-          } else {
-            console.log(
-              "Invalid referral code provided but will be stored:",
-              data.referral
+              "Valid referral found and points will be applied:",
+              rewardPoints
             );
           }
         }
@@ -80,10 +79,28 @@ export async function signUp(data: SignUpData): Promise<ActionResponse> {
       }
     }
 
+    // Create user with referral code and reward points
     const user = await User.create({
       ...data,
       isVerified: false,
+      rewardPoints: rewardPoints, // Add the reward points
+      referral: data.referral, // Store the referral code
+      referralUsed: data.referral ? true : false, // Mark referral as used
     });
+
+    // If referral was used successfully, increment the usedCount in the referral
+    if (data.referral) {
+      await fetch(`${process.env.NEXT_PUBLIC_APP_BASE_URL}/api/referrals`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          code: data.referral,
+          usedCount: { $inc: 1 }, // Increment usedCount by 1
+        }),
+      });
+    }
 
     return {
       success: true,

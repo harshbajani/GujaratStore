@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  rewardPoints: {
+    type: Number,
+    default: 0,
+  },
   wishlist: {
     type: [mongoose.Schema.Types.ObjectId],
     ref: "Product",

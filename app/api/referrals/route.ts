@@ -1,13 +1,11 @@
 import Referral from "@/lib/models/referral.model";
+import User from "@/lib/models/user.model";
 import { connectToDB } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { getCurrentVendor } from "@/lib/actions/vendor.actions";
 
-const populateConfig = [
-  { path: "parentCategory", select: "name isActive" },
-  { path: "createdBy", select: "name email" },
-];
+const populateConfig = [{ path: "createdBy", select: "name email" }];
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +13,6 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get("id");
     const code = searchParams.get("code");
-    const categoryId = searchParams.get("categoryId");
 
     // Get referral by ID
     if (id) {
@@ -55,23 +52,6 @@ export async function GET(request: NextRequest) {
       }
 
       return NextResponse.json({ success: true, data: referral });
-    }
-
-    // Get referrals by category ID
-    if (categoryId) {
-      const now = new Date();
-      const referrals = await Referral.find({
-        parentCategory: categoryId,
-        isActive: true,
-        expiryDate: { $gt: now },
-        $expr: { $lt: ["$usedCount", "$maxUses"] },
-      })
-        .populate(populateConfig)
-        .sort({ discountValue: -1 })
-        .lean()
-        .exec();
-
-      return NextResponse.json({ success: true, data: referrals });
     }
 
     const vendorResponse = await getCurrentVendor();
@@ -206,19 +186,20 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// Special API to increment usage count when a referral is applied
+// Special API to apply referral and add reward points to user
 export async function PATCH(request: Request) {
   try {
     await connectToDB();
     const body = await request.json();
 
-    if (!body.code) {
+    if (!body.code || !body.userId) {
       return NextResponse.json(
-        { success: false, error: "Referral code is required" },
+        { success: false, error: "Referral code and userId are required" },
         { status: 400 }
       );
     }
 
+    // Find the referral by code
     const referral = await Referral.findOne({ code: body.code });
 
     if (!referral) {
@@ -241,16 +222,39 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // Increment the usage count
+    // Find the user and add reward points
+    const user = await User.findById(body.userId);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if the user has already used a referral code
+    if (user.referralUsed) {
+      return NextResponse.json(
+        { success: false, error: "User has already used a referral code" },
+        { status: 400 }
+      );
+    }
+
+    // Add reward points to user's wallet and mark referral as used
+    user.rewardPoints += referral.rewardPoints;
+    user.referral = referral.code;
+    user.referralUsed = true;
+    await user.save();
+
+    // Increment the usage count for the referral
     referral.usedCount += 1;
     await referral.save();
 
     return NextResponse.json({
       success: true,
       data: {
-        message: "Referral usage recorded successfully",
-        usedCount: referral.usedCount,
-        maxUses: referral.maxUses,
+        message: "Referral applied successfully",
+        rewardPoints: referral.rewardPoints,
+        totalPoints: user.rewardPoints,
       },
     });
   } catch (error: unknown) {
