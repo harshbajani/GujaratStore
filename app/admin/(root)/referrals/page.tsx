@@ -1,13 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect } from "react";
 import {
-  Link,
   Plus,
   Trash2,
   Edit,
   Search,
   Copy,
   ExternalLink,
+  GiftIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,30 +22,12 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -53,39 +36,58 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format } from "date-fns";
-import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { toast } from "@/hooks/use-toast";
-import { IParentCategory, IAdminReferral } from "@/types";
+import { IReferral } from "@/types";
 import Loader from "@/components/Loader";
-import { adminReferralFormSchema } from "@/lib/validations";
+import ReferralForm from "@/lib/forms/admin/referral/ReferralForm";
+
+// Updated schema for the new reward points system
+const referralFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  rewardPoints: z.number().min(1, "Reward points must be at least 1"),
+  expiryDate: z.string(),
+  maxUses: z.number().min(1, "Maximum uses must be at least 1"),
+  isActive: z.boolean().default(true),
+});
 
 const ReferralsPage = () => {
-  const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
-    []
-  );
-  const [referrals, setReferrals] = useState<IAdminReferral[]>([]);
+  const [referrals, setReferrals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingReferral, setEditingReferral] = useState<IAdminReferral | null>(
+  const [editingReferral, setEditingReferral] = useState<IReferral | null>(
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
+  // Add these below your other state declarations
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingReferralId, setDeletingReferralId] = useState<string | null>(
+    null
+  );
 
   // Initialize form
-  const form = useForm<z.infer<typeof adminReferralFormSchema>>({
-    resolver: zodResolver(adminReferralFormSchema),
+  const form = useForm({
+    resolver: zodResolver(referralFormSchema),
     defaultValues: {
       name: "",
       description: "",
-      discountType: "percentage",
-      discountValue: 0,
-      parentCategoryId: "",
+      rewardPoints: 100, // Default to 100 reward points
       expiryDate: format(
         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         "yyyy-MM-dd"
@@ -95,18 +97,12 @@ const ReferralsPage = () => {
     },
   });
 
-  // Load parent categories and referrals
+  // Load referrals
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Set base URL for referral links
         setBaseUrl(`${process.env.NEXT_PUBLIC_APP_BASE_URL}/`);
-
-        // Fetch parent categories
-        const categoriesResponse = await getAllParentCategory();
-        if (categoriesResponse.success && categoriesResponse.data) {
-          setParentCategories(categoriesResponse.data as IParentCategory[]);
-        }
 
         // Fetch referrals
         const referralsResponse = await fetch("/api/admin/referrals");
@@ -130,7 +126,7 @@ const ReferralsPage = () => {
   }, []);
 
   // Handle form submission
-  const onSubmit = async (values: z.infer<typeof adminReferralFormSchema>) => {
+  const onSubmit = async (values: z.infer<typeof referralFormSchema>) => {
     setIsSubmitting(true);
     try {
       const endpoint = "/api/admin/referrals";
@@ -138,10 +134,8 @@ const ReferralsPage = () => {
 
       const payload = {
         ...values,
-        discountValue: Number(values.discountValue),
+        rewardPoints: Number(values.rewardPoints),
         maxUses: Number(values.maxUses),
-        parentCategory: values.parentCategoryId,
-        parentCategoryId: undefined,
         ...(editingReferral && { _id: editingReferral._id }),
       };
 
@@ -175,11 +169,11 @@ const ReferralsPage = () => {
       } else {
         throw new Error(result.error || "Operation failed");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting form:", error);
       toast({
         title: "Error",
-        description: (error as Error).message || "Something went wrong",
+        description: error.message || "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -198,14 +192,12 @@ const ReferralsPage = () => {
   };
 
   // Handle edit referral
-  const handleEditReferral = (referral: IAdminReferral) => {
+  const handleEditReferral = (referral: IReferral) => {
     setEditingReferral(referral);
     form.reset({
       name: referral.name,
       description: referral.description || "",
-      discountType: referral.discountType,
-      discountValue: referral.discountValue,
-      parentCategoryId: referral.parentCategory._id,
+      rewardPoints: referral.rewardPoints,
       expiryDate: new Date(referral.expiryDate).toISOString().split("T")[0],
       maxUses: referral.maxUses,
       isActive: referral.isActive,
@@ -214,21 +206,33 @@ const ReferralsPage = () => {
   };
 
   // Handle delete referral
-  const handleDeleteReferral = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this referral?")) {
-      return;
-    }
+  // Handle delete referral
+  const handleDeleteReferral = (id: string) => {
+    setDeletingReferralId(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = async () => {
+    if (!deletingReferralId) return;
 
     try {
-      const response = await fetch(`/api/admin/referrals?id=${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/admin/referrals?id=${deletingReferralId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       const result = await response.json();
 
       if (result.success) {
         // Remove from local state
-        setReferrals(referrals.filter((referral) => referral._id !== id));
+        setReferrals(
+          referrals.filter(
+            (referral: IReferral) => referral._id !== deletingReferralId
+          )
+        );
 
         toast({
           title: "Success",
@@ -237,25 +241,25 @@ const ReferralsPage = () => {
       } else {
         throw new Error(result.error || "Delete operation failed");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting referral:", error);
       toast({
         title: "Error",
-        description: (error as Error).message || "Failed to delete referral",
+        description: error.message || "Failed to delete referral",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setDeletingReferralId(null);
     }
   };
 
   // Filter referrals based on search term
-  const filteredReferrals = referrals.filter((referral) => {
+  const filteredReferrals = referrals.filter((referral: IReferral) => {
     return (
       searchTerm === "" ||
       referral.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      referral.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      referral.parentCategory.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+      referral.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
 
@@ -263,8 +267,8 @@ const ReferralsPage = () => {
     <div className="p-2">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Link className="text-brand" size={30} />
-          <h1 className="text-2xl font-bold">Referral System</h1>
+          <GiftIcon className="text-brand" size={30} />
+          <h1 className="text-2xl font-bold">Reward Points Referral System</h1>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -274,9 +278,7 @@ const ReferralsPage = () => {
                 form.reset({
                   name: "",
                   description: "",
-                  discountType: "percentage",
-                  discountValue: 0,
-                  parentCategoryId: "",
+                  rewardPoints: 100,
                   expiryDate: format(
                     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
                     "yyyy-MM-dd"
@@ -298,211 +300,15 @@ const ReferralsPage = () => {
               <DialogDescription>
                 {editingReferral
                   ? "Update the referral details below."
-                  : "Fill in the details for your new category referral discount."}
+                  : "Create a referral link that will award reward points to new users who sign up."}
               </DialogDescription>
             </DialogHeader>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Referral Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Spring Referral Campaign"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Referral program details..."
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="discountType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Discount Type</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="percentage">
-                              Percentage (%)
-                            </SelectItem>
-                            <SelectItem value="amount">Fixed Amount</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="discountValue"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Discount Value</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder={
-                              form.watch("discountType") === "percentage"
-                                ? "10"
-                                : "50"
-                            }
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value))
-                            }
-                            value={field.value}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="parentCategoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Product Category</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {parentCategories.map((category) => (
-                            <SelectItem
-                              key={category._id}
-                              value={category._id}
-                              disabled={!category.isActive}
-                            >
-                              {category.name}{" "}
-                              {!category.isActive && "(Inactive)"}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="expiryDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Expiry Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="maxUses"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Maximum Uses</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value))
-                            }
-                            value={field.value}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="isActive"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                        <FormLabel>Active Status</FormLabel>
-                        <FormDescription>
-                          Is this referral currently active?
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="primary-btn"
-                  >
-                    {isSubmitting
-                      ? "Saving..."
-                      : editingReferral
-                      ? "Update"
-                      : "Create"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
+            <ReferralForm
+              onSubmit={onSubmit}
+              editingReferral={editingReferral}
+              isSubmitting={isSubmitting}
+              onCancel={() => setIsDialogOpen(false)}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -510,7 +316,7 @@ const ReferralsPage = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Manage Referral Links</CardTitle>
+            <CardTitle>Manage Reward Point Referrals</CardTitle>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -522,8 +328,9 @@ const ReferralsPage = () => {
             </div>
           </div>
           <CardDescription>
-            Create and manage referral links that offer discounts on specific
-            product categories.
+            Create and manage referral links that award reward points to new
+            users. Users can redeem these points at checkout (10 points = ₹1
+            discount).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -547,8 +354,7 @@ const ReferralsPage = () => {
                   <TableRow>
                     <TableHead className="w-[200px]">Name</TableHead>
                     <TableHead>Referral Code</TableHead>
-                    <TableHead>Discount</TableHead>
-                    <TableHead>Category</TableHead>
+                    <TableHead>Reward Points</TableHead>
                     <TableHead>Uses</TableHead>
                     <TableHead>Expires</TableHead>
                     <TableHead>Status</TableHead>
@@ -556,7 +362,7 @@ const ReferralsPage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredReferrals.map((referral) => (
+                  {filteredReferrals.map((referral: IReferral) => (
                     <TableRow key={referral._id}>
                       <TableCell className="font-medium">
                         {referral.name}
@@ -570,10 +376,11 @@ const ReferralsPage = () => {
                         {referral.code}
                       </TableCell>
                       <TableCell>
-                        {referral.discountValue}
-                        {referral.discountType === "percentage" ? "%" : ""}
+                        {referral.rewardPoints} points
+                        <p className="text-xs text-muted-foreground">
+                          (₹{Math.floor(referral.rewardPoints / 10)} value)
+                        </p>
                       </TableCell>
-                      <TableCell>{referral.parentCategory.name}</TableCell>
                       <TableCell>
                         {referral.usedCount}/{referral.maxUses}
                       </TableCell>
@@ -642,6 +449,32 @@ const ReferralsPage = () => {
           )}
         </CardContent>
       </Card>
+      {/* Add this before the final closing div */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              referral and remove it from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingReferralId(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="primary-btn"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
