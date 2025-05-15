@@ -37,6 +37,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -67,6 +77,10 @@ const ReferralsPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingReferralId, setDeletingReferralId] = useState<string | null>(
+    null
+  );
 
   // Initialize form
   const form = useForm({
@@ -194,23 +208,31 @@ const ReferralsPage = () => {
     setIsDialogOpen(true);
   };
 
-  // Handle delete referral
-  const handleDeleteReferral = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this referral?")) {
-      return;
-    }
+  const handleDeleteReferral = (id: string) => {
+    setDeletingReferralId(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = async () => {
+    if (!deletingReferralId) return;
 
     try {
-      const response = await fetch(`/api/referrals?id=${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/admin/referrals?id=${deletingReferralId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       const result = await response.json();
 
       if (result.success) {
         // Remove from local state
         setReferrals(
-          referrals.filter((referral: IReferral) => referral._id !== id)
+          referrals.filter(
+            (referral: IReferral) => referral._id !== deletingReferralId
+          )
         );
 
         toast({
@@ -227,6 +249,9 @@ const ReferralsPage = () => {
         description: error.message || "Failed to delete referral",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setDeletingReferralId(null);
     }
   };
 
@@ -446,6 +471,32 @@ const ReferralsPage = () => {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              referral and remove it from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingReferralId(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="primary-btn"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
