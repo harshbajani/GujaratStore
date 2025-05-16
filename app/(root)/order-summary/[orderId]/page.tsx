@@ -11,6 +11,7 @@ import { ShoppingBag, Truck, Clock, CheckCircle } from "lucide-react";
 import Loader from "@/components/Loader";
 import { toast } from "@/hooks/use-toast";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
+import { useAuth } from "@/hooks/useAuth";
 
 interface OrderItem {
   productId: string;
@@ -56,6 +57,7 @@ interface User {
 }
 
 const OrderSummaryPage = () => {
+  const { isAuthenticated } = useAuth();
   const params = useParams();
   const router = useRouter();
   const orderId = params.orderId as string;
@@ -162,6 +164,8 @@ const OrderSummaryPage = () => {
   const formattedDate = order.createdAt
     ? format(new Date(order.createdAt), "d MMM yyyy, h:mm a")
     : "";
+
+  if (!isAuthenticated) router.push("/sign-in");
 
   return (
     <>
