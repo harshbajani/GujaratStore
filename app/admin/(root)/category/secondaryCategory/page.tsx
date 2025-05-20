@@ -36,7 +36,6 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
-import { SecondaryCategoryWithPopulatedFields } from "@/types";
 import {
   deleteSecondaryCategoryById,
   getAllSecondaryCategories,

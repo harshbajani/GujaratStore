@@ -2,13 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { secondaryCategorySchema } from "@/lib/validations";
-import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
+import { getAllAttributes } from "@/lib/actions/attribute.actions";
 import { toast } from "@/hooks/use-toast";
-import { IPrimaryCategory, ISecondaryCategory } from "@/types";
-import {
-  getAllParentCategory,
-  IParentCategory,
-} from "@/lib/actions/parentCategory.actions";
+import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";

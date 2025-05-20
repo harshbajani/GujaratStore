@@ -43,7 +43,6 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
-import { IAdminProduct, ProductWithPopulatedFields } from "@/types";
 
 const ProductsPage = () => {
   // * useStates and hooks

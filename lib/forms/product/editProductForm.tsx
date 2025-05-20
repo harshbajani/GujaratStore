@@ -17,23 +17,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import {
-  getAllParentCategory,
-  IParentCategory,
-} from "@/lib/actions/parentCategory.actions";
+import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
 import { getAllSecondaryCategories } from "@/lib/actions/secondaryCategory.actions";
 import React, { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  IBrand,
-  IPrimaryCategory,
-  IProduct,
-  IProductSecondaryCategory,
-  ISizes,
-} from "@/types";
-import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
+import { getAllAttributes } from "@/lib/actions/attribute.actions";
 import { useParams, useRouter } from "next/navigation";
 import { productSchema } from "@/lib/validations";
 import dynamic from "next/dynamic";
@@ -228,11 +218,6 @@ const EditProductsForm = () => {
             productSize: productSizeIds,
             vendorId: currentVendorId || product.vendorId || "",
           });
-
-          console.log(
-            "VendorId after product load:",
-            form.getValues("vendorId")
-          );
         }
       } catch (error) {
         console.error("Error fetching product:", error);
@@ -253,7 +238,6 @@ const EditProductsForm = () => {
 
   // * data submission
   const onSubmit = async (data: IProduct) => {
-    console.log("Form submission triggered with data:", data);
     try {
       setIsLoading(true);
 
@@ -262,7 +246,6 @@ const EditProductsForm = () => {
 
       if (userData.success && userData.data && userData.data._id) {
         data.vendorId = userData.data._id;
-        console.log("Vendor ID set at submission time:", data.vendorId);
       } else {
         console.error("Failed to get vendor ID from response", userData);
         toast({
@@ -325,11 +308,6 @@ const EditProductsForm = () => {
         productImages: productImageIds,
         vendorId: data.vendorId,
       };
-
-      console.log("Sending PUT request with vendorId:", finalData.vendorId);
-      console.log("Sending PUT request to:", `/api/products/${params.id}`);
-      console.log("With data:", finalData);
-
       const response = await fetch(`/api/products/${params.id}`, {
         method: "PUT",
         headers: {
@@ -339,7 +317,6 @@ const EditProductsForm = () => {
       });
 
       const responseData = await response.json();
-      console.log("API response:", responseData);
 
       if (!response.ok) {
         throw new Error(responseData.error || "Update failed");
@@ -462,18 +439,14 @@ const EditProductsForm = () => {
   return (
     <Form {...form}>
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!params.id) {
-            toast({
-              title: "Error",
-              description: "Product ID is missing",
-              variant: "destructive",
-            });
-            return;
-          }
-          form.handleSubmit(onSubmit)(e);
-        }}
+        onSubmit={form.handleSubmit(onSubmit, (errors) => {
+          console.log("Form validation errors:", errors); // Add this line
+          toast({
+            title: "Error",
+            description: "Please check all required fields",
+            variant: "destructive",
+          });
+        })}
         className="space-y-8"
       >
         <Input type="hidden" {...form.register("vendorId")} />
@@ -939,16 +912,7 @@ const EditProductsForm = () => {
         />
 
         <div className="flex gap-2">
-          <Button
-            type="submit"
-            className="primary-btn"
-            disabled={isLoading}
-            onClick={() => {
-              console.log("Manual submission attempt");
-              const data = form.getValues();
-              onSubmit(data);
-            }}
-          >
+          <Button type="submit" className="primary-btn" disabled={isLoading}>
             {isLoading ? "Updating..." : "Update Product"}
           </Button>
           <Button

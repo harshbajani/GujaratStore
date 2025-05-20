@@ -29,12 +29,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Loader from "@/components/Loader";
 import { withVendorProtection } from "../../HOC";
-import {
-  IDashboardCardProps,
-  IOrderStatusBreakdown,
-  IProductInventoryStats,
-  ISalesSummary,
-} from "@/types";
 
 const DashboardCard: React.FC<IDashboardCardProps> = ({
   title,

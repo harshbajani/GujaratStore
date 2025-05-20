@@ -2,8 +2,6 @@
 
 import { connectToDB } from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
-
-import { ActionResponse, IVendor, VendorResponse } from "@/types/index";
 import { revalidatePath } from "next/cache";
 import Vendor from "../models/vendor.model";
 import { authOptions } from "../nextAuthConfig";

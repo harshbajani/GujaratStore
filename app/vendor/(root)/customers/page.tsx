@@ -37,7 +37,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IOrder } from "@/types";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 

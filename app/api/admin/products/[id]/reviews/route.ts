@@ -4,7 +4,6 @@ import ProductReviews from "@/lib/models/productReview.model";
 import Products from "@/lib/models/product.model";
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
-import { RouteParams } from "@/types";
 
 // Get all reviews for a product
 export async function GET(request: NextRequest, { params }: RouteParams) {

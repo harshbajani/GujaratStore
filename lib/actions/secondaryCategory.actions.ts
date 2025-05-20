@@ -4,7 +4,6 @@ import { z } from "zod";
 import { connectToDB } from "../mongodb";
 import { parseStringify } from "../utils";
 import { HydratedDocument } from "mongoose";
-import { ISecondaryCategory } from "@/types";
 import { secondaryCategorySchema } from "../validations";
 import ParentCategory from "../models/parentCategory.model";
 import Attributes from "../models/attribute.model";

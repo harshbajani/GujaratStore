@@ -21,7 +21,6 @@ import {
   getParentCategoryById,
   updateParentCategory,
 } from "@/lib/actions/parentCategory.actions";
-import { ParentCategoryFormData } from "@/types";
 import Loader from "@/components/Loader";
 
 interface EditParentCategoryFormProps {

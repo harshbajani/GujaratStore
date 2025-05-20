@@ -5,11 +5,6 @@ import Order from "@/lib/models/order.model";
 import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
 import { getCurrentVendor } from "@/lib/actions/vendor.actions";
-import {
-  ISalesSummary,
-  IOrderStatusBreakdown,
-  IProductInventoryStats,
-} from "@/types";
 import mongoose from "mongoose";
 
 export async function GET(request: Request) {

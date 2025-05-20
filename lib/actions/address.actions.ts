@@ -6,7 +6,6 @@ import { connectToDB } from "@/lib/mongodb";
 import { Address } from "@/lib/validations";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
-import { IAddress } from "@/types";
 import { z } from "zod";
 import { Document } from "mongoose";
 

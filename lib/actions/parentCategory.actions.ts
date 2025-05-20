@@ -5,13 +5,6 @@ import { revalidatePath } from "next/cache";
 import { parentCategorySchema } from "../validations";
 import ParentCategory from "../models/parentCategory.model";
 
-export interface IParentCategory {
-  id: string;
-  _id: string;
-  name: string;
-  isActive: boolean;
-}
-
 // Helper function to serialize MongoDB documents
 const serializeDocument = (doc: HydratedDocument<IParentCategory>) => {
   if (!doc) return null;

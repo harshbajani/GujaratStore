@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/actions/admin/user.actions";
 import { connectToDB } from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
-import { IUser } from "@/types";
+
 import User from "@/lib/models/user.model";
 
 export async function GET() {

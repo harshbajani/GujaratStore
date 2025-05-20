@@ -17,7 +17,6 @@ import {
   updateAddress,
 } from "@/lib/actions/address.actions";
 import { Address as deliveryAddress } from "@/lib/validations";
-import { AddressCardProps } from "@/types";
 import AddressDialog from "@/lib/forms/addressForm";
 import { useUserDetails } from "@/hooks/useUserDetails";
 import Loader from "@/components/Loader";

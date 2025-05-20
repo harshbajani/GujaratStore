@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
-import { IAddress, IOrder } from "@/types";
 
 import { getCustomerOrders } from "@/lib/utils";
 import { useUsers } from "@/hooks/useUsers";

@@ -1,6 +1,5 @@
 import Order from "@/lib/models/order.model";
 import { connectToDB } from "@/lib/mongodb";
-import { RouteParams } from "@/types";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request, { params }: RouteParams) {

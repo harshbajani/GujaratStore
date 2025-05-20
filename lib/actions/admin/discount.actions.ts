@@ -7,7 +7,6 @@ import Discount, {
   DiscountTargetType,
 } from "../../models/discount.model";
 import ParentCategory from "../../models/parentCategory.model";
-import { IAdminDiscount } from "@/types";
 
 // Helper function to serialize MongoDB documents
 const serializeDocument = (

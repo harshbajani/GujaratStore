@@ -15,7 +15,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ProfileProps } from "@/types";
 import { signOut } from "next-auth/react";
 import { profileSchema } from "@/lib/validations";
 

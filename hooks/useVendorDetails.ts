@@ -1,7 +1,6 @@
 // hooks/useUserDetails.ts
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
-import { IAddress } from "@/types";
 import { getCurrentVendor } from "@/lib/actions/vendor.actions";
 
 // Define types for the hook's return values

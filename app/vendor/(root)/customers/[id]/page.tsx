@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
-import { IOrder } from "@/types";
 import { useUserDetails } from "@/hooks/useOrderHooks"; // Import the hook
 import { getCustomerOrders } from "@/lib/utils";
 

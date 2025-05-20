@@ -1,6 +1,6 @@
 import User from "@/lib/models/user.model";
 import { connectToDB } from "@/lib/mongodb";
-import { IUser } from "@/types";
+
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {

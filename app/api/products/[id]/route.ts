@@ -1,6 +1,6 @@
 import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
-import { RouteParams } from "@/types";
+
 import { NextRequest, NextResponse } from "next/server";
 
 // Populate configuration for reuse

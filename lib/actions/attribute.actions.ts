@@ -5,14 +5,6 @@ import Attributes from "@/lib/models/attribute.model";
 import mongoose from "mongoose";
 import { z } from "zod";
 
-// Define the attribute interface
-export interface IAttribute {
-  id: string;
-  _id: string;
-  name: string;
-  isActive: boolean;
-}
-
 // Helper function to serialize MongoDB documents
 const serializeDocument = (doc: mongoose.Document): IAttribute | null => {
   if (!doc) return null;
