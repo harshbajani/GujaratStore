@@ -44,7 +44,6 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
-import { IProduct, ProductWithPopulatedFields } from "@/types";
 
 const ProductsPage = () => {
   // * useStates and hooks

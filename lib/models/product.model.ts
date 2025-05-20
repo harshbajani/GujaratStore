@@ -12,7 +12,6 @@ const productSchema = new Schema({
   vendorId: {
     type: Schema.Types.ObjectId,
     ref: "Vendor",
-    required: true,
   },
   productName: { type: String, required: true },
   parentCategory: {

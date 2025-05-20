@@ -2,7 +2,6 @@ import { useReducer, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { generateOrderId } from "@/lib/utils";
-import { CheckoutData, IUser } from "@/types";
 
 // Define the shape of our checkout state
 interface CheckoutState {

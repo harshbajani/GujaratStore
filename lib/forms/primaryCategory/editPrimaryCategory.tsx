@@ -4,11 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { primaryCategorySchema } from "@/lib/validations";
 import { toast } from "@/hooks/use-toast";
-import { IPrimaryCategory } from "@/types";
-import {
-  getAllParentCategory,
-  IParentCategory,
-} from "@/lib/actions/parentCategory.actions";
+import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import {
   updatePrimaryCategoryById,
   getPrimaryCategoryById,

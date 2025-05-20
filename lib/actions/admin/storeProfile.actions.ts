@@ -7,7 +7,6 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
 import Vendor from "@/lib/models/vendor.model";
 import { toInterfaceFormat, toSchemaFormat } from "../../utils";
-import { StoreData } from "@/types";
 
 export async function createStore(data: StoreData) {
   try {

@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IProductReview } from "@/types";
 
 type Review = {
   _id: string;

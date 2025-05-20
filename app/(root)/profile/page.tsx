@@ -23,7 +23,6 @@ import Profile from "./components/Profile";
 import Address from "./components/Address";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getCurrentUser } from "@/lib/actions/user.actions";
-import { UserResponse } from "@/types";
 import Coupons from "./components/Coupons";
 import Loader from "@/components/Loader";
 import Orders from "./components/Orders";

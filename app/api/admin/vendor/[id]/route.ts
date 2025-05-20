@@ -6,7 +6,6 @@ import {
   updateVendorById,
   deleteVendor,
 } from "@/lib/actions/admin/vendor.actions";
-import { RouteParams } from "@/types";
 
 // GET /api/admin/vendor/[id]
 export async function GET(request: Request, { params }: RouteParams) {

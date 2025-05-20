@@ -17,25 +17,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import {
-  getAllParentCategory,
-  IParentCategory,
-} from "@/lib/actions/parentCategory.actions";
+import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
 import { getAllSecondaryCategories } from "@/lib/actions/secondaryCategory.actions";
 import React, { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  IAdminBrand,
-  IPrimaryCategory,
-  IProduct,
-  IProductSecondaryCategory,
-  ISizes,
-} from "@/types";
-import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
+import { getAllAttributes } from "@/lib/actions/attribute.actions";
 import { useRouter } from "next/navigation";
-import { productSchema } from "@/lib/validations";
+import { adminProductSchema } from "@/lib/validations";
 import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
@@ -72,7 +62,7 @@ const AddProductsForm = () => {
 
   const router = useRouter();
   const form = useForm<IProduct>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(adminProductSchema),
     defaultValues: {
       productName: "",
       parentCategory: "",
@@ -256,13 +246,11 @@ const AddProductsForm = () => {
         throw new Error(`Submission failed: ${response.statusText}`);
       }
 
-      const result = await response.json();
       toast({
         title: "Success",
         description: "Product added successfully",
       });
       router.push("/admin/products");
-      console.log("Submission successful:", result);
     } catch (error) {
       console.error("Submission error:", error);
       toast({
@@ -345,7 +333,17 @@ const AddProductsForm = () => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form
+        onSubmit={form.handleSubmit(onSubmit, (errors) => {
+          console.log("Form validation errors:", errors); // Add this line
+          toast({
+            title: "Error",
+            description: "Please check all required fields",
+            variant: "destructive",
+          });
+        })}
+        className="space-y-8"
+      >
         <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}

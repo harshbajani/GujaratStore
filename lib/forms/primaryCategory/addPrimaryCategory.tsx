@@ -3,11 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { primaryCategorySchema } from "@/lib/validations";
 import { toast } from "@/hooks/use-toast";
-import { IPrimaryCategory } from "@/types";
-import {
-  getAllParentCategory,
-  IParentCategory,
-} from "@/lib/actions/parentCategory.actions";
+import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { createPrimaryCategory } from "@/lib/actions/primaryCategory.actions";
 import { useRouter } from "next/navigation";
 
@@ -84,7 +80,7 @@ const AddPrimaryCategoryForm = () => {
         description: "Primary category added successfully",
       });
 
-      // router.push("/admin/category/primaryCategory");
+      router.push("/admin/category/primaryCategory");
     } catch {
       toast({
         title: "Error",

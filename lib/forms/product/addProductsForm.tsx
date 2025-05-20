@@ -17,23 +17,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import {
-  getAllParentCategory,
-  IParentCategory,
-} from "@/lib/actions/parentCategory.actions";
+import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
 import { getAllSecondaryCategories } from "@/lib/actions/secondaryCategory.actions";
 import React, { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  IBrand,
-  IPrimaryCategory,
-  IProduct,
-  IProductSecondaryCategory,
-  ISizes,
-} from "@/types";
-import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
+import { getAllAttributes } from "@/lib/actions/attribute.actions";
 import { useRouter } from "next/navigation";
 import { productSchema } from "@/lib/validations";
 import dynamic from "next/dynamic";
@@ -256,14 +246,11 @@ const AddProductsForm = () => {
         console.error("API error:", errorData);
         throw new Error(`Submission failed: ${response.statusText}`);
       }
-
-      const result = await response.json();
       toast({
         title: "Success",
         description: "Product added successfully",
       });
       router.push("/vendor/products");
-      console.log("Submission successful:", result);
     } catch (error) {
       console.error("Submission error:", error);
       toast({

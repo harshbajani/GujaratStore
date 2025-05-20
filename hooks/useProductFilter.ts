@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { IProductResponse } from "@/types";
 
 interface Filters {
   primaryCategories: string[];

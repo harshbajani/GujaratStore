@@ -4,11 +4,6 @@ import { NextResponse } from "next/server";
 import Order from "@/lib/models/order.model";
 import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
-import {
-  ISalesSummary,
-  IOrderStatusBreakdown,
-  IProductInventoryStats,
-} from "@/types";
 
 export async function GET(request: Request) {
   try {

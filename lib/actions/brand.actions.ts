@@ -4,7 +4,6 @@ import { connectToDB } from "../mongodb";
 import { brandSchema } from "../validations";
 import Brand from "../models/brand.model";
 import { ObjectId } from "mongodb";
-import { IBrand } from "@/types";
 import { Types } from "mongoose";
 import { z } from "zod";
 

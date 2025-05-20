@@ -7,7 +7,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Star, Heart, ShoppingCart, Check, Filter } from "lucide-react";
 import { cn, getProductRating } from "@/lib/utils";
-import { IProductResponse } from "@/types";
 import Loader from "@/components/Loader";
 import { toast } from "@/hooks/use-toast";
 import useProductFilter from "@/hooks/useProductFilter";

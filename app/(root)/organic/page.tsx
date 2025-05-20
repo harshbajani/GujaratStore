@@ -32,7 +32,6 @@ import {
 
 import Loader from "@/components/Loader";
 import { toast } from "@/hooks/use-toast";
-import { IProductResponse } from "@/types";
 import useProductFilter from "@/hooks/useProductFilter";
 
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
