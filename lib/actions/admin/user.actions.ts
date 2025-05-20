@@ -3,8 +3,6 @@
 import { connectToDB } from "@/lib/mongodb";
 import User from "@/lib/models/user.model";
 import { getServerSession } from "next-auth";
-
-import { ActionResponse, IUser, UserResponse } from "@/types/index";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "../../nextAuthConfig";
 

@@ -4,7 +4,6 @@ import { motion, Variants } from "framer-motion";
 import Image from "next/image";
 import { clothing, flavoursOfGujarat, furnishings, organic } from "@/constants";
 import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
-import { PrimaryCategoryWithPopulatedFields } from "@/types";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 

@@ -28,12 +28,6 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Loader from "@/components/Loader";
-import {
-  IDashboardCardProps,
-  IOrderStatusBreakdown,
-  IProductInventoryStats,
-  ISalesSummary,
-} from "@/types";
 
 const DashboardCard: React.FC<IDashboardCardProps> = ({
   title,

@@ -1,7 +1,6 @@
 "use client";
 import { createBrand } from "@/lib/actions/brand.actions";
 import { brandSchema } from "@/lib/validations";
-import { IBrand } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";

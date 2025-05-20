@@ -1,6 +1,5 @@
 // useOrderHooks.ts
 import { useState, useEffect } from "react";
-import { IOrder, IAddress, IUser } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
 // Base fetch function to reduce code duplication

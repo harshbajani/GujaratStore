@@ -1,7 +1,6 @@
 "use client";
 import { Star } from "lucide-react";
 import Loader from "@/components/Loader";
-import { IBrand } from "@/types";
 import React, { useState, useEffect } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import {

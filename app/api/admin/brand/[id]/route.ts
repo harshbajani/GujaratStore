@@ -1,5 +1,4 @@
 import Brand from "@/lib/models/brand.model";
-import { RouteParams } from "@/types";
 import { NextResponse } from "next/server";
 
 export async function PUT(req: Request, { params }: RouteParams) {

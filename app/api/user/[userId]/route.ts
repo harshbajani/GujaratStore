@@ -1,5 +1,5 @@
 import { getUserById } from "@/lib/actions/user.actions";
-import { RouteParams } from "@/types";
+
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request, { params }: RouteParams) {

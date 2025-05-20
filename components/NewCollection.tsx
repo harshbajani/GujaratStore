@@ -4,7 +4,6 @@ import Image from "next/image";
 import { newCollection } from "@/constants";
 import { Button } from "./ui/button";
 import Link from "next/link";
-import { CollectionItemProps, ContentItem, ImageItem } from "@/types";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 

@@ -37,7 +37,6 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
 import { deleteSize, getAllSizes } from "@/lib/actions/size.actions";
-import { ISizes } from "@/types";
 
 const SizePage = () => {
   // * useStates and hooks

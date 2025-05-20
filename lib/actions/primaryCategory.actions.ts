@@ -5,7 +5,6 @@ import { connectToDB } from "@/lib/mongodb";
 import PrimaryCategory from "@/lib/models/primaryCategory.model";
 
 // Import referenced models for population
-import { IPrimaryCategory } from "@/types";
 import { primaryCategorySchema } from "../validations";
 import ParentCategory from "@/lib/models/parentCategory.model";
 import { parseStringify } from "../utils";

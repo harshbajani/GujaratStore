@@ -2,7 +2,6 @@
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { getCurrentUser } from "@/lib/actions/user.actions"; // Import the server action
-import { IAddress } from "@/types";
 
 // Define types for the hook's return values
 interface UseUserDetailsReturn {

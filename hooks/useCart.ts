@@ -1,7 +1,6 @@
 // hooks/useCart.ts
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
-import { IProductResponse } from "@/types";
 
 interface CartItem extends IProductResponse {
   cartQuantity: number;

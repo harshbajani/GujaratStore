@@ -17,25 +17,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import {
-  getAllParentCategory,
-  IParentCategory,
-} from "@/lib/actions/parentCategory.actions";
+import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
 import { getAllSecondaryCategories } from "@/lib/actions/secondaryCategory.actions";
 import React, { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  IAdminBrand,
-  IPrimaryCategory,
-  IProduct,
-  IProductSecondaryCategory,
-  ISizes,
-} from "@/types";
-import { getAllAttributes, IAttribute } from "@/lib/actions/attribute.actions";
+import { getAllAttributes } from "@/lib/actions/attribute.actions";
 import { useParams, useRouter } from "next/navigation";
-import { productSchema } from "@/lib/validations";
+import { adminProductSchema } from "@/lib/validations";
 import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
@@ -70,7 +60,7 @@ const EditProductsForm = () => {
 
   const router = useRouter();
   const form = useForm<IProduct>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(adminProductSchema),
     defaultValues: {
       productName: "",
       parentCategory: "",
@@ -243,8 +233,7 @@ const EditProductsForm = () => {
   }, [params.id]);
 
   // * data submission
-  const onSubmit = async (data: IProduct) => {
-    console.log("Form submission triggered with data:", data);
+  const onSubmit = async (data: IAdminProduct) => {
     try {
       setIsLoading(true);
 
@@ -300,12 +289,6 @@ const EditProductsForm = () => {
         productImages: productImageIds,
       };
 
-      console.log(
-        "Sending PUT request to:",
-        `/api/admin/products/${params.id}`
-      );
-      console.log("With data:", finalData);
-
       const response = await fetch(`/api/admin/products/${params.id}`, {
         method: "PUT",
         headers: {
@@ -315,7 +298,6 @@ const EditProductsForm = () => {
       });
 
       const responseData = await response.json();
-      console.log("API response:", responseData);
 
       if (!response.ok) {
         throw new Error(responseData.error || "Update failed");
@@ -404,18 +386,14 @@ const EditProductsForm = () => {
   return (
     <Form {...form}>
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!params.id) {
-            toast({
-              title: "Error",
-              description: "Product ID is missing",
-              variant: "destructive",
-            });
-            return;
-          }
-          form.handleSubmit(onSubmit)(e);
-        }}
+        onSubmit={form.handleSubmit(onSubmit, (errors) => {
+          console.log("Form validation errors:", errors); // Add this line
+          toast({
+            title: "Error",
+            description: "Please check all required fields",
+            variant: "destructive",
+          });
+        })}
         className="space-y-8"
       >
         <div className="grid grid-cols-3 gap-6">
@@ -880,16 +858,7 @@ const EditProductsForm = () => {
         />
 
         <div className="flex gap-2">
-          <Button
-            type="submit"
-            className="primary-btn"
-            disabled={isLoading}
-            onClick={() => {
-              console.log("Manual submission attempt");
-              const data = form.getValues();
-              onSubmit(data);
-            }}
-          >
+          <Button type="submit" className="primary-btn" disabled={isLoading}>
             {isLoading ? "Updating..." : "Update Product"}
           </Button>
           <Button

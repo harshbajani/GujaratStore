@@ -21,7 +21,6 @@ import {
   getAttributeById,
   updateAttribute,
 } from "@/lib/actions/attribute.actions";
-import { AttributeFormData } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
 const attributeSchema = z.object({

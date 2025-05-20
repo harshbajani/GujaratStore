@@ -46,13 +46,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format } from "date-fns";
 import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { toast } from "@/hooks/use-toast";
-import { IDiscount, IParentCategory } from "@/types";
 import Loader from "@/components/Loader";
 import { discountFormSchema } from "@/lib/validations";
 
@@ -64,6 +73,10 @@ const DiscountsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<IDiscount | null>(
+    null
+  );
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingDiscountId, setDeletingDiscountId] = useState<string | null>(
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -206,21 +219,30 @@ const DiscountsPage = () => {
   };
 
   // Handle delete discount
-  const handleDeleteDiscount = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this discount?")) {
-      return;
-    }
+  const handleDeleteDiscount = (id: string) => {
+    setDeletingDiscountId(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Add this new function
+  const handleDeleteConfirm = async () => {
+    if (!deletingDiscountId) return;
 
     try {
-      const response = await fetch(`/api/discounts?id=${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/admin/discounts?id=${deletingDiscountId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       const result = await response.json();
 
       if (result.success) {
         // Remove from local state
-        setDiscounts(discounts.filter((discount) => discount._id !== id));
+        setDiscounts(
+          discounts.filter((discount) => discount._id !== deletingDiscountId)
+        );
 
         toast({
           title: "Success",
@@ -236,6 +258,9 @@ const DiscountsPage = () => {
         description: (error as Error).message || "Failed to delete discount",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setDeletingDiscountId(null);
     }
   };
 
@@ -617,6 +642,31 @@ const DiscountsPage = () => {
           )}
         </CardContent>
       </Card>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              discount and remove it from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingDiscountId(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="primary-btn"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

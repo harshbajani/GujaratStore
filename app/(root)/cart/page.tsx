@@ -8,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckoutData } from "@/types";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, Trash2 } from "lucide-react";

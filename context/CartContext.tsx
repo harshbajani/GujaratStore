@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { IProductResponse } from "@/types";
 import { toast } from "@/hooks/use-toast";
 
 type CartContextType = {

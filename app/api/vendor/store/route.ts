@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
 import { connectToDB } from "@/lib/mongodb";
 import Vendor from "@/lib/models/vendor.model";
-import { IVendor } from "@/types";
 
 export async function GET() {
   try {
