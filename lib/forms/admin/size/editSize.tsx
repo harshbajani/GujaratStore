@@ -17,7 +17,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { getSizeById, updateSize } from "@/lib/actions/size.actions";
-import { ISize } from "@/lib/models/size.model";
 import { toast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
 
