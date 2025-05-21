@@ -134,15 +134,23 @@ declare interface AttributeFormData {
   isActive: boolean;
 }
 
-declare interface ParentCategoryFormData {
-  id: string;
-  name: string;
-  isActive: boolean;
-}
-
 declare interface IAttribute {
   id: string;
   _id: string;
+  name: string;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+declare interface AttributeResponse {
+  success: boolean;
+  data?: IAttribute | IAttribute[] | null;
+  error?: string;
+}
+
+declare interface ParentCategoryFormData {
+  id: string;
   name: string;
   isActive: boolean;
 }
@@ -219,6 +227,16 @@ declare interface IBrand {
   __v?: number;
 }
 
+declare interface BrandResponse {
+  success: boolean;
+  data?: IBrand | IBrand[] | null;
+  error?: string;
+}
+
+declare interface TransformedBrand extends IBrand {
+  image?: string; // base64 encoded image
+}
+
 declare interface IAdminBrand {
   _id?: string;
   name: string;
@@ -234,6 +252,22 @@ declare interface ISizes {
   label: string;
   value: string;
   isActive: boolean;
+}
+
+declare interface ISize {
+  _id?: string;
+  id?: string;
+  label: string;
+  value: string;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+declare interface SizeResponse {
+  success: boolean;
+  data?: ISize | ISize[] | null;
+  error?: string;
 }
 
 declare interface IProduct {

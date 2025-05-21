@@ -1,18 +1,12 @@
-import mongoose, { Schema, Document, Model } from "mongoose";
-
-export interface ISize extends Document {
-  label: string;
-  value: string;
-  isActive: boolean;
-}
+import mongoose, { Schema, Model } from "mongoose";
 
 const sizeSchema: Schema<ISize> = new Schema(
   {
-    label: { type: String, required: true, unique: true },
-    value: { type: String, required: true },
+    label: { type: String, required: true, trim: true, unique: true },
+    value: { type: String, trim: true, required: true },
     isActive: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 const Size: Model<ISize> =

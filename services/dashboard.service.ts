@@ -1,0 +1,274 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Types } from "mongoose";
+import Order from "@/lib/models/order.model";
+import Products from "@/lib/models/product.model";
+import { CacheService } from "./cache.service";
+
+export class DashboardService {
+  private static instance: DashboardService;
+
+  private constructor() {}
+
+  public static getInstance(): DashboardService {
+    if (!DashboardService.instance) {
+      DashboardService.instance = new DashboardService();
+    }
+    return DashboardService.instance;
+  }
+
+  async getSalesSummary(
+    vendorId: string,
+    month?: number,
+    year?: number
+  ): Promise<ISalesSummary> {
+    const cacheKey = `sales:${vendorId}:${month}:${year}`;
+    const cached = await CacheService.get<ISalesSummary>(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const query = this.buildTimeRangeQuery(month, year);
+    query["items.vendorId"] = new Types.ObjectId(vendorId);
+
+    const orders = await Order.find(query);
+    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+    const totalOrders = orders.length;
+    const averageOrderValue = totalRevenue / totalOrders || 0;
+
+    const monthlyRevenue = await this.calculateMonthlyRevenue(orders);
+    const yearlyRevenue = await this.calculateYearlyRevenue(vendorId);
+    const revenueChangePercent = this.calculateRevenueChange(monthlyRevenue);
+    const topSellingProducts = await this.calculateTopSellingProducts(query);
+
+    const summary = {
+      totalRevenue,
+      totalOrders,
+      averageOrderValue,
+      monthlyRevenue,
+      yearlyRevenue,
+      topSellingProducts,
+      revenueChangePercent,
+    };
+
+    await CacheService.set(cacheKey, summary);
+    return summary;
+  }
+
+  async getOrderStatusBreakdown(
+    vendorId: string,
+    month?: number,
+    year?: number
+  ): Promise<IOrderStatusBreakdown> {
+    const cacheKey = `orders:${vendorId}:${month}:${year}`;
+    const cached = await CacheService.get<IOrderStatusBreakdown>(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const query = this.buildTimeRangeQuery(month, year);
+    query["items.vendorId"] = new Types.ObjectId(vendorId);
+
+    const statusBreakdown = await Order.aggregate([
+      { $match: query },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]);
+
+    const breakdown = this.normalizeOrderBreakdown(statusBreakdown);
+
+    await CacheService.set(cacheKey, breakdown);
+    return breakdown;
+  }
+
+  async getInventoryStats(vendorId: string): Promise<IProductInventoryStats> {
+    const cacheKey = `inventory:${vendorId}`;
+    const cached = await CacheService.get<IProductInventoryStats>(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const vendorObjectId = new Types.ObjectId(vendorId);
+
+    const [
+      totalProducts,
+      lowStockProducts,
+      outOfStockProducts,
+      lowStockDetails,
+      inventoryValue,
+    ] = await Promise.all([
+      Products.countDocuments({ vendorId }),
+      Products.countDocuments({ vendorId, productQuantity: { $lt: 10 } }),
+      Products.countDocuments({ vendorId, productQuantity: 0 }),
+      Products.find({ vendorId, productQuantity: { $lt: 10 } }).select(
+        "productName productQuantity"
+      ),
+      Products.aggregate([
+        { $match: { vendorId: vendorObjectId } },
+        {
+          $group: {
+            _id: null,
+            totalValue: {
+              $sum: { $multiply: ["$productQuantity", "$netPrice"] },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const stats = {
+      totalProducts,
+      lowStockProducts,
+      outOfStockProducts,
+      inventoryValueTotal: inventoryValue[0]?.totalValue || 0,
+      lowStockProductDetails: lowStockDetails.map((product) => ({
+        name: product.productName,
+        quantity: product.productQuantity,
+      })),
+    };
+
+    await CacheService.set(cacheKey, stats);
+    return stats;
+  }
+
+  private buildTimeRangeQuery(month?: number, year?: number) {
+    const query: any = {};
+    if (month !== undefined && year !== undefined) {
+      const startDate = new Date(year, month, 1);
+      const endDate = new Date(year, month + 1, 0);
+      query.createdAt = { $gte: startDate, $lte: endDate };
+    }
+    return query;
+  }
+
+  private async calculateMonthlyRevenue(
+    orders: any[]
+  ): Promise<{ [month: string]: number }> {
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const monthlyRevenue: { [key: string]: number } = months.reduce(
+      (acc, m) => ({ ...acc, [m]: 0 }),
+      {}
+    );
+
+    orders.forEach((order) => {
+      const month = new Date(order.createdAt).toLocaleString("default", {
+        month: "short",
+      });
+      monthlyRevenue[month] = (monthlyRevenue[month] || 0) + order.total;
+    });
+
+    return monthlyRevenue;
+  }
+
+  private async calculateYearlyRevenue(
+    vendorId: string
+  ): Promise<{ [year: number]: number }> {
+    const currentYear = new Date().getFullYear();
+    const fiveYearsAgo = currentYear - 4;
+    const vendorObjectId = new Types.ObjectId(vendorId);
+
+    const yearlyData = await Order.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(fiveYearsAgo, 0, 1),
+            $lte: new Date(currentYear, 11, 31),
+          },
+          "items.vendorId": vendorObjectId,
+        },
+      },
+      {
+        $group: {
+          _id: { $year: "$createdAt" },
+          totalRevenue: { $sum: "$total" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    return Object.fromEntries(
+      Array.from({ length: 5 }, (_, i) => [fiveYearsAgo + i, 0]).map(
+        ([year]) => [
+          year,
+          yearlyData.find((d) => d._id === year)?.totalRevenue || 0,
+        ]
+      )
+    );
+  }
+
+  private calculateRevenueChange(monthlyRevenue: {
+    [month: string]: number;
+  }): number {
+    const currentDate = new Date();
+    const currentMonth = currentDate.toLocaleString("default", {
+      month: "short",
+    });
+    const lastMonth = new Date(
+      currentDate.setMonth(currentDate.getMonth() - 1)
+    ).toLocaleString("default", { month: "short" });
+
+    const currentRevenue = monthlyRevenue[currentMonth] || 0;
+    const lastRevenue = monthlyRevenue[lastMonth] || 0;
+
+    return lastRevenue !== 0
+      ? ((currentRevenue - lastRevenue) / lastRevenue) * 100
+      : 0;
+  }
+
+  private async calculateTopSellingProducts(query: any) {
+    return Order.aggregate([
+      { $match: query },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.productId",
+          productName: { $first: "$items.productName" },
+          quantity: { $sum: "$items.quantity" },
+          revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
+        },
+      },
+      { $sort: { quantity: -1 } },
+      { $limit: 5 },
+    ]).then((products) =>
+      products.map((p) => ({
+        productId: p._id,
+        productName: p.productName,
+        quantity: p.quantity,
+        revenue: p.revenue,
+      }))
+    );
+  }
+
+  private normalizeOrderBreakdown(
+    statusBreakdown: any[]
+  ): IOrderStatusBreakdown {
+    const breakdown: IOrderStatusBreakdown = {
+      confirmed: 0,
+      processing: 0,
+      shipped: 0,
+      delivered: 0,
+      cancelled: 0,
+      returned: 0,
+    };
+
+    statusBreakdown.forEach((entry) => {
+      breakdown[entry._id as keyof IOrderStatusBreakdown] = entry.count;
+    });
+
+    return breakdown;
+  }
+}
