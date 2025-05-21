@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Brand from "@/lib/models/brand.model";
 import { CacheService } from "./cache.service";
 import { Types } from "mongoose";
@@ -108,7 +109,7 @@ export class BrandService {
         return { success: false, error: "Invalid brand ID" };
       }
 
-      const brand = await Brand.findById(id).lean();
+      const brand = await Brand.findById(id).lean<IBrand>();
       if (!brand) {
         return { success: false, error: "Brand not found" };
       }

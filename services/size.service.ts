@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Size from "@/lib/models/size.model";
 import { CacheService } from "./cache.service";
 import { Types } from "mongoose";
