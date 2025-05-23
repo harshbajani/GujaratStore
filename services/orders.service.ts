@@ -2,6 +2,9 @@
 import { CacheService } from "./cache.service";
 import Order from "@/lib/models/order.model";
 import { getCurrentVendor } from "@/lib/actions/vendor.actions";
+import Product from "@/lib/models/product.model";
+import { connectToDB } from "@/lib/mongodb";
+import User from "@/lib/models/user.model";
 
 const CACHE_KEYS = {
   ORDER_DETAILS: "order:details:",
@@ -12,6 +15,55 @@ const CACHE_KEYS = {
 const CACHE_TTL = 300; // 5 minutes
 
 export class OrdersService {
+  static async createOrder(
+    orderData: Partial<IOrder>
+  ): Promise<ActionResponse<IOrder>> {
+    try {
+      await connectToDB();
+
+      // Validate required fields
+      if (!this.validateOrderData(orderData)) {
+        return { success: false, message: "Missing required fields" };
+      }
+
+      const items = orderData.items!;
+
+      // Validate product stock
+      const stockValidation = await this.validateProductStock(items);
+      if (!stockValidation.success) {
+        return {
+          success: false,
+          message: stockValidation.error || "Stock validation failed",
+        };
+      }
+
+      // Create order
+      const newOrder = new Order(orderData);
+      await newOrder.save();
+
+      // Update product quantities
+      await this.updateProductQuantities(items);
+
+      // Update user cart and orders
+      await this.updateUserData(orderData.userId as string, newOrder._id);
+
+      // Invalidate relevant caches
+      await this.invalidateOrderCaches();
+
+      return {
+        success: true,
+        message: "Order created successfully",
+        data: newOrder,
+      };
+    } catch (error) {
+      console.error("Create order error:", error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to create order",
+      };
+    }
+  }
   // Get order by custom orderId (for frontend display)
   static async getOrderByOrderId(
     orderId: string
@@ -21,7 +73,11 @@ export class OrdersService {
       const cachedOrder = await CacheService.get<IOrder>(cacheKey);
 
       if (cachedOrder) {
-        return { success: true, data: cachedOrder };
+        return {
+          success: true,
+          data: cachedOrder,
+          message: "Order fetched from cache",
+        };
       }
 
       const order = await Order.findOne({ orderId });
@@ -30,7 +86,11 @@ export class OrdersService {
       }
 
       await CacheService.set(cacheKey, order, CACHE_TTL);
-      return { success: true, data: order };
+      return {
+        success: true,
+        data: order,
+        message: "Order fetched successfully",
+      };
     } catch (error) {
       return {
         success: false,
@@ -47,7 +107,11 @@ export class OrdersService {
       const cachedOrder = await CacheService.get<IOrder>(cacheKey);
 
       if (cachedOrder) {
-        return { success: true, data: cachedOrder };
+        return {
+          success: true,
+          data: cachedOrder,
+          message: "Order fetched from cache",
+        };
       }
 
       const order = await Order.findById(id);
@@ -56,7 +120,11 @@ export class OrdersService {
       }
 
       await CacheService.set(cacheKey, order, CACHE_TTL);
-      return { success: true, data: order };
+      return {
+        success: true,
+        data: order,
+        message: "Order fetched successfully",
+      };
     } catch (error) {
       return {
         success: false,
@@ -76,7 +144,11 @@ export class OrdersService {
       const cachedData = await CacheService.get<IOrder[]>(cacheKey);
 
       if (cachedData) {
-        return { success: true, data: cachedData };
+        return {
+          success: true,
+          data: cachedData,
+          message: "Orders fetched from cache",
+        };
       }
 
       const vendorResponse = await getCurrentVendor();
@@ -85,10 +157,14 @@ export class OrdersService {
       const orders = await Order.find(query)
         .sort({ createdAt: -1 })
         .populate("items.productId", "productName")
-        .lean();
+        .lean<IOrder[]>();
 
       await CacheService.set(cacheKey, orders, CACHE_TTL);
-      return { success: true, data: orders };
+      return {
+        success: true,
+        data: orders,
+        message: "Orders fetched successfully",
+      };
     } catch (error) {
       return {
         success: false,
@@ -168,7 +244,101 @@ export class OrdersService {
       return { success: false, message: "Invalid order status" };
     }
 
-    return { success: true };
+    return { success: true, message: "Valid order status" };
+  }
+
+  private static validateOrderData(orderData: Partial<IOrder>): boolean {
+    return !!(
+      orderData.orderId &&
+      orderData.userId &&
+      orderData.items?.length &&
+      orderData.subtotal &&
+      orderData.total &&
+      orderData.addressId &&
+      orderData.paymentOption
+    );
+  }
+
+  private static async validateProductStock(
+    items: OrderItem[]
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      for (const item of items) {
+        const product = await Product.findById(item.productId);
+
+        if (!product) {
+          return {
+            success: false,
+            error: `Product not found: ${item.productId}`,
+          };
+        }
+
+        if (
+          !product.productQuantity ||
+          product.productQuantity < item.quantity
+        ) {
+          return {
+            success: false,
+            error: `Product "${item.productName}" is out of stock or only ${product.productQuantity} available.`,
+          };
+        }
+      }
+      return { success: true };
+    } catch (error) {
+      console.error("Validate stock error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to validate product stock",
+      };
+    }
+  }
+
+  private static async updateProductQuantities(
+    items: OrderItem[]
+  ): Promise<void> {
+    try {
+      const updates = items.map((item) =>
+        Product.findByIdAndUpdate(
+          item.productId,
+          { $inc: { productQuantity: -item.quantity } },
+          { new: true }
+        )
+      );
+      await Promise.all(updates);
+    } catch (error) {
+      console.error("Update quantities error:", error);
+      throw new Error(
+        `Failed to update product quantities: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  }
+
+  private static async updateUserData(
+    userId: string,
+    orderId: string
+  ): Promise<void> {
+    try {
+      await User.findByIdAndUpdate(
+        userId,
+        {
+          $push: { order: orderId },
+          $set: { cart: [] },
+        },
+        { new: true }
+      );
+    } catch (error) {
+      console.error("Update user data error:", error);
+      throw new Error(
+        `Failed to update user data: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
   }
 
   private static async buildOrderQuery(

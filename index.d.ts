@@ -460,6 +460,8 @@ declare interface OrderItem {
   quantity: number;
   price: number;
   deliveryDate: string;
+  selectedSize?: string;
+  vendorId?: string;
 }
 
 declare interface IOrder {

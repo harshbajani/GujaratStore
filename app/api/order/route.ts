@@ -14,13 +14,13 @@ export async function POST(request: Request) {
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: result.error },
+        { success: false, error: result.message },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { success: true, order: result.order },
+      { success: true, order: result.data },
       { status: 201 }
     );
   } catch (error) {
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: result.error },
+        { success: false, error: result.message },
         { status: 400 }
       );
     }
