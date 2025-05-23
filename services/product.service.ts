@@ -2,7 +2,6 @@
 import { Types } from "mongoose";
 import Products from "@/lib/models/product.model";
 import { CacheService } from "./cache.service";
-import { getFileById } from "@/lib/utils/file.utils";
 
 export class ProductService {
   private static CACHE_TTL = 300; // 5 minutes
@@ -11,36 +10,12 @@ export class ProductService {
     return `products:${key}`;
   }
 
-  private static async transformProduct(
-    product: any
-  ): Promise<IProductResponse> {
-    const imagePromises = product.productImages.map(async (imageId: string) => {
-      try {
-        const image = await getFileById(imageId);
-        return image.buffer.toString("base64");
-      } catch (error) {
-        console.warn(`Failed to fetch image ${imageId}:`, error);
-        return null;
-      }
-    });
-
-    let coverImage;
-    try {
-      const image = await getFileById(product.productCoverImage);
-      coverImage = image.buffer.toString("base64");
-    } catch (error) {
-      console.warn(`Failed to fetch cover image:`, error);
-      coverImage = null;
-    }
-
-    const images = await Promise.all(imagePromises);
-    const filteredImages = images.filter((img): img is string => img !== null);
-
+  private static transformProduct(product: any): IProductResponse {
     return {
       ...product,
       _id: product._id.toString(),
-      productImages: filteredImages,
-      productCoverImage: coverImage,
+      productImages: product.productImages,
+      productCoverImage: product.productCoverImage,
     };
   }
 
@@ -89,10 +64,7 @@ export class ProductService {
         ])
         .lean();
 
-      const transformedProducts = await Promise.all(
-        products.map(this.transformProduct)
-      );
-
+      const transformedProducts = products.map(this.transformProduct);
       await CacheService.set(cacheKey, transformedProducts, this.CACHE_TTL);
 
       return {
