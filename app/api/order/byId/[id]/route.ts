@@ -1,6 +1,5 @@
-import Order from "@/lib/models/order.model";
+import { OrdersService } from "@/services/orders.service";
 import { connectToDB } from "@/lib/mongodb";
-
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request, { params }: RouteParams) {
@@ -8,7 +7,6 @@ export async function GET(request: Request, { params }: RouteParams) {
     // Establish database connection
     await connectToDB();
 
-    // Get the MongoDB ObjectId from the route params
     const { id } = await params;
 
     // Basic validation: Ensure id is provided
@@ -19,66 +17,21 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Find the order with the given MongoDB ObjectId
-    const order = await Order.findById(id);
+    const result = await OrdersService.getOrderById(id);
 
-    // Check if order exists
-    if (!order) {
+    if (!result.success) {
       return NextResponse.json(
-        { success: false, message: "Order not found" },
+        { success: false, message: result.message },
         { status: 404 }
       );
     }
 
     // Return the order data
-    return NextResponse.json({ success: true, order }, { status: 200 });
-  } catch (error: unknown) {
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "An error occurred",
-      },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(request: Request, { params }: RouteParams) {
-  try {
-    // Establish database connection
-    await connectToDB();
-
-    // Get the MongoDB ObjectId from the route params
-    const { id } = await params;
-
-    // Basic validation: Ensure id is provided
-    if (!id) {
-      return NextResponse.json(
-        { success: false, message: "Order ID is required" },
-        { status: 400 }
-      );
-    }
-
-    // Find the order first to check if it exists
-    const order = await Order.findById(id);
-
-    // Check if order exists
-    if (!order) {
-      return NextResponse.json(
-        { success: false, message: "Order not found" },
-        { status: 404 }
-      );
-    }
-
-    // Delete the order
-    await Order.findByIdAndDelete(id);
-
-    // Return success response
-    return NextResponse.json(
-      { success: true, message: "Order deleted successfully" },
+      { success: true, order: result.data },
       { status: 200 }
     );
-  } catch (error: unknown) {
+  } catch (error) {
     return NextResponse.json(
       {
         success: false,
@@ -91,15 +44,8 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
-    // Establish database connection
-    await connectToDB();
-
-    // Get the MongoDB ObjectId from the route params
     const { id } = await params;
-
-    // Parse the request body
-    const body = await request.json();
-    const { status } = body;
+    const { status } = await request.json();
 
     // Basic validation: Ensure id is provided
     if (!id) {
@@ -133,31 +79,50 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Find and update the order
-    const updatedOrder = await Order.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true } // Return the updated document
-    );
+    const result = await OrdersService.updateOrderStatus(id, status);
 
-    // Check if order exists
-    if (!updatedOrder) {
+    if (!result.success) {
       return NextResponse.json(
-        { success: false, message: "Order not found" },
-        { status: 404 }
+        { success: false, message: result.message },
+        { status: 400 }
       );
     }
 
-    // Return the updated order
+    return NextResponse.json(result, { status: 200 });
+  } catch (error) {
     return NextResponse.json(
       {
-        success: true,
-        message: "Order status updated successfully",
-        data: updatedOrder,
+        success: false,
+        error: error instanceof Error ? error.message : "An error occurred",
       },
-      { status: 200 }
+      { status: 500 }
     );
-  } catch (error: unknown) {
+  }
+}
+
+export async function DELETE(request: Request, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+
+    // Basic validation: Ensure id is provided
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "Order ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const result = await OrdersService.deleteOrder(id);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, message: result.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(result, { status: 200 });
+  } catch (error) {
     return NextResponse.json(
       {
         success: false,
