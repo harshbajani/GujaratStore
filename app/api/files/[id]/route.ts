@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFileById } from "@/lib/actions/blog.actions";
+import { getFileById } from "@/lib/actions/files.actions";
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const id = (await params).id;
