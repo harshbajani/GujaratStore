@@ -26,4 +26,14 @@ export class CacheService {
       console.error("Cache delete error:", error);
     }
   }
+
+  static async keys(pattern: string): Promise<string[]> {
+    try {
+      const keys = await redis.keys(pattern);
+      return keys;
+    } catch (error) {
+      console.error("Cache keys error:", error);
+      return [];
+    }
+  }
 }
