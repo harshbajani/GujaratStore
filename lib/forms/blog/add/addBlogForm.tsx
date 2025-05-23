@@ -95,7 +95,7 @@ const AddBlog = () => {
         });
         router.push("/vendor/blogs");
       } else {
-        throw new Error(result.error);
+        throw new Error(result.success || "Failed to add blog.");
       }
     } catch (error) {
       console.error("Error submitting form:", error);

@@ -571,3 +571,17 @@ declare interface IDashboardCardProps {
   trend?: number;
   trendDirection?: "up" | "down";
 }
+
+declare interface TransformedBlog {
+  id: string;
+  vendorId: string;
+  imageId: string;
+  user: string;
+  date: string;
+  heading: string;
+  description: string;
+  category: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+}

@@ -6,7 +6,7 @@ import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
 import { getPublicBlogs } from "@/lib/actions/blog.actions";
 import { features } from "@/constants";
-import { TransformedBlog } from "@/types";
+import { BlogImage } from "@/components/BlogImage";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ClientFeaturesAndBlogs = ({ initialBlog }: any) => {
@@ -49,8 +49,8 @@ const ClientFeaturesAndBlogs = ({ initialBlog }: any) => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const data = await getPublicBlogs(); // Ensure this fetches images as base64
-        setBlogs(data);
+        const response = await getPublicBlogs();
+        setBlogs(response.data ?? []);
       } catch (err) {
         console.error("Error fetching blogs:", err);
       }
@@ -177,11 +177,10 @@ const BlogCard = ({
         transition={{ duration: 0.2 }}
         className={`relative rounded-lg overflow-hidden ${cardHeight} cursor-pointer`}
       >
-        <Image
-          src={`data:image/jpeg;base64,${blog.imageId}`} // Render the base64 image here
+        <BlogImage
+          imageId={blog.imageId}
           alt={blog.heading}
-          width={500}
-          height={500}
+          fill
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black opacity-70" />

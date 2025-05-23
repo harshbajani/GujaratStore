@@ -76,13 +76,5 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60, // 24 hours
   },
-  events: {
-    async signIn(message) {
-      console.log("Sign in", message);
-    },
-    async session(message) {
-      console.log("session", message);
-    },
-  },
   secret: process.env.NEXTAUTH_SECRET,
 };

@@ -1,6 +1,6 @@
 "use client";
 import { withVendorProtection } from "@/app/vendor/HOC";
-import EditBlog from "@/lib/forms/blog/edit/page";
+import EditBlog from "@/lib/forms/blog/edit/editBlogForm";
 import { PencilLine } from "lucide-react";
 import React from "react";
 

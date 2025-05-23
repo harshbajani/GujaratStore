@@ -1,6 +1,7 @@
 import { getBlogById } from "@/lib/actions/blog.actions";
 import { Metadata } from "next";
 import ClientBlogPage from "./client";
+import { BlogService } from "@/services/blog.service";
 
 // * Metadata generation
 export async function generateMetadata({
@@ -10,13 +11,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   try {
     const id = (await params).id;
-    const post = await getBlogById(id);
+    const result = await BlogService.getBlogById(id);
 
-    if (!post) {
+    if (!result.success || !result.data) {
       return {
         title: "Blog Post Not Found",
       };
     }
+
+    const post = result.data;
 
     return {
       title: post.metaTitle || post.heading,
@@ -28,7 +31,7 @@ export async function generateMetadata({
         images: post.imageId
           ? [
               {
-                url: `data:image/jpeg;base64,${post.imageId}`,
+                url: `/api/files/${post.imageId}`,
                 width: 1200,
                 height: 630,
                 alt: post.heading,
@@ -41,7 +44,7 @@ export async function generateMetadata({
         card: "summary_large_image",
         title: post.metaTitle || post.heading,
         description: post.metaDescription,
-        images: post.imageId ? [`data:image/jpeg;base64,${post.imageId}`] : [],
+        images: post.imageId ? [`/api/files/${post.imageId}`] : [],
       },
     };
   } catch (error) {
@@ -61,5 +64,5 @@ export default async function BlogPage({
   const id = (await params).id;
 
   const initialBlog = await getBlogById(id);
-  return <ClientBlogPage initialBlog={initialBlog} />;
+  return <ClientBlogPage initialBlog={initialBlog ?? null} />;
 }
