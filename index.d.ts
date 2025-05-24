@@ -12,7 +12,7 @@ declare interface IUser {
   addresses: IAddress[];
   referral?: string;
   rewardPoints?: number;
-  referralUsed?: string;
+  referralUsed?: boolean;
   role: "user";
   isVerified: boolean;
   verificationToken?: string;
@@ -584,4 +584,37 @@ declare interface TransformedBlog {
   metaTitle: string;
   metaDescription: string;
   metaKeywords: string;
+}
+
+declare interface IReferral {
+  _id?: string;
+  name: string;
+  description?: string;
+  code: string;
+  rewardPoints: number;
+  vendorId: string;
+  expiryDate: Date;
+  maxUses: number;
+  usedCount: number;
+  isActive: boolean;
+  createdBy?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+declare interface IReferralStats {
+  totalReferrals: number;
+  activeReferrals: number;
+  totalRewardPointsIssued: number;
+  totalUsageCount: number;
+  conversionRate: number;
+  monthlyUsage: Record<string, number>;
+}
+
+declare interface IReferralResponse extends Omit<IReferral, "createdBy"> {
+  createdBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
 }
