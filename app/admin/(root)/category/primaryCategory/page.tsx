@@ -43,7 +43,7 @@ import Loader from "@/components/Loader";
 
 const PrimaryCategoryPage = () => {
   // * useStates and hooks
-  const [data, setData] = useState<PrimaryCategoryWithPopulatedFields[]>([]);
+  const [data, setData] = useState<IPrimaryCategory[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -58,8 +58,18 @@ const PrimaryCategoryPage = () => {
   const fetchAllPrimaryCategories = async () => {
     try {
       setLoading(true);
-      const response = await getAllPrimaryCategories(); // Use await here
-      setData(response); // Directly set the data from the resolved promise
+      const response = await getAllPrimaryCategories();
+
+      if (response.success && response.data) {
+        // Type assertion to handle array response
+        setData(response.data as IPrimaryCategory[]);
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Failed to fetch primary categories",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Failed to fetch primary categories:", error);
       toast({
@@ -95,7 +105,7 @@ const PrimaryCategoryPage = () => {
     fetchAllPrimaryCategories();
   }, []);
 
-  const columns: ColumnDef<PrimaryCategoryWithPopulatedFields>[] = [
+  const columns: ColumnDef<IPrimaryCategory>[] = [
     {
       accessorKey: "name",
       header: "Name",
@@ -106,9 +116,10 @@ const PrimaryCategoryPage = () => {
     {
       accessorKey: "parentCategory",
       header: "Parent Category",
-      cell: ({ row }) => (
-        <div>{row.original.parentCategory?.name || "N/A"}</div>
-      ),
+      cell: ({ row }) => {
+        const parentCategory = row.original.parentCategory as { name: string };
+        return <div>{parentCategory?.name || "N/A"}</div>;
+      },
     },
     {
       accessorKey: "description",
@@ -148,7 +159,7 @@ const PrimaryCategoryPage = () => {
               className="hover:bg-gray-100"
               onClick={() =>
                 router.push(
-                  `/admin/category/primaryCategory/edit/${primaryCategory.id}`
+                  `/admin/category/primaryCategory/edit/${primaryCategory._id}`
                 )
               }
             >
@@ -159,7 +170,7 @@ const PrimaryCategoryPage = () => {
               variant="ghost"
               size="icon"
               className="hover:bg-red-100"
-              onClick={() => handleDelete(primaryCategory.id!)}
+              onClick={() => handleDelete(primaryCategory._id!)}
             >
               <Trash2 className="h-4 w-4 text-red-600" />
             </Button>

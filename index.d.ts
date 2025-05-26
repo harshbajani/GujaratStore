@@ -163,9 +163,15 @@ declare interface IParentCategory {
 }
 
 declare interface IPrimaryCategory {
-  id?: string;
+  _id?: string;
   name: string;
-  parentCategory: string;
+  parentCategory:
+    | string
+    | {
+        _id: string;
+        name: string;
+        isActive: boolean;
+      };
   description?: string;
   metaTitle?: string;
   metaKeywords?: string[];
@@ -175,12 +181,53 @@ declare interface IPrimaryCategory {
 
 declare interface ISecondaryCategory {
   id?: string;
+  _id?: string;
   name: string;
-  parentCategory: string;
-  primaryCategory: string;
-  attributes: string[];
-  description?: string;
+  parentCategory:
+    | string
+    | {
+        _id: string;
+        name: string;
+        isActive: boolean;
+      };
+  primaryCategory:
+    | string
+    | {
+        _id: string;
+        name: string;
+        isActive: boolean;
+      };
+  attributes:
+    | string[]
+    | Array<{
+        _id: string;
+        name: string;
+        isActive: boolean;
+      }>;
+  description: string;
   isActive: boolean;
+}
+
+declare interface SecondaryCategoryWithPopulatedFields
+  extends Omit<
+    ISecondaryCategory,
+    "parentCategory" | "primaryCategory" | "attributes"
+  > {
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  primaryCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  attributes: Array<{
+    _id: string;
+    name: string;
+    isActive: boolean;
+  }>;
 }
 
 declare interface IProductSecondaryCategory {
@@ -199,22 +246,6 @@ declare type PrimaryCategoryWithPopulatedFields = IPrimaryCategory & {
     _id: string;
     name: string;
   };
-};
-
-declare type SecondaryCategoryWithPopulatedFields = ISecondaryCategory & {
-  id: string; // Ensure you have an id field
-  parentCategory: {
-    _id: string;
-    name: string;
-  };
-  primaryCategory: {
-    _id: string;
-    name: string;
-  };
-  attributes: {
-    _id: string;
-    name: string;
-  }[];
 };
 
 declare interface IBrand {

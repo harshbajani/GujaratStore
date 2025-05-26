@@ -147,14 +147,12 @@ export const primaryCategorySchema = z.object({
 });
 
 export const secondaryCategorySchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  parentCategory: z.string().nonempty("Parent category is required"),
-  primaryCategory: z.string().nonempty("Primary category is required"),
-  attributes: z
-    .array(z.string())
-    .nonempty("At least one attribute is required"),
-  description: z.string().optional(),
-  isActive: z.boolean().default(true),
+  name: z.string(),
+  description: z.string().default(""),
+  attributes: z.tuple([z.string()]).rest(z.string()),
+  parentCategory: z.string(),
+  primaryCategory: z.string(),
+  isActive: z.boolean(),
 });
 
 export const brandSchema = z.object({

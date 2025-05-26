@@ -1,21 +1,8 @@
 "use server";
 
-import mongoose, { HydratedDocument } from "mongoose";
+import { ParentCategoryService } from "@/services/parentCategory.service";
 import { revalidatePath } from "next/cache";
 import { parentCategorySchema } from "../validations";
-import ParentCategory from "../models/parentCategory.model";
-
-// Helper function to serialize MongoDB documents
-const serializeDocument = (doc: HydratedDocument<IParentCategory>) => {
-  if (!doc) return null;
-  const serialized = doc.toJSON ? doc.toJSON() : doc;
-  return {
-    id: serialized._id.toString(),
-    _id: serialized._id.toString(),
-    name: (serialized as IParentCategory).name,
-    isActive: (serialized as IParentCategory).isActive,
-  };
-};
 
 export type ParentCategoryResponse = {
   success: boolean;
@@ -28,31 +15,28 @@ export async function createParentCategory(
   isActive: boolean
 ): Promise<ParentCategoryResponse> {
   try {
-    console.log("Incoming data:", { name, isActive });
     const validation = parentCategorySchema.safeParse({ name, isActive });
 
     if (!validation.success) {
-      console.log("Validation error:", validation.error.errors);
       return {
         success: false,
         error: validation.error.errors[0].message,
       };
     }
 
-    const existingParentCategory = await ParentCategory.findOne({ name });
-    if (existingParentCategory) {
-      return {
-        success: false,
-        error: "Parent Category with this name already exists",
-      };
+    const result = await ParentCategoryService.createParentCategory({
+      name,
+      isActive,
+    });
+
+    if (result.success) {
+      revalidatePath("/admin/category/parentCategory");
     }
 
-    const parentCategory = await ParentCategory.create({ name, isActive });
-    revalidatePath("/admin/category/parentCategory");
-
     return {
-      success: true,
-      data: serializeDocument(parentCategory),
+      success: result.success,
+      data: null,
+      error: result.message,
     };
   } catch (error) {
     console.error("Create parent category error:", error);
@@ -65,18 +49,17 @@ export async function createParentCategory(
 
 export async function getAllParentCategory(): Promise<ParentCategoryResponse> {
   try {
-    const parentCategory = await ParentCategory.find().sort({ name: 1 });
+    const result = await ParentCategoryService.getAllParentCategories();
     return {
-      success: true,
-      data: parentCategory
-        .map(serializeDocument)
-        .filter((attr): attr is IParentCategory => attr !== null),
+      success: result.success,
+      data: result.data,
+      error: result.message,
     };
   } catch (error) {
-    console.error("Get parent category error:", error);
+    console.error("Get parent categories error:", error);
     return {
       success: false,
-      error: "Failed to fetch parent category",
+      error: "Failed to fetch parent categories",
     };
   }
 }
@@ -85,24 +68,11 @@ export async function getParentCategoryById(
   id: string
 ): Promise<ParentCategoryResponse> {
   try {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return {
-        success: false,
-        error: "Invalid parentCategoryID",
-      };
-    }
-
-    const parentCategory = await ParentCategory.findById(id);
-    if (!parentCategory) {
-      return {
-        success: false,
-        error: "Parent category not found",
-      };
-    }
-
+    const result = await ParentCategoryService.getParentCategoryById(id);
     return {
-      success: true,
-      data: serializeDocument(parentCategory),
+      success: result.success,
+      data: result.data,
+      error: result.message,
     };
   } catch (error) {
     console.error("Get parent category error:", error);
@@ -118,33 +88,16 @@ export async function updateParentCategory(
   data: { name: string; isActive: boolean }
 ): Promise<ParentCategoryResponse> {
   try {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return {
-        success: false,
-        error: "Invalid parentCategoryID",
-      };
+    const result = await ParentCategoryService.updateParentCategory(id, data);
+
+    if (result.success) {
+      revalidatePath("/admin/category/parentCategory");
     }
 
-    const updatedParentCategory = await ParentCategory.findByIdAndUpdate(
-      id,
-      {
-        name: data.name,
-        isActive: data.isActive,
-      },
-      { new: true } // Returns updated document
-    );
-
-    if (!updatedParentCategory) {
-      return {
-        success: false,
-        error: "Parent category not found",
-      };
-    }
-
-    revalidatePath("/admin/category/parentCategory");
     return {
-      success: true,
-      data: serializeDocument(updatedParentCategory),
+      success: result.success,
+      data: result.data,
+      error: result.message,
     };
   } catch (error) {
     console.error("Update parent category error:", error);
@@ -159,26 +112,16 @@ export async function deleteParentCategory(
   id: string
 ): Promise<ParentCategoryResponse> {
   try {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return {
-        success: false,
-        error: "Invalid parentCategoryID",
-      };
+    const result = await ParentCategoryService.deleteParentCategory(id);
+
+    if (result.success) {
+      revalidatePath("/admin/category/parentCategory");
     }
 
-    const parentCategory = await ParentCategory.findByIdAndDelete(id);
-
-    if (!parentCategory) {
-      return {
-        success: false,
-        error: "Parent category not found",
-      };
-    }
-
-    revalidatePath("/admin/category/parentCategory");
     return {
-      success: true,
-      data: serializeDocument(parentCategory),
+      success: result.success,
+      data: result.data!,
+      error: result.message,
     };
   } catch (error) {
     console.error("Delete parent category error:", error);

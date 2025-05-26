@@ -32,18 +32,28 @@ import "quill/dist/quill.snow.css";
 import { createSecondaryCategory } from "@/lib/actions/secondaryCategory.actions";
 import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
 
+// First, create a proper interface for the form data
+interface FormData {
+  name: string;
+  parentCategory: string;
+  primaryCategory: string;
+  attributes: string[];
+  description: string;
+  isActive: boolean;
+}
+
 const AddSecondaryCategoryForm = () => {
   // * useStates and hooks
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
   );
-  const [primaryCategory, setPrimaryCategory] = useState<IPrimaryCategory[]>(
-    []
-  );
+  const [primaryCategories, setPrimaryCategories] = useState<
+    IPrimaryCategory[]
+  >([]);
   const [attributes, setAttributes] = useState<IAttribute[]>([]);
   const router = useRouter();
 
-  const form = useForm<ISecondaryCategory>({
+  const form = useForm<FormData>({
     resolver: zodResolver(secondaryCategorySchema),
     defaultValues: {
       name: "",
@@ -58,19 +68,27 @@ const AddSecondaryCategoryForm = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const parentCategoryResponse = await getAllParentCategory();
-        const primaryCategoryResponse = await getAllPrimaryCategories();
-        const attributeResponse = await getAllAttributes();
+        const [
+          parentCategoryResponse,
+          primaryCategoryResponse,
+          attributeResponse,
+        ] = await Promise.all([
+          getAllParentCategory(),
+          getAllPrimaryCategories(),
+          getAllAttributes(),
+        ]);
 
-        if (parentCategoryResponse.success) {
+        if (parentCategoryResponse.success && parentCategoryResponse.data) {
           setParentCategories(parentCategoryResponse.data as IParentCategory[]);
         }
 
-        if (primaryCategoryResponse.length > 0) {
-          setPrimaryCategory(primaryCategoryResponse as IPrimaryCategory[]);
+        if (primaryCategoryResponse.success && primaryCategoryResponse.data) {
+          setPrimaryCategories(
+            primaryCategoryResponse.data as IPrimaryCategory[]
+          );
         }
 
-        if (attributeResponse.success) {
+        if (attributeResponse.success && attributeResponse.data) {
           setAttributes(attributeResponse.data as IAttribute[]);
         }
       } catch {
@@ -85,15 +103,16 @@ const AddSecondaryCategoryForm = () => {
     fetchData();
   }, []);
   // * form submission
-  const onSubmit = async (data: ISecondaryCategory) => {
+  const onSubmit = async (data: FormData) => {
     try {
-      await createSecondaryCategory({
+      const result = await createSecondaryCategory({
         ...data,
-        attributes:
-          data.attributes.length > 0
-            ? [data.attributes[0], ...data.attributes.slice(1)]
-            : ["default"],
+        attributes: data.attributes,
       });
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to create secondary category");
+      }
 
       toast({
         title: "Success",
@@ -101,10 +120,13 @@ const AddSecondaryCategoryForm = () => {
       });
 
       router.push("/admin/category/secondaryCategory");
-    } catch {
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add secondary category",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to add secondary category",
         variant: "destructive",
       });
     }
@@ -134,10 +156,7 @@ const AddSecondaryCategoryForm = () => {
               <FormItem>
                 <FormLabel>Parent Category</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select parent category" />
                     </SelectTrigger>
@@ -161,16 +180,18 @@ const AddSecondaryCategoryForm = () => {
               <FormItem>
                 <FormLabel>Primary Category</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select primary category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {primaryCategory.map((category) => (
-                        <SelectItem key={category.id} value={category.id!}>
+                      {primaryCategories.map((category) => (
+                        <SelectItem
+                          key={category._id}
+                          value={
+                            typeof category._id === "string" ? category._id : ""
+                          }
+                        >
                           {category.name}
                         </SelectItem>
                       ))}
@@ -196,10 +217,9 @@ const AddSecondaryCategoryForm = () => {
                       value: attr._id,
                       label: attr.name,
                     }))}
-                    onValueChange={(values) => {
-                      field.onChange(values); // Update the form state
-                    }}
-                    defaultValue={field.value} // Ensure this is set correctly
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    placeholder="Select attributes"
                   />
                 </FormControl>
                 <FormMessage />

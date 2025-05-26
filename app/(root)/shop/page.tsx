@@ -76,17 +76,21 @@ const imageHoverVariants: Variants = {
 
 const CategorySection = ({ title, items }: CategorySectionProps) => {
   const [data, setData] = useState<PrimaryCategoryWithPopulatedFields[]>([]);
+
   const fetchPrimaryCategory = async () => {
     try {
       const response = await getAllPrimaryCategories();
-      // Filter categories based on the section title
-      const filteredCategories = response.filter(
-        (category) =>
-          category.parentCategory?.name.toLowerCase() === title.toLowerCase()
-      );
-      setData(filteredCategories);
+
+      if (response.success && response.data) {
+        const categories = response.data as PrimaryCategoryWithPopulatedFields[];
+        const filteredCategories = categories.filter(
+          (category) =>
+            category.parentCategory?.name.toLowerCase() === title.toLowerCase()
+        );
+        setData(filteredCategories);
+      }
     } catch (error) {
-      console.log(error);
+      console.error("Error fetching primary categories:", error);
     }
   };
 
@@ -94,12 +98,12 @@ const CategorySection = ({ title, items }: CategorySectionProps) => {
     fetchPrimaryCategory();
   }, [title]);
 
-  // Combine static images with dynamic category data
+  // Update this section to use _id instead of id
   const combinedItems = data
     .map((category, index) => ({
-      ...items[index], // Get static image data
-      id: category.id, // Add dynamic category id
-      label: category.name, // Use dynamic category name instead of static label
+      ...items[index],
+      _id: category._id, // Changed from id to _id
+      label: category.name,
     }))
     .slice(0, items.length);
 
@@ -150,13 +154,13 @@ const CategorySection = ({ title, items }: CategorySectionProps) => {
       >
         {combinedItems.map((item) => (
           <motion.div
-            key={item.id}
+            key={item._id} // Changed from id to _id
             className="relative group cursor-pointer overflow-hidden"
             variants={itemVariants}
             whileHover="hover"
             whileTap="tap"
           >
-            <Link href={`/product-category/${item.id}`}>
+            <Link href={`/product-category/${item._id}`}> {/* Changed from id to _id */}
               <motion.div
                 className="w-full h-44 relative"
                 variants={imageHoverVariants}
