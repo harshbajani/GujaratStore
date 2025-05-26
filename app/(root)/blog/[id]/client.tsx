@@ -1,14 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getPublicBlogs, getBlogById } from "@/lib/actions/blog.actions";
 import Loader from "@/components/Loader";
-import { TransformedBlog } from "@/types/index";
+import { BlogImage } from "@/components/BlogImage";
 
 interface ClientBlogPageProps {
   initialBlog: TransformedBlog | null;
@@ -21,16 +20,14 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getImageUrl = (imageId: string) => `/api/files/${imageId}`;
-
   // * Fetching the data of the blog
   useEffect(() => {
     const fetchBlogData = async () => {
       try {
         const blogData = await getBlogById(initialBlog?.id as string);
-        setBlog(blogData);
-        const allBlogs = await getPublicBlogs();
-        const filtered = allBlogs
+        setBlog(blogData ?? null);
+        const response = await getPublicBlogs();
+        const filtered = (response.data || [])
           .filter((b) => b.id !== initialBlog?.id)
           .slice(0, 2);
         setRelatedBlogs(filtered);
@@ -88,10 +85,9 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
 
         {/* Hero Section */}
         <div className="relative w-full h-[400px] rounded-xl overflow-hidden mb-8">
-          {/* If the blog image is a base64 string, use it directly in the Image src */}
           {blog.imageId && (
-            <Image
-              src={getImageUrl(blog.imageId)}
+            <BlogImage
+              imageId={blog.imageId}
               alt={blog.heading}
               fill
               className="object-cover"
@@ -152,8 +148,8 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
                   className="group"
                 >
                   <div className="relative h-48 rounded-lg overflow-hidden mb-3">
-                    <Image
-                      src={`data:image/jpeg;base64,${relatedBlog.imageId}`} // Using base64 for related blogs as well
+                    <BlogImage
+                      imageId={relatedBlog.imageId}
                       alt={relatedBlog.heading}
                       fill
                       className="object-cover transition-transform duration-300 group-hover:scale-105"

@@ -110,7 +110,7 @@ const EditBlog = () => {
       });
 
       if (!result.success) {
-        throw new Error(result.error || "Failed to update blog");
+        throw new Error(result.success || "Failed to update blog");
       }
 
       toast({

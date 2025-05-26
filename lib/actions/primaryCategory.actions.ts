@@ -1,113 +1,127 @@
 "use server";
-import { z } from "zod";
-import { HydratedDocument } from "mongoose";
-import { connectToDB } from "@/lib/mongodb";
-import PrimaryCategory from "@/lib/models/primaryCategory.model";
 
-// Import referenced models for population
+import { PrimaryCategoryService } from "@/services/primaryCategory.service";
 import { primaryCategorySchema } from "../validations";
-import ParentCategory from "@/lib/models/parentCategory.model";
-import { parseStringify } from "../utils";
+import { revalidatePath } from "next/cache";
 
-// Define TypeScript interface for PrimaryCategory
-export type PrimaryCategoryData = z.infer<typeof primaryCategorySchema>;
-
-// Helper function to serialize MongoDB documents (to prevent serialize errors)
-export const serializeDocument = async (
-  doc: HydratedDocument<IPrimaryCategory>
-) => {
-  return parseStringify(doc);
+export type PrimaryCategoryResponse = {
+  success: boolean;
+  data?: IPrimaryCategory | IPrimaryCategory[] | null;
+  error?: string;
 };
 
-// * 1. Create Primary Category
-export const createPrimaryCategory = async (data: PrimaryCategoryData) => {
-  // Ensure database connection
-  await connectToDB();
-
-  // Validate incoming data
-  const validatedData = primaryCategorySchema.parse(data);
-
-  // Ensure ParentCategory and Attributes exist
-  const parentCategoryExists = await ParentCategory.findById(
-    validatedData.parentCategory
-  );
-  if (!parentCategoryExists) throw new Error("Parent category not found");
-
-  const primaryCategory = new PrimaryCategory(validatedData);
-  const savedCategory = await primaryCategory.save();
-
-  return serializeDocument(savedCategory);
-};
-
-// * 2. Get All Primary Categories
-export const getAllPrimaryCategories = async () => {
-  await connectToDB();
-
-  const primaryCategories = await PrimaryCategory.find().populate({
-    path: "parentCategory",
-    select: "name", // Explicitly select name field
-  });
-
-  // Ensure proper serialization
-  return primaryCategories.map((category) => ({
-    ...parseStringify(category), // Serialize
-    id: category._id.toString(), // Ensure id is a string
-  }));
-};
-
-// * 3. Get Primary Category by ID
-export const getPrimaryCategoryById = async (id: string) => {
-  // Ensure database connection
-  await connectToDB();
-
-  const primaryCategory = await PrimaryCategory.findById(id).populate(
-    "parentCategory"
-  );
-
-  if (!primaryCategory) throw new Error("Primary category not found");
-
-  return serializeDocument(primaryCategory);
-};
-
-// * 4. Update Primary Category by ID
-export const updatePrimaryCategoryById = async (
-  id: string,
-  data: Partial<PrimaryCategoryData>
-) => {
-  // Ensure database connection
-  await connectToDB();
-
-  const validatedData = primaryCategorySchema.partial().parse(data);
-
-  // Check if parentCategory exists, if provided
-  if (validatedData.parentCategory) {
-    const parentCategoryExists = await ParentCategory.findById(
-      validatedData.parentCategory
+export async function createPrimaryCategory(
+  data: IPrimaryCategory
+): Promise<PrimaryCategoryResponse> {
+  try {
+    const validatedData = primaryCategorySchema.parse(data);
+    const result = await PrimaryCategoryService.createPrimaryCategory(
+      validatedData
     );
-    if (!parentCategoryExists) throw new Error("Parent category not found");
-  }
 
-  const updatedCategory = await PrimaryCategory.findByIdAndUpdate(
-    id,
-    validatedData,
-    {
-      new: true, // Return the updated document
+    if (result.success) {
+      revalidatePath("/admin/category/primaryCategory");
     }
-  ).populate("parentCategory");
 
-  if (!updatedCategory) throw new Error("Primary category not found");
+    return {
+      success: result.success,
+      data: result.data,
+      error: result.message,
+    };
+  } catch (error) {
+    console.error("Create primary category error:", error);
+    return {
+      success: false,
+      error: "Failed to create primary category",
+    };
+  }
+}
 
-  return serializeDocument(updatedCategory);
-};
+export async function getAllPrimaryCategories(): Promise<PrimaryCategoryResponse> {
+  try {
+    const result = await PrimaryCategoryService.getAllPrimaryCategories();
+    return {
+      success: result.success,
+      data: result.data,
+      error: result.message,
+    };
+  } catch (error) {
+    console.error("Get primary categories error:", error);
+    return {
+      success: false,
+      error: "Failed to fetch primary categories",
+    };
+  }
+}
 
-// * 5. Delete Primary Category by ID
-export const deletePrimaryCategoryById = async (id: string) => {
-  // Ensure database connection
-  await connectToDB();
+export async function getPrimaryCategoryById(
+  id: string
+): Promise<PrimaryCategoryResponse> {
+  try {
+    const result = await PrimaryCategoryService.getPrimaryCategoryById(id);
+    return {
+      success: result.success,
+      data: result.data,
+      error: result.message,
+    };
+  } catch (error) {
+    console.error("Get primary category error:", error);
+    return {
+      success: false,
+      error: "Failed to fetch primary category",
+    };
+  }
+}
 
-  const deletedCategory = await PrimaryCategory.findByIdAndDelete(id);
+export async function updatePrimaryCategoryById(
+  id: string,
+  data: Partial<IPrimaryCategory>
+): Promise<PrimaryCategoryResponse> {
+  try {
+    const validatedData = primaryCategorySchema.partial().parse(data);
+    const result = await PrimaryCategoryService.updatePrimaryCategory(
+      id,
+      validatedData
+    );
 
-  if (!deletedCategory) throw new Error("Primary category not found");
+    if (result.success) {
+      revalidatePath("/admin/category/primaryCategory");
+    }
 
-  return serializeDocument(deletedCategory);
-};
+    return {
+      success: result.success,
+      data: result.data,
+      error: result.message,
+    };
+  } catch (error) {
+    console.error("Update primary category error:", error);
+    return {
+      success: false,
+      error: "Failed to update primary category",
+    };
+  }
+}
+
+export async function deletePrimaryCategoryById(
+  id: string
+): Promise<PrimaryCategoryResponse> {
+  try {
+    const result = await PrimaryCategoryService.deletePrimaryCategory(id);
+
+    if (result.success) {
+      revalidatePath("/admin/category/primaryCategory");
+    }
+
+    return {
+      success: result.success,
+      data: result.data!,
+      error: result.message,
+    };
+  } catch (error) {
+    console.error("Delete primary category error:", error);
+    return {
+      success: false,
+      error: "Failed to delete primary category",
+    };
+  }
+}

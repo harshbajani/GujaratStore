@@ -58,8 +58,17 @@ const SecondaryCategoryPage = () => {
   const fetchAllSecondaryCategories = async () => {
     try {
       setLoading(true);
-      const response = await getAllSecondaryCategories(); // Use await here
-      setData(response); // Directly set the data from the resolved promise
+      const response = await getAllSecondaryCategories();
+
+      if (response.success && response.data) {
+        setData(response.data as SecondaryCategoryWithPopulatedFields[]);
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Failed to fetch secondary categories",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Failed to fetch secondary categories:", error);
       toast({
@@ -120,13 +129,24 @@ const SecondaryCategoryPage = () => {
     {
       accessorKey: "attributes",
       header: "Attributes",
-      cell: ({ row }) => (
-        <div>
-          {row.original.attributes
-            ?.map((attr: { name: string }) => attr.name)
-            .join(", ") || "N/A"}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const attributes = row.original.attributes;
+        if (!attributes?.length) return <div>N/A</div>;
+
+        return (
+          <div className="flex flex-wrap gap-1">
+            {attributes.map((attr) => (
+              <Badge
+                key={attr._id}
+                variant="outline"
+                className="text-xs whitespace-nowrap"
+              >
+                {attr.name}
+              </Badge>
+            ))}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "description",

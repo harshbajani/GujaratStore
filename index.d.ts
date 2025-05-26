@@ -12,7 +12,7 @@ declare interface IUser {
   addresses: IAddress[];
   referral?: string;
   rewardPoints?: number;
-  referralUsed?: string;
+  referralUsed?: boolean;
   role: "user";
   isVerified: boolean;
   verificationToken?: string;
@@ -134,15 +134,23 @@ declare interface AttributeFormData {
   isActive: boolean;
 }
 
-declare interface ParentCategoryFormData {
-  id: string;
-  name: string;
-  isActive: boolean;
-}
-
 declare interface IAttribute {
   id: string;
   _id: string;
+  name: string;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+declare interface AttributeResponse {
+  success: boolean;
+  data?: IAttribute | IAttribute[] | null;
+  error?: string;
+}
+
+declare interface ParentCategoryFormData {
+  id: string;
   name: string;
   isActive: boolean;
 }
@@ -155,9 +163,15 @@ declare interface IParentCategory {
 }
 
 declare interface IPrimaryCategory {
-  id?: string;
+  _id?: string;
   name: string;
-  parentCategory: string;
+  parentCategory:
+    | string
+    | {
+        _id: string;
+        name: string;
+        isActive: boolean;
+      };
   description?: string;
   metaTitle?: string;
   metaKeywords?: string[];
@@ -167,12 +181,53 @@ declare interface IPrimaryCategory {
 
 declare interface ISecondaryCategory {
   id?: string;
+  _id?: string;
   name: string;
-  parentCategory: string;
-  primaryCategory: string;
-  attributes: string[];
-  description?: string;
+  parentCategory:
+    | string
+    | {
+        _id: string;
+        name: string;
+        isActive: boolean;
+      };
+  primaryCategory:
+    | string
+    | {
+        _id: string;
+        name: string;
+        isActive: boolean;
+      };
+  attributes:
+    | string[]
+    | Array<{
+        _id: string;
+        name: string;
+        isActive: boolean;
+      }>;
+  description: string;
   isActive: boolean;
+}
+
+declare interface SecondaryCategoryWithPopulatedFields
+  extends Omit<
+    ISecondaryCategory,
+    "parentCategory" | "primaryCategory" | "attributes"
+  > {
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  primaryCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  attributes: Array<{
+    _id: string;
+    name: string;
+    isActive: boolean;
+  }>;
 }
 
 declare interface IProductSecondaryCategory {
@@ -193,22 +248,6 @@ declare type PrimaryCategoryWithPopulatedFields = IPrimaryCategory & {
   };
 };
 
-declare type SecondaryCategoryWithPopulatedFields = ISecondaryCategory & {
-  id: string; // Ensure you have an id field
-  parentCategory: {
-    _id: string;
-    name: string;
-  };
-  primaryCategory: {
-    _id: string;
-    name: string;
-  };
-  attributes: {
-    _id: string;
-    name: string;
-  }[];
-};
-
 declare interface IBrand {
   _id?: string;
   name: string;
@@ -217,6 +256,16 @@ declare interface IBrand {
   metaKeywords?: string;
   metaDescription?: string;
   __v?: number;
+}
+
+declare interface BrandResponse {
+  success: boolean;
+  data?: IBrand | IBrand[] | null;
+  error?: string;
+}
+
+declare interface TransformedBrand extends IBrand {
+  image?: string; // base64 encoded image
 }
 
 declare interface IAdminBrand {
@@ -234,6 +283,22 @@ declare interface ISizes {
   label: string;
   value: string;
   isActive: boolean;
+}
+
+declare interface ISize {
+  _id?: string;
+  id?: string;
+  label: string;
+  value: string;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+declare interface SizeResponse {
+  success: boolean;
+  data?: ISize | ISize[] | null;
+  error?: string;
 }
 
 declare interface IProduct {
@@ -426,6 +491,8 @@ declare interface OrderItem {
   quantity: number;
   price: number;
   deliveryDate: string;
+  selectedSize?: string;
+  vendorId?: string;
 }
 
 declare interface IOrder {
@@ -442,55 +509,6 @@ declare interface IOrder {
   createdAt: string;
   updatedAt: string;
   __v: number;
-}
-
-enum DiscountType {
-  PERCENTAGE = "percentage",
-  AMOUNT = "amount",
-}
-
-declare interface IDiscount {
-  id: string;
-  _id: string;
-  name: string;
-  vendorId: Schema.Types.ObjectId;
-  description?: string;
-  discountType: DiscountType;
-  discountValue: number;
-  targetType: "category";
-  parentCategory: {
-    _id: string;
-    name: string;
-    isActive: boolean;
-  };
-
-  startDate: Date;
-  endDate: Date;
-  isActive: boolean;
-  createdBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-declare interface IAdminDiscount {
-  id: string;
-  _id: string;
-  name: string;
-  description?: string;
-  discountType: DiscountType;
-  discountValue: number;
-  targetType: "category";
-  parentCategory: {
-    _id: string;
-    name: string;
-    isActive: boolean;
-  };
-  startDate: Date;
-  endDate: Date;
-  isActive: boolean;
-  createdBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 declare interface ISalesSummary {
@@ -534,4 +552,118 @@ declare interface IDashboardCardProps {
   icon: ReactNode;
   trend?: number;
   trendDirection?: "up" | "down";
+}
+
+declare interface TransformedBlog {
+  id: string;
+  vendorId: string;
+  imageId: string;
+  user: string;
+  date: string;
+  heading: string;
+  description: string;
+  category: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+}
+
+declare interface IReferral {
+  _id?: string;
+  name: string;
+  description?: string;
+  code: string;
+  rewardPoints: number;
+  vendorId: string;
+  expiryDate: Date;
+  maxUses: number;
+  usedCount: number;
+  isActive: boolean;
+  createdBy?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+declare interface IReferralStats {
+  totalReferrals: number;
+  activeReferrals: number;
+  totalRewardPointsIssued: number;
+  totalUsageCount: number;
+  conversionRate: number;
+  monthlyUsage: Record<string, number>;
+}
+
+declare interface IReferralResponse extends Omit<IReferral, "createdBy"> {
+  createdBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+}
+
+enum DiscountType {
+  PERCENTAGE = "percentage",
+  AMOUNT = "amount",
+}
+
+declare interface IDiscount {
+  id: string;
+  _id: string;
+  name: string;
+  vendorId: Schema.Types.ObjectId;
+  description?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  targetType: "category";
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+  createdBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+declare interface IDiscountValidation {
+  discount: IDiscount;
+  discountAmount: number;
+  applicableSubtotal: number;
+  newTotal: number;
+}
+
+declare interface IDiscountStats {
+  totalDiscounts: number;
+  activeDiscounts: number;
+  totalUsage: number;
+  discountsByCategory: Record<string, number>;
+  monthlyDiscounts: Record<string, number>;
+}
+
+declare interface IAdminDiscount {
+  id: string;
+  _id: string;
+  name: string;
+  description?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  targetType: "category";
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

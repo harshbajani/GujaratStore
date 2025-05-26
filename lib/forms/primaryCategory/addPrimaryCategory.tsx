@@ -29,6 +29,10 @@ import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 
+interface FormData extends Omit<IPrimaryCategory, "parentCategory"> {
+  parentCategory: string;
+}
+
 const AddPrimaryCategoryForm = () => {
   // * useStates and hooks
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
@@ -36,7 +40,7 @@ const AddPrimaryCategoryForm = () => {
   );
   const router = useRouter();
 
-  const form = useForm<IPrimaryCategory>({
+  const form = useForm<FormData>({
     resolver: zodResolver(primaryCategorySchema),
     defaultValues: {
       name: "",
@@ -114,10 +118,7 @@ const AddPrimaryCategoryForm = () => {
               <FormItem>
                 <FormLabel>Parent Category</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select parent category" />
                     </SelectTrigger>

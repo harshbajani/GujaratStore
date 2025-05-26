@@ -1,17 +1,10 @@
-import Order from "@/lib/models/order.model";
-import { connectToDB } from "@/lib/mongodb";
-
+import { OrdersService } from "@/services/orders.service";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request, { params }: RouteParams) {
   try {
-    // Establish database connection
-    await connectToDB();
-
-    // Get the orderId from the route params
     const { orderId } = await params;
 
-    // Basic validation: Ensure orderId is provided
     if (!orderId) {
       return NextResponse.json(
         { success: false, message: "Order ID is required" },
@@ -19,20 +12,20 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Find the order with the given orderId
-    const order = await Order.findOne({ orderId });
+    const result = await OrdersService.getOrderByOrderId(orderId);
 
-    // Check if order exists
-    if (!order) {
+    if (!result.success) {
       return NextResponse.json(
-        { success: false, message: "Order not found" },
+        { success: false, message: result.message },
         { status: 404 }
       );
     }
 
-    // Return the order data
-    return NextResponse.json({ success: true, order }, { status: 200 });
-  } catch (error: unknown) {
+    return NextResponse.json(
+      { success: true, order: result.data },
+      { status: 200 }
+    );
+  } catch (error) {
     return NextResponse.json(
       {
         success: false,

@@ -1,155 +1,127 @@
 "use server";
 
-import { z } from "zod";
-import { connectToDB } from "../mongodb";
-import { parseStringify } from "../utils";
-import { HydratedDocument } from "mongoose";
+import { SecondaryCategoryService } from "@/services/secondaryCategory.service";
 import { secondaryCategorySchema } from "../validations";
-import ParentCategory from "../models/parentCategory.model";
-import Attributes from "../models/attribute.model";
-import PrimaryCategory from "../models/primaryCategory.model";
-import SecondaryCategory from "../models/secondaryCategory.model";
+import { revalidatePath } from "next/cache";
 
-export type SecondaryCategoryData = z.infer<typeof secondaryCategorySchema>;
-
-export const serializeDocument = async (
-  doc: HydratedDocument<ISecondaryCategory>
-) => {
-  return parseStringify(doc);
+export type SecondaryCategoryResponse = {
+  success: boolean;
+  data?: ISecondaryCategory | ISecondaryCategory[] | null;
+  error?: string;
 };
 
-// * 1. Create Secondary Category
-export const createSecondaryCategory = async (data: SecondaryCategoryData) => {
-  // Ensure database connection
-  await connectToDB();
+export async function createSecondaryCategory(
+  data: ISecondaryCategory
+): Promise<SecondaryCategoryResponse> {
+  try {
+    const validatedData = secondaryCategorySchema.parse(data);
+    const result = await SecondaryCategoryService.createSecondaryCategory(
+      validatedData
+    );
 
-  // Validate incoming data
-  const validatedData = secondaryCategorySchema.parse(data);
+    if (result.success) {
+      revalidatePath("/admin/category/secondaryCategory");
+    }
 
-  // Ensure ParentCategory and Attributes exist
-  const parentCategoryExists = await ParentCategory.findById(
-    validatedData.parentCategory
-  );
-  if (!parentCategoryExists) throw new Error("Parent category not found");
-
-  const primaryCategoryExists = await PrimaryCategory.findById(
-    validatedData.primaryCategory
-  );
-  if (!primaryCategoryExists) throw new Error("Primary category not found");
-
-  const attributesExist = await Attributes.find({
-    _id: { $in: validatedData.attributes },
-  });
-  if (attributesExist.length !== validatedData.attributes.length) {
-    throw new Error("One or more attributes not found");
+    return {
+      success: result.success,
+      data: result.data,
+      error: result.message,
+    };
+  } catch (error) {
+    console.error("Create secondary category error:", error);
+    return {
+      success: false,
+      error: "Failed to create secondary category",
+    };
   }
+}
 
-  const secondaryCategory = new SecondaryCategory(validatedData);
-  const savedCategory = await secondaryCategory.save();
+export async function getAllSecondaryCategories(): Promise<SecondaryCategoryResponse> {
+  try {
+    const result = await SecondaryCategoryService.getAllSecondaryCategories();
+    return {
+      success: result.success,
+      data: result.data,
+      error: result.message,
+    };
+  } catch (error) {
+    console.error("Get secondary categories error:", error);
+    return {
+      success: false,
+      error: "Failed to fetch secondary categories",
+    };
+  }
+}
 
-  return serializeDocument(savedCategory);
-};
+export async function getSecondaryCategoryById(
+  id: string
+): Promise<SecondaryCategoryResponse> {
+  try {
+    const result = await SecondaryCategoryService.getSecondaryCategoryById(id);
+    return {
+      success: result.success,
+      data: result.data,
+      error: result.message,
+    };
+  } catch (error) {
+    console.error("Get secondary category error:", error);
+    return {
+      success: false,
+      error: "Failed to fetch secondary category",
+    };
+  }
+}
 
-// * 2. Get All Secondary Categories
-export const getAllSecondaryCategories = async () => {
-  await connectToDB();
-
-  const secondaryCategory = await SecondaryCategory.find()
-    .populate({
-      path: "parentCategory",
-      select: "name", // Explicitly select name field
-    })
-    .populate({
-      path: "primaryCategory",
-      select: "name", // Explicitly select name field
-    })
-    .populate({
-      path: "attributes",
-      select: "name", // Explicitly select name field
-    });
-
-  // Ensure proper serialization
-  return secondaryCategory.map((category) => ({
-    ...parseStringify(category), // Serialize
-    id: category._id.toString(), // Ensure id is a string
-  }));
-};
-
-// * 3. Get Secondary Category by ID
-export const getSecondaryCategoryById = async (id: string) => {
-  // Ensure database connection
-  await connectToDB();
-
-  const secondaryCategory = await SecondaryCategory.findById(id)
-    .populate("parentCategory")
-    .populate("primaryCategory")
-    .populate("attributes");
-
-  if (!secondaryCategory) throw new Error("Secondary category not found");
-
-  return serializeDocument(secondaryCategory);
-};
-
-// * 4. Update Secondary Category by ID
-export const updateSecondaryCategoryById = async (
+export async function updateSecondaryCategoryById(
   id: string,
-  data: Partial<SecondaryCategoryData>
-) => {
-  // Ensure database connection
-  await connectToDB();
-
-  const validatedData = secondaryCategorySchema.partial().parse(data);
-
-  // Check if parentCategory exists, if provided
-  if (validatedData.parentCategory) {
-    const parentCategoryExists = await ParentCategory.findById(
-      validatedData.parentCategory
+  data: Partial<ISecondaryCategory>
+): Promise<SecondaryCategoryResponse> {
+  try {
+    const validatedData = secondaryCategorySchema.partial().parse(data);
+    const result = await SecondaryCategoryService.updateSecondaryCategory(
+      id,
+      validatedData
     );
-    if (!parentCategoryExists) throw new Error("Parent category not found");
-  }
 
-  // Check if primaryCategory exists, if provided
-  if (validatedData.primaryCategory) {
-    const primaryCategoryExists = await PrimaryCategory.findById(
-      validatedData.primaryCategory
-    );
-    if (!primaryCategoryExists) throw new Error("Primary category not found");
-  }
-
-  // Check if attributes exist, if provided
-  if (validatedData.attributes) {
-    const attributesExist = await Attributes.find({
-      _id: { $in: validatedData.attributes },
-    });
-    if (attributesExist.length !== validatedData.attributes.length) {
-      throw new Error("One or more attributes not found");
+    if (result.success) {
+      revalidatePath("/admin/category/secondaryCategory");
     }
+
+    return {
+      success: result.success,
+      data: result.data,
+      error: result.message,
+    };
+  } catch (error) {
+    console.error("Update secondary category error:", error);
+    return {
+      success: false,
+      error: "Failed to update secondary category",
+    };
   }
+}
 
-  const updatedCategory = await SecondaryCategory.findByIdAndUpdate(
-    id,
-    validatedData,
-    {
-      new: true, // Return the updated document
+export async function deleteSecondaryCategoryById(
+  id: string
+): Promise<SecondaryCategoryResponse> {
+  try {
+    const result = await SecondaryCategoryService.deleteSecondaryCategory(id);
+
+    if (result.success) {
+      revalidatePath("/admin/category/secondaryCategory");
     }
-  )
-    .populate("parentCategory")
-    .populate("primaryCategory")
-    .populate("attributes");
 
-  if (!updatedCategory) throw new Error("Secondary category not found");
-
-  return serializeDocument(updatedCategory);
-};
-
-// * 5. Delete Secondary Category by ID
-export const deleteSecondaryCategoryById = async (id: string) => {
-  // Ensure database connection
-  await connectToDB();
-
-  const deletedCategory = await SecondaryCategory.findByIdAndDelete(id);
-
-  if (!deletedCategory) throw new Error("Secondary category not found");
-
-  return serializeDocument(deletedCategory);
-};
+    return {
+      success: result.success,
+      data: result.data!,
+      error: result.message,
+    };
+  } catch (error) {
+    console.error("Delete secondary category error:", error);
+    return {
+      success: false,
+      error: "Failed to delete secondary category",
+    };
+  }
+}

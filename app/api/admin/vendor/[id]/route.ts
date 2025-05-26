@@ -1,18 +1,12 @@
 // app/api/admin/vendor/[id]/route.ts
 import { NextResponse } from "next/server";
-import { connectToDB } from "@/lib/mongodb";
-import {
-  getVendorById,
-  updateVendorById,
-  deleteVendor,
-} from "@/lib/actions/admin/vendor.actions";
+import { VendorService } from "@/services/vendor.service";
 
 // GET /api/admin/vendor/[id]
 export async function GET(request: Request, { params }: RouteParams) {
-  await connectToDB();
   const id = (await params).id;
+  const result = await VendorService.getVendorById(id);
 
-  const result = await getVendorById(id);
   if (result.success) {
     return NextResponse.json(result, { status: 200 });
   } else {
@@ -22,11 +16,11 @@ export async function GET(request: Request, { params }: RouteParams) {
 
 // PUT /api/admin/vendor/[id]
 export async function PUT(request: Request, { params }: RouteParams) {
-  await connectToDB();
   const id = (await params).id;
   const data = await request.json();
 
-  const result = await updateVendorById(id, data);
+  const result = await VendorService.updateVendor(id, data);
+
   if (result.success) {
     return NextResponse.json(result, { status: 200 });
   } else {
@@ -36,10 +30,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
 // DELETE /api/admin/vendor/[id]
 export async function DELETE(request: Request, { params }: RouteParams) {
-  await connectToDB();
   const id = (await params).id;
+  const result = await VendorService.deleteVendor(id);
 
-  const result = await deleteVendor(id);
   if (result.success) {
     return NextResponse.json(result, { status: 200 });
   } else {

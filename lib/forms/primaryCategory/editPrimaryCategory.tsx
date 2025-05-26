@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +11,6 @@ import {
   getPrimaryCategoryById,
 } from "@/lib/actions/primaryCategory.actions";
 import { useRouter, useParams } from "next/navigation";
-
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -33,15 +33,19 @@ import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 
+interface FormData extends Omit<IPrimaryCategory, "parentCategory"> {
+  parentCategory: string;
+}
+
 const EditPrimaryCategoryForm = () => {
-  // * useStates and hooks
-  const { id } = useParams(); // Get the ID from the URL parameters
+  const { id } = useParams();
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
   );
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const form = useForm<IPrimaryCategory>({
+  const form = useForm<FormData>({
     resolver: zodResolver(primaryCategorySchema),
     defaultValues: {
       name: "",
@@ -53,41 +57,61 @@ const EditPrimaryCategoryForm = () => {
       isActive: true,
     },
   });
-  // * fetch parent and primary category to populate fields
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const parentCategoryResponse = await getAllParentCategory();
+        setIsLoading(true);
+        const [parentCategoryResponse, categoryResponse] = await Promise.all([
+          getAllParentCategory(),
+          getPrimaryCategoryById(id as string),
+        ]);
 
-        const categoryResponse = await getPrimaryCategoryById(id as string);
-
-        if (parentCategoryResponse.success) {
+        if (parentCategoryResponse.success && parentCategoryResponse.data) {
           setParentCategories(parentCategoryResponse.data as IParentCategory[]);
         }
 
-        if (categoryResponse) {
+        if (categoryResponse.success && categoryResponse.data) {
+          const category = categoryResponse.data as IPrimaryCategory;
           form.reset({
-            ...categoryResponse,
-            parentCategory: categoryResponse.parentCategory?._id || "",
+            name: category.name,
+            parentCategory:
+              typeof category.parentCategory === "string"
+                ? category.parentCategory
+                : category.parentCategory._id,
+            description: category.description || "",
+            metaTitle: category.metaTitle || "",
+            metaKeywords: category.metaKeywords || [],
+            metaDescription: category.metaDescription || "",
+            isActive: category.isActive,
           });
         }
       } catch {
         toast({
           title: "Error",
-          description: "Failed to fetch data",
+          description: "Failed to fetch category data",
           variant: "destructive",
         });
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchData();
+    if (id) {
+      fetchData();
+    }
   }, [id, form]);
-  // * form submission
-  const onSubmit = async (data: IPrimaryCategory) => {
+
+  const onSubmit = async (data: FormData) => {
     try {
-      await updatePrimaryCategoryById(id as string, {
+      const result = await updatePrimaryCategoryById(id as string, {
         ...data,
+        parentCategory: data.parentCategory,
       });
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to update category");
+      }
 
       toast({
         title: "Success",
@@ -95,14 +119,21 @@ const EditPrimaryCategoryForm = () => {
       });
 
       router.push("/admin/category/primaryCategory");
-    } catch {
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update primary category",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to update primary category",
         variant: "destructive",
       });
     }
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <Form {...form}>
@@ -129,25 +160,16 @@ const EditPrimaryCategoryForm = () => {
               <FormItem>
                 <FormLabel>Parent Category</FormLabel>
                 <FormControl>
-                  <Select
-                    value={field.value || ""} // Ensures the value is controlled
-                    onValueChange={(value) => field.onChange(value)} // Updates form state
-                  >
+                  <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select parent category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {parentCategories.length > 0 ? (
-                        parentCategories.map((category) => (
-                          <SelectItem key={category._id} value={category._id}>
-                            {category.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="none" disabled>
-                          No Parent Categories Available
+                      {parentCategories.map((category) => (
+                        <SelectItem key={category._id} value={category._id}>
+                          {category.name}
                         </SelectItem>
-                      )}
+                      ))}
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -157,26 +179,24 @@ const EditPrimaryCategoryForm = () => {
           />
         </div>
 
-        <div className="w-full">
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field: { onChange, value, ...field } }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <ReactQuill
-                    {...field}
-                    theme="snow"
-                    value={value || ""}
-                    onChange={onChange}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field: { onChange, value, ...field } }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <ReactQuill
+                  {...field}
+                  theme="snow"
+                  value={value || ""}
+                  onChange={onChange}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-2 gap-6">
           <FormField
@@ -192,6 +212,7 @@ const EditPrimaryCategoryForm = () => {
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="metaKeywords"
@@ -201,13 +222,12 @@ const EditPrimaryCategoryForm = () => {
                 <FormControl>
                   <Input
                     placeholder="Enter meta keywords"
-                    {...field}
                     value={field.value?.join(", ") || ""}
                     onChange={(e) => {
                       const keywords = e.target.value
                         .split(",")
                         .map((k) => k.trim())
-                        .filter((k) => k);
+                        .filter(Boolean);
                       field.onChange(keywords);
                     }}
                   />
@@ -225,7 +245,7 @@ const EditPrimaryCategoryForm = () => {
             <FormItem>
               <FormLabel>Meta Description</FormLabel>
               <FormControl>
-                <Input placeholder="Enter description" {...field} />
+                <Input placeholder="Enter meta description" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

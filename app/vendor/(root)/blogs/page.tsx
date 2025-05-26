@@ -2,7 +2,6 @@
 import { PencilLine } from "lucide-react";
 import { withVendorProtection } from "../../HOC";
 import Loader from "@/components/Loader";
-import { TransformedBlog } from "@/types";
 import { deleteBlog, getAllBlogs } from "@/lib/actions/blog.actions";
 import React, { useState, useEffect } from "react";
 import { Pencil, Trash2 } from "lucide-react";
@@ -57,7 +56,11 @@ const BlogsPage = () => {
   const fetchBlogPosts = async () => {
     try {
       const response = await getAllBlogs();
-      setData(response);
+      if (response.success && response.data) {
+        setData(response.data);
+      } else {
+        throw new Error(response.message || "Failed to fetch blogs");
+      }
     } catch (error) {
       console.error("Failed to fetch blog posts:", error);
       toast({

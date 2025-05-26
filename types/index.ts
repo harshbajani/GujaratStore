@@ -4,7 +4,7 @@ import { Control } from "react-hook-form";
 import { z } from "zod";
 
 export interface IBlog extends Document {
-  _id: Types.ObjectId;
+  _id: string;
   vendorId: string;
   imageId: string;
   user: string;
@@ -32,20 +32,6 @@ export interface IAdminBlog extends Document {
   metaKeywords: string;
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface TransformedBlog {
-  id: string;
-  vendorId: string;
-  imageId: string;
-  user: string;
-  date: string;
-  heading: string;
-  description: string;
-  category: string;
-  metaTitle: string;
-  metaDescription: string;
-  metaKeywords: string;
 }
 
 export interface AdminTransformedBlog {

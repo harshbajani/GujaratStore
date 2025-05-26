@@ -353,13 +353,18 @@ const EditProductsForm = () => {
           setParentCategories(parentCategoryResponse.data as IParentCategory[]);
         }
 
-        if (primaryCategoryResponse.length > 0) {
-          setPrimaryCategory(primaryCategoryResponse as IPrimaryCategory[]);
+        if (primaryCategoryResponse.success && primaryCategoryResponse.data) {
+          setPrimaryCategory(
+            primaryCategoryResponse.data as IPrimaryCategory[]
+          );
         }
 
-        if (secondaryCategoryResponse.length > 0) {
+        if (
+          secondaryCategoryResponse.success &&
+          secondaryCategoryResponse.data
+        ) {
           setSecondaryCategory(
-            secondaryCategoryResponse as IProductSecondaryCategory[]
+            secondaryCategoryResponse.data as IProductSecondaryCategory[]
           );
         }
 
@@ -550,7 +555,7 @@ const EditProductsForm = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {primaryCategory.map((category) => (
-                        <SelectItem key={category.id} value={category.id!}>
+                        <SelectItem key={category._id} value={category._id!}>
                           {category.name}
                         </SelectItem>
                       ))}

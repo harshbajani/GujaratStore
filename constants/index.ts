@@ -706,3 +706,5 @@ export const adminSidebarLinks = [
     icon: Percent,
   },
 ];
+
+export const CACHE_TTL = 300; // 5 minutes in seconds

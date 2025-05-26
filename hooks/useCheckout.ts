@@ -450,20 +450,16 @@ export function useCheckout() {
           code: state.discountCode,
           items: state.checkoutData.items,
           userId: state.userData?._id,
+          deliveryCharges: state.checkoutData.deliveryCharges,
+          rewardDiscountAmount: state.rewardDiscountAmount,
         }),
       });
       const result = await response.json();
 
       if (result.success) {
-        const baseTotal = state.appliedDiscountCode
-          ? state.originalTotal
-          : state.checkoutData.total;
-        const newTotal =
-          baseTotal - result.discountAmount - state.rewardDiscountAmount;
-
         dispatch({
           type: "SET_DISCOUNT_AMOUNT",
-          payload: result.discountAmount,
+          payload: result.data.discountAmount,
         });
         dispatch({ type: "SET_DISCOUNT_INFO", payload: result.message });
         dispatch({
@@ -471,11 +467,12 @@ export function useCheckout() {
           payload: state.discountCode,
         });
 
+        // Use the calculated total from the service instead of calculating here
         const updatedCheckoutData: CheckoutData = {
           ...state.checkoutData,
-          discountAmount: result.discountAmount,
+          discountAmount: result.data.discountAmount,
           discountCode: state.discountCode,
-          total: newTotal,
+          total: result.data.newTotal, // Use the properly calculated total from the service
         };
 
         updateCheckoutData(updatedCheckoutData);

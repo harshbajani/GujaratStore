@@ -36,6 +36,16 @@ import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 
+// First, create an interface for the form data
+interface FormData {
+  name: string;
+  parentCategory: string;
+  primaryCategory: string;
+  attributes: string[];
+  description: string;
+  isActive: boolean;
+}
+
 const EditSecondaryCategoryForm = () => {
   // * useStates and hooks
   const { id } = useParams(); // Get the ID from the URL parameters
@@ -48,7 +58,7 @@ const EditSecondaryCategoryForm = () => {
   const [attributes, setAttributes] = useState<IAttribute[]>([]);
   const router = useRouter();
 
-  const form = useForm<ISecondaryCategory>({
+  const form = useForm<FormData>({
     resolver: zodResolver(secondaryCategorySchema),
     defaultValues: {
       name: "",
@@ -63,34 +73,61 @@ const EditSecondaryCategoryForm = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const parentCategoryResponse = await getAllParentCategory();
-        const primaryCategoryResponse = await getAllPrimaryCategories();
-        const attributeResponse = await getAllAttributes();
-        const categoryResponse = await getSecondaryCategoryById(id as string);
+        const [
+          parentCategoryResponse,
+          primaryCategoryResponse,
+          attributeResponse,
+          categoryResponse,
+        ] = await Promise.all([
+          getAllParentCategory(),
+          getAllPrimaryCategories(),
+          getAllAttributes(),
+          getSecondaryCategoryById(id as string),
+        ]);
 
-        if (parentCategoryResponse.success) {
+        // Handle parent categories
+        if (parentCategoryResponse.success && parentCategoryResponse.data) {
           setParentCategories(parentCategoryResponse.data as IParentCategory[]);
         }
 
-        if (primaryCategoryResponse.length > 0) {
-          setPrimaryCategories(primaryCategoryResponse as IPrimaryCategory[]);
+        // Handle primary categories
+        if (primaryCategoryResponse.success && primaryCategoryResponse.data) {
+          setPrimaryCategories(primaryCategoryResponse.data as IPrimaryCategory[]);
         }
 
-        if (attributeResponse.success) {
+        // Handle attributes
+        if (attributeResponse.success && attributeResponse.data) {
           setAttributes(attributeResponse.data as IAttribute[]);
         }
 
-        if (categoryResponse) {
+        // Handle category data
+        if (categoryResponse.success && categoryResponse.data) {
+          const category = categoryResponse.data as SecondaryCategoryWithPopulatedFields;
+          
+          // Convert populated fields to IDs
+          const parentCategoryId = typeof category.parentCategory === 'string' 
+            ? category.parentCategory 
+            : category.parentCategory._id;
+
+          const primaryCategoryId = typeof category.primaryCategory === 'string'
+            ? category.primaryCategory
+            : category.primaryCategory._id;
+
+          const attributeIds = category.attributes.map(attr => 
+            typeof attr === 'string' ? attr : attr._id
+          );
+
           form.reset({
-            ...categoryResponse,
-            parentCategory: categoryResponse.parentCategory?._id || "",
-            primaryCategory: categoryResponse.primaryCategory?._id || "",
-            attributes: categoryResponse.attributes.map(
-              (attr: IAttribute) => attr._id
-            ),
+            name: category.name,
+            parentCategory: parentCategoryId,
+            primaryCategory: primaryCategoryId,
+            attributes: attributeIds,
+            description: category.description,
+            isActive: category.isActive,
           });
         }
-      } catch {
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
         toast({
           title: "Error",
           description: "Failed to fetch data",
@@ -99,18 +136,21 @@ const EditSecondaryCategoryForm = () => {
       }
     };
 
-    fetchData();
+    if (id) {
+      fetchData();
+    }
   }, [id, form]);
   // * form submission
-  const onSubmit = async (data: ISecondaryCategory) => {
+  const onSubmit = async (data: FormData) => {
     try {
-      await updateSecondaryCategoryById(id as string, {
+      const result = await updateSecondaryCategoryById(id as string, {
         ...data,
-        attributes:
-          data.attributes.length > 0
-            ? [data.attributes[0], ...data.attributes.slice(1)]
-            : ["default"],
+        attributes: data.attributes
       });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update category');
+      }
 
       toast({
         title: "Success",
@@ -118,15 +158,16 @@ const EditSecondaryCategoryForm = () => {
       });
 
       router.push("/admin/category/secondaryCategory");
-    } catch {
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update secondary category",
+        description: error instanceof Error ? error.message : "Failed to update secondary category",
         variant: "destructive",
       });
     }
   };
 
+  // Update the MultiSelect component usage
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -194,7 +235,7 @@ const EditSecondaryCategoryForm = () => {
                     <SelectContent>
                       {primaryCategories.length > 0 ? (
                         primaryCategories.map((category) => (
-                          <SelectItem key={category.id} value={category.id!}>
+                          <SelectItem key={category._id} value={category._id!}>
                             {category.name}
                           </SelectItem>
                         ))
@@ -225,8 +266,8 @@ const EditSecondaryCategoryForm = () => {
                       value: attr._id,
                       label: attr.name,
                     }))}
-                    defaultValue={field.value} // Ensure this is an array of strings
-                    onValueChange={(values) => field.onChange(values)}
+                    defaultValue={field.value}
+                    onValueChange={(values: string[]) => field.onChange(values)}
                     placeholder="Select attributes"
                   />
                 </FormControl>

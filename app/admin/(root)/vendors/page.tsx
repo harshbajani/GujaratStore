@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { deleteVendor } from "@/lib/actions/vendor.actions";
+import { deleteVendor } from "@/lib/actions/admin/vendor.actions";
 import { useVendors } from "@/hooks/useVendors";
 
 interface IVendor {
