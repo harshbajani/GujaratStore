@@ -26,10 +26,32 @@ import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
 import { useUserDetails } from "@/hooks/useOrderHooks"; // Import the hook
 import { getCustomerOrders } from "@/lib/utils";
+import {
+  ColumnDef,
+  getCoreRowModel,
+  useReactTable,
+  getPaginationRowModel,
+  SortingState,
+  getSortedRowModel,
+  PaginationState,
+  flexRender,
+} from "@tanstack/react-table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const CustomerDetailPage = () => {
   const [orders, setOrders] = useState<IOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState<boolean>(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -131,6 +153,81 @@ const CustomerDetailPage = () => {
   };
 
   const stats = calculateCustomerStats();
+
+  // Add the columns definition
+  const columns: ColumnDef<IOrder>[] = [
+    {
+      accessorKey: "orderId",
+      header: "Order ID",
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("orderId")}</div>
+      ),
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Date",
+      cell: ({ row }) => formatDate(row.getValue("createdAt")),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className={getStatusBadge(row.getValue("status"))}
+        >
+          {row.getValue("status")}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "items",
+      header: "Items",
+      cell: ({ row }) => row.original.items.length,
+    },
+    {
+      accessorKey: "paymentOption",
+      header: "Payment",
+    },
+    {
+      accessorKey: "total",
+      header: "Total",
+      cell: ({ row }) => (
+        <div className="text-right">
+          ₹{row.getValue<number>("total").toFixed(2)}
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="hover:bg-gray-100"
+          onClick={() => router.push(`/vendor/orders/view/${row.original._id}`)}
+        >
+          View
+        </Button>
+      ),
+    },
+  ];
+
+  // Initialize the table
+  const table = useReactTable({
+    data: orders,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onPaginationChange: setPagination,
+    state: {
+      sorting,
+      pagination,
+    },
+  });
 
   if (loading || ordersLoading) {
     return <Loader />;
@@ -273,65 +370,120 @@ const CustomerDetailPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[120px]">Order ID</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.length > 0 ? (
-                  orders.map((order) => (
-                    <TableRow key={order._id}>
-                      <TableCell className="font-medium">
-                        {order.orderId}
-                      </TableCell>
-                      <TableCell>{formatDate(order.createdAt)}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={getStatusBadge(order.status)}
-                        >
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{order.items.length}</TableCell>
-                      <TableCell>{order.paymentOption}</TableCell>
-                      <TableCell className="text-right">
-                        ₹{order.total.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="hover:bg-gray-100"
-                          onClick={() =>
-                            router.push(`/vendor/orders/view/${order._id}`)
-                          }
-                        >
-                          View
-                        </Button>
+            <div className="border rounded-lg overflow-auto">
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id} className="hover:bg-gray-50">
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length}
+                        className="h-24 text-center text-gray-500"
+                      >
+                        No orders found for this customer
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center py-6 text-gray-500"
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Rows per page:</span>
+                <Select
+                  value={pagination.pageSize.toString()}
+                  onValueChange={(value) => {
+                    setPagination({
+                      pageIndex: 0,
+                      pageSize: Number(value),
+                    });
+                  }}
+                >
+                  <SelectTrigger className="w-[70px]">
+                    <SelectValue placeholder={pagination.pageSize} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[10, 20, 50, 100].map((size) => (
+                      <SelectItem key={size} value={size.toString()}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                >
+                  Previous
+                </Button>
+                <div className="flex gap-1">
+                  {Array.from(
+                    { length: table.getPageCount() },
+                    (_, index) => index + 1
+                  ).map((pageNumber) => (
+                    <Button
+                      key={pageNumber}
+                      variant={
+                        table.getState().pagination.pageIndex + 1 === pageNumber
+                          ? "default"
+                          : "outline"
+                      }
+                      size="sm"
+                      onClick={() => table.setPageIndex(pageNumber - 1)}
+                      className={
+                        table.getState().pagination.pageIndex + 1 === pageNumber
+                          ? "bg-brand hover:bg-brand/90 text-white"
+                          : ""
+                      }
                     >
-                      No orders found for this customer
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                      {pageNumber}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
