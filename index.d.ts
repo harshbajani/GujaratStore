@@ -480,55 +480,6 @@ declare interface IOrder {
   __v: number;
 }
 
-enum DiscountType {
-  PERCENTAGE = "percentage",
-  AMOUNT = "amount",
-}
-
-declare interface IDiscount {
-  id: string;
-  _id: string;
-  name: string;
-  vendorId: Schema.Types.ObjectId;
-  description?: string;
-  discountType: DiscountType;
-  discountValue: number;
-  targetType: "category";
-  parentCategory: {
-    _id: string;
-    name: string;
-    isActive: boolean;
-  };
-
-  startDate: Date;
-  endDate: Date;
-  isActive: boolean;
-  createdBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-declare interface IAdminDiscount {
-  id: string;
-  _id: string;
-  name: string;
-  description?: string;
-  discountType: DiscountType;
-  discountValue: number;
-  targetType: "category";
-  parentCategory: {
-    _id: string;
-    name: string;
-    isActive: boolean;
-  };
-  startDate: Date;
-  endDate: Date;
-  isActive: boolean;
-  createdBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 declare interface ISalesSummary {
   totalRevenue: number;
   totalOrders: number;
@@ -617,4 +568,71 @@ declare interface IReferralResponse extends Omit<IReferral, "createdBy"> {
     name: string;
     email: string;
   };
+}
+
+enum DiscountType {
+  PERCENTAGE = "percentage",
+  AMOUNT = "amount",
+}
+
+declare interface IDiscount {
+  id: string;
+  _id: string;
+  name: string;
+  vendorId: Schema.Types.ObjectId;
+  description?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  targetType: "category";
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+  createdBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+declare interface IDiscountValidation {
+  discount: IDiscount;
+  discountAmount: number;
+  applicableSubtotal: number;
+  newTotal: number;
+}
+
+declare interface IDiscountStats {
+  totalDiscounts: number;
+  activeDiscounts: number;
+  totalUsage: number;
+  discountsByCategory: Record<string, number>;
+  monthlyDiscounts: Record<string, number>;
+}
+
+declare interface IAdminDiscount {
+  id: string;
+  _id: string;
+  name: string;
+  description?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  targetType: "category";
+  parentCategory: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  };
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

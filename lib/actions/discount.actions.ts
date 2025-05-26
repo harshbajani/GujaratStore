@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import mongoose, { HydratedDocument } from "mongoose";
@@ -35,7 +36,13 @@ const serializeDocument = (
     startDate: serialized.startDate,
     endDate: serialized.endDate,
     isActive: serialized.isActive,
-    createdBy: serialized.createdBy?.toString(),
+    createdBy: serialized.createdBy
+      ? {
+          _id: serialized.createdBy._id.toString(),
+          name: serialized.createdBy.name,
+          email: serialized.createdBy.email,
+        }
+      : undefined,
     createdAt: serialized.createdAt,
     updatedAt: serialized.updatedAt,
   };

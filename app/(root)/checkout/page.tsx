@@ -16,25 +16,7 @@ import { RewardRedemptionComponent } from "@/components/RewardPointsSection";
 
 const CheckoutPage = () => {
   const {
-    state: {
-      checkoutData,
-      userData,
-      loading,
-      selectedAddress,
-      submitting,
-      discountCode,
-      discountAmount,
-      discountInfo,
-      loadingDiscount,
-      expandedSection,
-      paymentOption,
-      isConfirmationOpen,
-      confirmedOrderId,
-      // Add the new reward-related state
-      pointsToRedeem,
-      rewardDiscountAmount,
-      loadingRewardRedemption,
-    },
+    state,
     dispatch,
     updateQuantity,
     removeItem,
@@ -42,15 +24,14 @@ const CheckoutPage = () => {
     confirmOrder,
     toggleSection,
     getReferralDiscountDetails,
-    // Add the new reward points handler
     handleRedeemRewardPoints,
   } = useCheckout();
 
   const { referralDiscount, referralDiscountType, referralCode } =
     getReferralDiscountDetails();
 
-  if (loading) return <Loader />;
-  if (!checkoutData || !userData) return null;
+  if (state.loading) return <Loader />;
+  if (!state.checkoutData || !state.userData) return null;
 
   // Helper function to set points to redeem
   const setPointsToRedeem = (points: number) => {
@@ -70,11 +51,11 @@ const CheckoutPage = () => {
               id="deliveryTo"
               title="DELIVERY TO"
               index={1}
-              expandedSection={expandedSection}
+              expandedSection={state.expandedSection}
               onToggle={toggleSection}
             >
-              <p className="font-medium">{userData.name}</p>
-              <p className="text-gray-600">{userData.phone}</p>
+              <p className="font-medium">{state.userData.name}</p>
+              <p className="text-gray-600">{state.userData.phone}</p>
             </AccordionSection>
 
             {/* Delivery Address */}
@@ -82,17 +63,17 @@ const CheckoutPage = () => {
               id="deliveryAddress"
               title="DELIVERY ADDRESS"
               index={2}
-              expandedSection={expandedSection}
+              expandedSection={state.expandedSection}
               onToggle={toggleSection}
             >
-              {userData.addresses.length > 0 ? (
+              {state.userData.addresses.length > 0 ? (
                 <div className="space-y-3">
-                  {userData.addresses.map((address) => (
+                  {state.userData.addresses.map((address) => (
                     <div
                       key={address._id}
                       className={cn(
                         "border rounded-md p-4 flex justify-between",
-                        selectedAddress === address._id
+                        state.selectedAddress === address._id
                           ? "border-red-500 bg-red-50"
                           : "border-gray-200"
                       )}
@@ -142,11 +123,11 @@ const CheckoutPage = () => {
               id="orderSummary"
               title="ORDER SUMMARY"
               index={3}
-              expandedSection={expandedSection}
+              expandedSection={state.expandedSection}
               onToggle={toggleSection}
-              showItemCount={checkoutData.items.length}
+              showItemCount={state.checkoutData.items.length}
             >
-              {checkoutData.items.map((item) => (
+              {state.checkoutData.items.map((item) => (
                 <div key={item.productId} className="flex gap-4 border-b pb-4">
                   <Image
                     src={`/api/files/${item.coverImage}`}
@@ -205,12 +186,12 @@ const CheckoutPage = () => {
               id="paymentOptions"
               title="PAYMENT OPTIONS"
               index={4}
-              expandedSection={expandedSection}
+              expandedSection={state.expandedSection}
               onToggle={toggleSection}
               changeButtonText={undefined}
             >
               <RadioGroup
-                value={paymentOption}
+                value={state.paymentOption}
                 onValueChange={(value) =>
                   dispatch({ type: "SET_PAYMENT_OPTION", payload: value })
                 }
@@ -252,28 +233,28 @@ const CheckoutPage = () => {
               id="discount"
               title="DISCOUNT & REWARDS"
               index={5}
-              expandedSection={expandedSection}
+              expandedSection={state.expandedSection}
               onToggle={toggleSection}
             >
               <DiscountSection
                 onApplyDiscount={handleApplyDiscount}
-                discountCode={discountCode}
+                discountCode={state.discountCode}
                 setDiscountCode={(code) =>
                   dispatch({ type: "SET_DISCOUNT_CODE", payload: code })
                 }
-                discountAmount={discountAmount}
-                discountInfo={discountInfo}
-                loadingDiscount={loadingDiscount}
+                discountAmount={state.discountAmount}
+                discountInfo={state.discountInfo}
+                loadingDiscount={state.loadingDiscount}
               />
 
               {/* Add the Reward Redemption Component */}
               <RewardRedemptionComponent
-                userData={userData}
-                pointsToRedeem={pointsToRedeem}
+                userData={state.userData}
+                pointsToRedeem={state.pointsToRedeem}
                 setPointsToRedeem={setPointsToRedeem}
                 handleRedeemRewardPoints={handleRedeemRewardPoints}
-                rewardDiscountAmount={rewardDiscountAmount}
-                loadingRewardRedemption={loadingRewardRedemption}
+                rewardDiscountAmount={state.rewardDiscountAmount}
+                loadingRewardRedemption={state.loadingRewardRedemption}
               />
             </AccordionSection>
           </div>
@@ -284,24 +265,31 @@ const CheckoutPage = () => {
               <h2 className="text-xl font-bold mb-4">PRICE DETAILS</h2>
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
-                  <span>Price ({checkoutData.items.length} items)</span>
-                  <span>₹{checkoutData.subtotal.toLocaleString("en-IN")}</span>
+                  <span>Price ({state.checkoutData.items.length} items)</span>
+                  <span>
+                    ₹{state.checkoutData.subtotal.toLocaleString("en-IN")}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery Charges</span>
-                  {checkoutData.deliveryCharges > 0 ? (
+                  {state.checkoutData.deliveryCharges > 0 ? (
                     <span>
-                      ₹{checkoutData.deliveryCharges.toLocaleString("en-IN")}
+                      ₹
+                      {state.checkoutData.deliveryCharges.toLocaleString(
+                        "en-IN"
+                      )}
                     </span>
                   ) : (
                     <span className="text-green-500">Free</span>
                   )}
                 </div>
 
-                {discountAmount > 0 && (
+                {state.discountAmount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
-                    <span>- ₹{discountAmount.toLocaleString("en-IN")}</span>
+                    <span>
+                      - ₹{state.discountAmount.toLocaleString("en-IN")}
+                    </span>
                   </div>
                 )}
 
@@ -317,11 +305,11 @@ const CheckoutPage = () => {
                 )}
 
                 {/* Add the reward points discount display */}
-                {rewardDiscountAmount > 0 && (
+                {state.rewardDiscountAmount > 0 && (
                   <div className="flex justify-between text-blue-600">
-                    <span>Reward Points ({pointsToRedeem} points)</span>
+                    <span>Reward Points ({state.pointsToRedeem} points)</span>
                     <span>
-                      - ₹{rewardDiscountAmount.toLocaleString("en-IN")}
+                      - ₹{state.rewardDiscountAmount.toLocaleString("en-IN")}
                     </span>
                   </div>
                 )}
@@ -329,7 +317,9 @@ const CheckoutPage = () => {
                 <div className="border-t pt-3 mt-3">
                   <div className="flex justify-between font-bold">
                     <span>Total</span>
-                    <span>₹{checkoutData.total.toLocaleString("en-IN")}</span>
+                    <span>
+                      ₹{state.checkoutData.total.toLocaleString("en-IN")}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -337,9 +327,11 @@ const CheckoutPage = () => {
               <Button
                 className="w-full bg-red-600 hover:bg-red-700"
                 onClick={confirmOrder}
-                disabled={loading || !selectedAddress || submitting}
+                disabled={
+                  state.loading || !state.selectedAddress || state.submitting
+                }
               >
-                {submitting ? "Processing..." : "Confirm order"}
+                {state.submitting ? "Processing..." : "Confirm order"}
               </Button>
             </div>
           </div>
@@ -348,11 +340,11 @@ const CheckoutPage = () => {
 
       {/* Order Confirmation Dialog */}
       <OrderConfirmationDialog
-        isOpen={isConfirmationOpen}
+        isOpen={state.isConfirmationOpen}
         onClose={() =>
           dispatch({ type: "SET_CONFIRMATION_OPEN", payload: false })
         }
-        orderId={confirmedOrderId}
+        orderId={state.confirmedOrderId}
       />
     </div>
   );
