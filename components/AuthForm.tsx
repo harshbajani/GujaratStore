@@ -370,6 +370,15 @@ const AuthForm = ({
                     {isLoading && <Loader2 className="ml-2 animate-spin" />}
                   </Button>
 
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => signIn("google", { callbackUrl: "/" })}
+                  >
+                    Continue with Google
+                  </Button>
+
                   {errorMessage && (
                     <p className="error-message">*{errorMessage}</p>
                   )}
