@@ -30,6 +30,7 @@ import {
   CardHeader,
 } from "./ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { FaGoogle } from "react-icons/fa";
 
 const AuthForm = ({
   type,
@@ -377,6 +378,7 @@ const AuthForm = ({
                     onClick={() => signIn("google", { callbackUrl: "/" })}
                   >
                     Continue with Google
+                    <FaGoogle />
                   </Button>
 
                   {errorMessage && (
