@@ -3,9 +3,23 @@ import Vendor from "@/lib/models/vendor.model";
 import { connectToDB } from "@/lib/mongodb";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+          role: "user", // Default role for Google auth
+        };
+      },
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -53,11 +67,43 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        try {
+          await connectToDB();
+
+          // Check if user exists
+          const existingUser = await User.findOne({ email: user.email });
+
+          if (!existingUser) {
+            // Create new user with Google profile data
+            await User.create({
+              name: user.name,
+              email: user.email,
+              phone: "", // You might want to collect this later
+              password: "", // No password for Google auth
+              role: "user",
+              isVerified: true, // Google accounts are pre-verified
+            });
+          }
+          return true;
+        } catch (error) {
+          console.error("Error in Google sign in:", error);
+          return false;
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
       }
+
+      if (account?.provider === "google") {
+        token.role = "user"; // Set default role for Google users
+      }
+
       return token;
     },
     async session({ session, token }) {
