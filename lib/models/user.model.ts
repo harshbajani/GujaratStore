@@ -15,12 +15,25 @@ const deliveryAddressSchema = new mongoose.Schema({
   alternativeContact: { type: String, optional: true },
 });
 
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema<IUser>({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  phone: { type: String, required: true, unique: true },
+  phone: {
+    type: String,
+    required: function () {
+      return !this.googleId;
+    },
+    unique: true,
+    sparse: true,
+  },
   googleId: { type: String, sparse: true },
-  password: { type: String, required: true },
+  password: {
+    type: String,
+    required: function () {
+      // Only required if not using Google auth
+      return !this.googleId;
+    },
+  },
   role: { type: String, enum: ["user"], default: "user" },
   addresses: { type: [deliveryAddressSchema], required: false },
   referral: { type: String },
