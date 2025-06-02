@@ -444,11 +444,11 @@ const FurnishingsPage = () => {
                 <motion.div
                   variants={containerVariants}
                   className="flex flex-col items-center justify-between rounded-lg bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-                  key={product._id}
+                  key={product.slug}
                 >
                   {/* Image Container */}
                   <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
-                    <Link href={`/clothing/${product._id}`}>
+                    <Link href={`/furnishings/${product.slug}`}>
                       <Image
                         src={getImageUrl(product.productCoverImage)}
                         alt={product.productName}
@@ -460,7 +460,7 @@ const FurnishingsPage = () => {
                   </div>
 
                   {/* Product Info */}
-                  <Link href={`/clothing/${product._id}`}>
+                  <Link href={`/furnishings/${product.slug}`}>
                     <div className="flex w-full flex-1 flex-col items-center">
                       <TooltipProvider>
                         <Tooltip>

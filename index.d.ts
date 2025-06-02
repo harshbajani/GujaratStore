@@ -304,6 +304,7 @@ declare interface SizeResponse {
 
 declare interface IProduct {
   _id?: string;
+  slug: string;
   vendorId: string;
   productName: string;
   parentCategory: string; // MongoDB ObjectId as string
@@ -396,6 +397,7 @@ declare type ProductWithPopulatedFields = IProduct & {
 
 declare interface IProductResponse {
   _id?: string;
+  slug: string;
   productName: string;
   vendorId: string;
   parentCategory: {
