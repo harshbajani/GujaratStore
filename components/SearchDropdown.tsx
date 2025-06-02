@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 
 type SearchResult = {
   _id: string;
+  slug?: string;
   productName: string;
   productCoverImage: string;
   parentCategory: {
@@ -39,7 +40,7 @@ const SearchDropdown = ({
         <div>
           {results.map((product) => (
             <Link
-              href={`/product/${product._id}`}
+              href={`/product/${product.slug}`}
               key={product._id}
               onClick={onClose}
               className="flex items-center p-3 hover:bg-gray-100 transition-colors"
