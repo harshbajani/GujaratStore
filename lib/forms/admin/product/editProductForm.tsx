@@ -40,8 +40,16 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { getAllSizes } from "@/lib/actions/size.actions";
 import { MultiSelect } from "@/components/ui/multi-select";
+import slugify from "slugify";
 
 const EditProductsForm = () => {
+  const generateSlug = (name: string) => {
+    return slugify(name, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+  };
   // * useStates and hooks
   const params = useParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +71,7 @@ const EditProductsForm = () => {
     resolver: zodResolver(adminProductSchema),
     defaultValues: {
       productName: "",
+      slug: "",
       parentCategory: "",
       primaryCategory: "",
       secondaryCategory: "", // Note: matches the interface property name
@@ -208,6 +217,7 @@ const EditProductsForm = () => {
           // Set form values with null checks
           form.reset({
             ...product,
+            slug: product.slug || generateSlug(product.productName),
             parentCategory: product.parentCategory?._id || "",
             primaryCategory: product.primaryCategory?._id || "",
             secondaryCategory: product.secondaryCategory?._id || "",
@@ -284,6 +294,7 @@ const EditProductsForm = () => {
       // Prepare final data
       const finalData = {
         ...data,
+        slug: data.slug,
         _id: params.id,
         productCoverImage: coverImageId,
         productImages: productImageIds,
@@ -380,6 +391,15 @@ const EditProductsForm = () => {
     };
   }, [coverPreview, productPreviews]);
 
+  const productName = form.watch("productName");
+
+  useEffect(() => {
+    if (productName) {
+      const slug = generateSlug(productName);
+      form.setValue("slug", slug);
+    }
+  }, [productName, form]);
+
   if (isLoading) {
     return (
       <div>
@@ -401,6 +421,7 @@ const EditProductsForm = () => {
         })}
         className="space-y-8"
       >
+        <Input type="hidden" {...form.register("vendorId")} />
         <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
@@ -410,6 +431,25 @@ const EditProductsForm = () => {
                 <FormLabel>Name</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter category name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Slug</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="product-slug"
+                    {...field}
+                    readOnly
+                    className="bg-gray-50"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -428,7 +468,8 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
-
+        </div>
+        <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="brands"
@@ -456,8 +497,6 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
-        </div>
-        <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="parentCategory"
@@ -512,6 +551,8 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
+        </div>
+        <div className="grid grid-cols-3 gap-6 items-center">
           <FormField
             control={form.control}
             name="secondaryCategory"
@@ -539,8 +580,6 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
-        </div>
-        <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="productColor"
@@ -869,7 +908,7 @@ const EditProductsForm = () => {
           <Button
             variant="outline"
             type="button"
-            onClick={() => router.push("/admin/products")}
+            onClick={() => router.push("/vendor/products")}
           >
             Cancel
           </Button>

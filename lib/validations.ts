@@ -167,6 +167,7 @@ export const brandSchema = z.object({
 export const productSchema = z.object({
   productName: z.string().min(1, "Product name is required"),
   vendorId: z.string().min(24, "Invalid VendorId"),
+  slug: z.string().min(1, "Slug is required"),
   parentCategory: z.string().length(24, "Invalid parent category ID"),
   primaryCategory: z.string().length(24, "Invalid primary category ID"),
   secondaryCategory: z.string().length(24, "Invalid secondary category ID"),

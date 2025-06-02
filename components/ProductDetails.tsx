@@ -33,7 +33,8 @@ import Loader from "@/components/Loader";
 import ReviewSection from "@/components/Review";
 
 const ProductsDetailPage = () => {
-  const { id } = useParams();
+  const params = useParams();
+  const productSlug = params.slug;
   const [product, setProduct] = useState<IProductResponse | null>(null);
   const [reviewStats, setReviewStats] = useState({
     totalReviews: 0,
@@ -126,7 +127,7 @@ const ProductsDetailPage = () => {
     const fetchProductAndUserData = async () => {
       try {
         // Always fetch product data
-        const productResp = await fetch(`/api/products/${id}`);
+        const productResp = await fetch(`/api/products/slug/${productSlug}`);
         const productData = await productResp.json();
 
         if (!productData.success) {
@@ -166,10 +167,10 @@ const ProductsDetailPage = () => {
       }
     };
 
-    if (id) {
+    if (productSlug) {
       fetchProductAndUserData();
     }
-  }, [id]);
+  }, [productSlug]);
 
   if (loading) {
     return <Loader />;

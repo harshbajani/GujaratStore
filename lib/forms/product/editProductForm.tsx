@@ -40,8 +40,16 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { getAllSizes } from "@/lib/actions/size.actions";
 import { MultiSelect } from "@/components/ui/multi-select";
+import slugify from "slugify";
 
 const EditProductsForm = () => {
+  const generateSlug = (name: string) => {
+    return slugify(name, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+  };
   // * useStates and hooks
   const params = useParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -64,6 +72,7 @@ const EditProductsForm = () => {
     defaultValues: {
       productName: "",
       vendorId: "",
+      slug: "",
       parentCategory: "",
       primaryCategory: "",
       secondaryCategory: "", // Note: matches the interface property name
@@ -211,6 +220,7 @@ const EditProductsForm = () => {
           // Set form values with null checks
           form.reset({
             ...product,
+            slug: product.slug || generateSlug(product.productName),
             parentCategory: product.parentCategory?._id || "",
             primaryCategory: product.primaryCategory?._id || "",
             secondaryCategory: product.secondaryCategory?._id || "",
@@ -304,6 +314,7 @@ const EditProductsForm = () => {
       const finalData = {
         ...data,
         _id: params.id,
+        slug: data.slug,
         productCoverImage: coverImageId,
         productImages: productImageIds,
         vendorId: data.vendorId,
@@ -427,6 +438,15 @@ const EditProductsForm = () => {
     }
   }, [isLoading, form]);
 
+  const productName = form.watch("productName");
+
+  useEffect(() => {
+    if (productName) {
+      const slug = generateSlug(productName);
+      form.setValue("slug", slug);
+    }
+  }, [productName, form]);
+
   // Add this near the top of your component
   const vendorId = form.watch("vendorId");
   useEffect(() => {
@@ -469,6 +489,25 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Slug</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="product-slug"
+                    {...field}
+                    readOnly
+                    className="bg-gray-50"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="productSKU"
@@ -482,7 +521,8 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
-
+        </div>
+        <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="brands"
@@ -510,8 +550,6 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
-        </div>
-        <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="parentCategory"
@@ -566,6 +604,8 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
+        </div>
+        <div className="grid grid-cols-3 gap-6 items-center">
           <FormField
             control={form.control}
             name="secondaryCategory"
@@ -593,8 +633,6 @@ const EditProductsForm = () => {
               </FormItem>
             )}
           />
-        </div>
-        <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="productColor"
