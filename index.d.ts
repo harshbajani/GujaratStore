@@ -341,7 +341,7 @@ declare interface IProduct {
 
 declare interface IAdminProduct {
   _id?: string;
-  vendorId: string;
+  slug: string;
   productName: string;
   parentCategory: string; // MongoDB ObjectId as string
   primaryCategory: string; // MongoDB ObjectId as string
