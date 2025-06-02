@@ -39,8 +39,16 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { getAllSizes } from "@/lib/actions/size.actions";
 import { MultiSelect } from "@/components/ui/multi-select";
+import slugify from "slugify";
 
 const AddProductsForm = () => {
+  const generateSlug = (name: string) => {
+    return slugify(name, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+  };
   // * useStates and hooks
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
@@ -65,6 +73,7 @@ const AddProductsForm = () => {
     resolver: zodResolver(adminProductSchema),
     defaultValues: {
       productName: "",
+      slug: "",
       parentCategory: "",
       primaryCategory: "",
       secondaryCategory: "", // Note: matches the interface property name
@@ -94,6 +103,7 @@ const AddProductsForm = () => {
     },
   });
 
+  const productName = form.watch("productName");
   const basePrice = form.watch("basePrice");
   const discountType = form.watch("discountType");
   const discountValue = form.watch("discountValue");
@@ -336,19 +346,16 @@ const AddProductsForm = () => {
     };
   }, [coverPreview, productPreviews]);
 
+  useEffect(() => {
+    if (productName) {
+      const slug = generateSlug(productName);
+      form.setValue("slug", slug);
+    }
+  }, [productName, form]);
+
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit, (errors) => {
-          console.log("Form validation errors:", errors); // Add this line
-          toast({
-            title: "Error",
-            description: "Please check all required fields",
-            variant: "destructive",
-          });
-        })}
-        className="space-y-8"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
@@ -363,6 +370,26 @@ const AddProductsForm = () => {
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Slug</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="product-slug"
+                    {...field}
+                    readOnly
+                    className="bg-gray-50"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="productSKU"
@@ -376,7 +403,8 @@ const AddProductsForm = () => {
               </FormItem>
             )}
           />
-
+        </div>
+        <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="brands"
@@ -404,8 +432,6 @@ const AddProductsForm = () => {
               </FormItem>
             )}
           />
-        </div>
-        <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="parentCategory"
@@ -460,6 +486,8 @@ const AddProductsForm = () => {
               </FormItem>
             )}
           />
+        </div>
+        <div className="grid grid-cols-3 gap-6 items-center">
           <FormField
             control={form.control}
             name="secondaryCategory"
@@ -487,8 +515,6 @@ const AddProductsForm = () => {
               </FormItem>
             )}
           />
-        </div>
-        <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="productColor"
@@ -804,7 +830,7 @@ const AddProductsForm = () => {
           <Button
             variant="outline"
             type="button"
-            onClick={() => router.push("/admin/products")}
+            onClick={() => router.push("/vendor/products")}
           >
             Cancel
           </Button>

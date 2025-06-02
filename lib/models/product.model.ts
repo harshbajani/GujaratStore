@@ -13,6 +13,12 @@ const productSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Vendor",
   },
+  slug: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true,
+  },
   productName: { type: String, required: true },
   parentCategory: {
     type: Schema.Types.ObjectId,

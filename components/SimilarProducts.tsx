@@ -24,6 +24,7 @@ import {
 
 interface Product {
   _id: string;
+  slug: string;
   productName: string;
   productCoverImage: string;
   mrp: number;
@@ -38,7 +39,7 @@ interface Product {
 
 const SimilarProducts = () => {
   const params = useParams();
-  const productId = params.id;
+  const productSlug = params.slug;
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +127,9 @@ const SimilarProducts = () => {
     const fetchRelatedProducts = async () => {
       try {
         // Fetch the current product to get its category
-        const productResponse = await fetch(`/api/products/${productId}`);
+        const productResponse = await fetch(
+          `/api/products/slug/${productSlug}`
+        );
         const productData = await productResponse.json();
 
         if (!productData.success) {
@@ -153,7 +156,7 @@ const SimilarProducts = () => {
           let related = productsData.data.filter(
             (product: Product) =>
               product.parentCategory?.name?.toLowerCase() === categoryName &&
-              product._id !== productId
+              product._id !== productSlug
           );
 
           // Limit to a reasonable number (e.g., 10)
@@ -186,10 +189,10 @@ const SimilarProducts = () => {
       }
     };
 
-    if (productId) {
+    if (productSlug) {
       fetchRelatedProducts();
     }
-  }, [productId]);
+  }, [productSlug]);
 
   return (
     <>
@@ -217,7 +220,9 @@ const SimilarProducts = () => {
                   <div className="flex flex-col items-center justify-between rounded-lg bg-white p-4 shadow-sm transition-shadow hover:shadow-md h-full">
                     {/* Image Container */}
                     <div className="mb-4 h-40 w-full overflow-hidden rounded-lg">
-                      <Link href={`/clothing/${product._id}`}>
+                      <Link
+                        href={`/${product.parentCategory?.name}/${product.slug}`}
+                      >
                         <Image
                           src={getImageUrl(product.productCoverImage)}
                           alt={product.productName}
@@ -229,7 +234,10 @@ const SimilarProducts = () => {
                     </div>
 
                     {/* Product Info */}
-                    <Link href={`/clothing/${product._id}`} className="w-full">
+                    <Link
+                      href={`/${product.parentCategory?.name}/${product.slug}`}
+                      className="w-full"
+                    >
                       <div className="flex w-full flex-1 flex-col items-center">
                         <TooltipProvider>
                           <Tooltip>
