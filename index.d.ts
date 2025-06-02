@@ -9,6 +9,7 @@ declare interface IUser {
   email: string;
   phone: string;
   password: string;
+  googleId?: string;
   addresses: IAddress[];
   referral?: string;
   rewardPoints?: number;

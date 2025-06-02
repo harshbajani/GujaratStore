@@ -374,11 +374,11 @@ const AuthForm = ({
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
+                    className="w-full flex items-center justify-center gap-2"
                     onClick={() => signIn("google", { callbackUrl: "/" })}
                   >
+                    <FaGoogle className="w-5 h-5" />
                     Continue with Google
-                    <FaGoogle />
                   </Button>
 
                   {errorMessage && (

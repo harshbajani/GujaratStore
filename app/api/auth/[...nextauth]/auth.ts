@@ -73,19 +73,26 @@ export const authOptions: NextAuthOptions = {
           await connectToDB();
 
           // Check if user exists
-          const existingUser = await User.findOne({ email: user.email });
+          let dbUser = await User.findOne({ email: user.email });
 
-          if (!existingUser) {
+          if (!dbUser) {
             // Create new user with Google profile data
-            await User.create({
+            dbUser = await User.create({
               name: user.name,
               email: user.email,
-              phone: "", // You might want to collect this later
-              password: "", // No password for Google auth
+              googleId: user.id, // Store Google ID
               role: "user",
               isVerified: true, // Google accounts are pre-verified
+              // Don't set phone or password for Google users
+            });
+          } else if (!dbUser.googleId) {
+            // If user exists but doesn't have googleId, update it
+            await User.findByIdAndUpdate(dbUser._id, {
+              googleId: user.id,
+              isVerified: true,
             });
           }
+
           return true;
         } catch (error) {
           console.error("Error in Google sign in:", error);
@@ -116,6 +123,10 @@ export const authOptions: NextAuthOptions = {
         },
       };
     },
+  },
+  pages: {
+    signIn: "/sign-in", // Custom sign-in page
+    error: "/auth/error", // Custom error page
   },
   session: {
     strategy: "jwt",
