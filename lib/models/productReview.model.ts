@@ -4,8 +4,7 @@ import "./product.model";
 
 const productReviewSchema = new Schema({
   userId: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
+    type: String,
     required: true,
   },
   productId: {

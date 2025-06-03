@@ -445,7 +445,7 @@ declare interface IProductResponse {
   productStatus?: boolean;
   productRating?: number;
   productReviews?: {
-    _id: string;
+    _id: Types.ObjectId;
     rating: number;
   };
   productWarranty?: string;

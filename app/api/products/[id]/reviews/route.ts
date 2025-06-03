@@ -71,7 +71,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
       // Check if user already reviewed this product
       const existingReview = await ProductReviews.findOne({
-        userId,
+        userId: userId.toString(),
         productId,
       }).session(session);
 
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         await ProductReviews.create(
           [
             {
-              userId,
+              userId: userId.toString(),
               productId,
               userName,
               rating,
