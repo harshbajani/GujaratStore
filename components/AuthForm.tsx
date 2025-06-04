@@ -31,6 +31,7 @@ import {
 } from "./ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { FaGoogle } from "react-icons/fa";
+import GoogleAutoSignIn from "./GoogleAutoSignIn";
 
 const AuthForm = ({
   type,
@@ -149,6 +150,7 @@ const AuthForm = ({
 
   return (
     <div className="flex w-full flex-col">
+      <GoogleAutoSignIn />
       {/* Header section with responsive height and padding */}
       <div className="relative min-h-[180px] w-full sm:min-h-[220px] md:min-h-[240px]">
         <div className="absolute inset-0 bg-[url('/bg/bg1.png')] bg-cover bg-center sm:bg-contain md:bg-[top_00%_right_200px]" />
@@ -376,9 +378,12 @@ const AuthForm = ({
                     variant="outline"
                     className="w-full flex items-center justify-center gap-2"
                     onClick={() => signIn("google", { callbackUrl: "/" })}
+                    asChild
                   >
-                    <FaGoogle className="w-5 h-5" />
-                    Continue with Google
+                    <Link href="/sign-in?autoSignIn=true">
+                      <FaGoogle className="w-5 h-5" />
+                      Continue with Google
+                    </Link>
                   </Button>
 
                   {errorMessage && (

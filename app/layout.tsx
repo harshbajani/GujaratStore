@@ -48,6 +48,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <script src="https://accounts.google.com/gsi/client" async defer />
+
       <body
         className={`${poppins.variable} ${playfair.variable} font-poppins antialiased`}
       >
