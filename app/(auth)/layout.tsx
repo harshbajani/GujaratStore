@@ -10,6 +10,7 @@ const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
     <main className="min-h-screen flex flex-col">
       <SessionProvider>
         <Header />
+        <script src="https://accounts.google.com/gsi/client" async defer />
         <div className="flex-1 main-content">{children}</div>
         <Toaster />
         <Footer />

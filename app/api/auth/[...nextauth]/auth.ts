@@ -10,6 +10,14 @@ export const authOptions: NextAuthOptions = {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "select_account",
+          access_type: "offline",
+          response_type: "code",
+          scope: "openid email profile",
+        },
+      },
       profile(profile) {
         return {
           id: profile.sub,
@@ -83,7 +91,6 @@ export const authOptions: NextAuthOptions = {
               googleId: user.id, // Store Google ID
               role: "user",
               isVerified: true, // Google accounts are pre-verified
-              // Don't set phone or password for Google users
             });
           } else if (!dbUser.googleId) {
             // If user exists but doesn't have googleId, update it
