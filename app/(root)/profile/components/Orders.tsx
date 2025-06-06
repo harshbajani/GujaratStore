@@ -171,7 +171,7 @@ const Orders = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-h-[440px] sm:max-h-[430px] overflow-auto">
       <h2 className="text-xl font-semibold mb-4">My Orders</h2>
 
       {orders.map((order) => {
