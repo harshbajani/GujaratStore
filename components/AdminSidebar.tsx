@@ -24,6 +24,7 @@ export function AdminSidebar() {
     <Sidebar className="border-r bg-brand">
       <SidebarHeader className="h-24 flex items-center justify-center border-b border-white/20 bg-brand">
         <Link
+          prefetch
           href="/vendor/dashboard"
           className="w-full h-full flex items-center justify-center"
         >
@@ -74,7 +75,7 @@ export function AdminSidebar() {
                   >
                     <div className="ml-8">
                       {route.map(({ route: subRoute, label: subLabel }) => (
-                        <Link key={subRoute} href={subRoute}>
+                        <Link prefetch key={subRoute} href={subRoute}>
                           <div
                             className={cn(
                               "flex items-center px-4 py-2 rounded-lg mb-2 transition-all duration-200",
@@ -92,7 +93,7 @@ export function AdminSidebar() {
                   </div>
                 </div>
               ) : (
-                <Link href={route}>
+                <Link prefetch href={route}>
                   <div
                     className={cn(
                       "flex items-center px-4 py-3 rounded-lg mb-2 transition-all duration-200",

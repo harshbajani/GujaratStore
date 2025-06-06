@@ -171,7 +171,7 @@ const BlogCard = ({
   const cardHeight = featured ? "h-full" : "h-[250px]";
 
   return (
-    <Link href={`/blog/${blog.id}`} className="block h-full">
+    <Link prefetch href={`/blog/${blog.id}`} className="block h-full">
       <motion.div
         whileHover={{ scale: 1.02 }}
         transition={{ duration: 0.2 }}

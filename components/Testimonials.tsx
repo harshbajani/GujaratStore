@@ -86,7 +86,9 @@ const Testimonials = () => {
                         className="mt-4 text-brand border-brand w-44 hover:bg-brand hover:text-white"
                         asChild
                       >
-                        <Link href="/shop">Buy Now</Link>
+                        <Link prefetch href="/shop">
+                          Buy Now
+                        </Link>
                       </Button>
                     </motion.div>
                   </motion.div>
@@ -133,7 +135,9 @@ const Testimonials = () => {
                         className="mt-4 text-brand border-brand w-44 hover:bg-brand hover:text-white"
                         asChild
                       >
-                        <Link href="/shop">Buy Now</Link>
+                        <Link prefetch href="/shop">
+                          Buy Now
+                        </Link>
                       </Button>
                     </motion.div>
                   </motion.div>

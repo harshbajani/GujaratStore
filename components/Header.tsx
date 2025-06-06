@@ -161,14 +161,18 @@ const Header = () => {
             className="border border-white text-white rounded hover:bg-white/20 hover:text-white"
             asChild
           >
-            <Link href="/sign-in">Login</Link>
+            <Link prefetch href="/sign-in">
+              Login
+            </Link>
           </Button>
           <Button
             variant="secondary"
             className="bg-white text-brand hover:bg-white/90"
             asChild
           >
-            <Link href="/sign-up">Sign Up</Link>
+            <Link prefetch href="/sign-up">
+              Sign Up
+            </Link>
           </Button>
         </div>
       );
@@ -181,7 +185,7 @@ const Header = () => {
         {/* Desktop Header */}
         <div className="h-[72px] w-full max-w-6xl mx-auto hidden md:flex flex-row items-center justify-between px-4">
           <div className="flex flex-row items-center space-x-4">
-            <Link href="/">
+            <Link prefetch href="/">
               <Image src="/logo.png" height={56} width={108} alt="logo" />
             </Link>
             <div className="relative" ref={searchRef}>
@@ -216,7 +220,11 @@ const Header = () => {
               className="bg-transparent hover:bg-white/20 text-white"
               asChild
             >
-              <Link href="/cart" className="flex items-center space-x-2">
+              <Link
+                prefetch
+                href="/cart"
+                className="flex items-center space-x-2"
+              >
                 <ShoppingCart />
                 <span>
                   <div className="relative">
@@ -286,7 +294,7 @@ const Header = () => {
             >
               <SheetHeader className="p-4 bg-brand text-white">
                 <SheetTitle className="flex justify-between items-center">
-                  <Link href="/">
+                  <Link prefetch href="/">
                     <Image src="/logo.png" height={40} width={80} alt="logo" />
                   </Link>
                 </SheetTitle>
@@ -328,6 +336,7 @@ const Header = () => {
                 <div className="border-t">
                   {NavLinks.map((link) => (
                     <Link
+                      prefetch
                       key={link.route}
                       href={link.route}
                       className="block px-4 py-3 text-gray-600 hover:bg-gray-100"
@@ -346,7 +355,11 @@ const Header = () => {
               className="bg-transparent hover:bg-white/20 text-white relative"
               asChild
             >
-              <Link href="/cart" className="flex items-center space-x-2">
+              <Link
+                prefetch
+                href="/cart"
+                className="flex items-center space-x-2"
+              >
                 <div className="relative">
                   <ShoppingCart />
                   {cartItemsCount > 0 && (
@@ -376,6 +389,7 @@ const Header = () => {
                   {UserNavLinks.map((link) => (
                     <DropdownMenuItem key={link.route} asChild>
                       <Link
+                        prefetch
                         href={link.route}
                         className="flex items-center space-x-2"
                       >
@@ -401,6 +415,7 @@ const Header = () => {
           <div className="flex items-center justify-between px-4">
             {NavLinks.map((link) => (
               <Link
+                prefetch
                 key={link.route}
                 href={link.route}
                 className="py-2 px-4 text-neutral-600 hover:text-brand transition-colors"

@@ -22,6 +22,7 @@ const Footer = () => {
                 C-18/17 & Road no. 1, Sandar Estate, Ajwa Road, Vadodara-390019
               </p>
               <Link
+                prefetch
                 href="https://goo.gl/maps/xyz"
                 className="text-brand text-sm"
               >
@@ -37,6 +38,7 @@ const Footer = () => {
               <div className="flex flex-wrap gap-x-4">
                 {FooterLinks.map((link, index) => (
                   <Link
+                    prefetch
                     key={index}
                     href={link.route}
                     className="text-gray-300 hover:text-brand text-sm"
@@ -50,7 +52,12 @@ const Footer = () => {
             {/* Social Media Icons */}
             <div className="flex gap-4 mt-4">
               {SocialLinks.map((social, index) => (
-                <Link key={index} href={social.url} className="text-white">
+                <Link
+                  prefetch
+                  key={index}
+                  href={social.url}
+                  className="text-white"
+                >
                   <Image
                     src={social.src}
                     width={20}

@@ -40,6 +40,7 @@ const SearchDropdown = ({
         <div>
           {results.map((product) => (
             <Link
+              prefetch
               href={`/product/${product.slug}`}
               key={product._id}
               onClick={onClose}

@@ -79,7 +79,9 @@ const Hero = () => {
               className="w-36 bg-brand hover:bg-white px-4 py-2 mt-4 text-white hover:text-brand rounded"
               asChild
             >
-              <Link href="/shop">Buy now</Link>
+              <Link prefetch href="/shop">
+                Buy now
+              </Link>
             </Button>
           </motion.div>
         </div>

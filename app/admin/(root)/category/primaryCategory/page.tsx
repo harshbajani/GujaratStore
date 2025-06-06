@@ -225,7 +225,7 @@ const PrimaryCategoryPage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/admin/category/primaryCategory/add">
+            <Link prefetch href="/admin/category/primaryCategory/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Primary Category
               </Button>

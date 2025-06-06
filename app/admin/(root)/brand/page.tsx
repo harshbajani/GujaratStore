@@ -200,7 +200,7 @@ const BrandPage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/admin/brand/add">
+            <Link prefetch href="/admin/brand/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Brand
               </Button>

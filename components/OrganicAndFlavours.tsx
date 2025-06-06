@@ -114,7 +114,11 @@ const OrganicAndFlavours = () => {
                 variants={itemVariants}
                 whileHover={{ y: -10, transition: { duration: 0.3 } }}
               >
-                <Link href="/organic" className="flex flex-col items-center">
+                <Link
+                  prefetch
+                  href="/organic"
+                  className="flex flex-col items-center"
+                >
                   <motion.div
                     className="mb-4 rounded-full overflow-hidden w-[250px] h-[250px]"
                     whileHover={{ scale: 1.05 }}
@@ -240,7 +244,9 @@ const OrganicAndFlavours = () => {
                     className="mt-4 text-brand border-brand w-44 hover:bg-brand hover:text-white"
                     asChild
                   >
-                    <Link href="/shop">Explore</Link>
+                    <Link prefetch href="/shop">
+                      Explore
+                    </Link>
                   </Button>
                 </motion.div>
               </motion.div>

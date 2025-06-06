@@ -209,7 +209,7 @@ const SizePage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/vendor/size/add">
+            <Link prefetch href="/vendor/size/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Size
               </Button>

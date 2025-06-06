@@ -447,7 +447,7 @@ const HomeDecorPage = () => {
                 >
                   {/* Image Container */}
                   <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
-                    <Link href={`/home-decor/${product.slug}`}>
+                    <Link prefetch href={`/home-decor/${product.slug}`}>
                       <Image
                         src={getImageUrl(product.productCoverImage)}
                         alt={product.productName}
@@ -459,7 +459,7 @@ const HomeDecorPage = () => {
                   </div>
 
                   {/* Product Info */}
-                  <Link href={`/home-decor/${product.slug}`}>
+                  <Link prefetch href={`/home-decor/${product.slug}`}>
                     <div className="flex w-full flex-1 flex-col items-center">
                       <TooltipProvider>
                         <Tooltip>

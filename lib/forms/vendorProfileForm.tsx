@@ -219,7 +219,9 @@ const VendorProfileForm = () => {
           <CardFooter className="flex items-end justify-end">
             <div className="flex justify-end gap-4">
               <Button variant="outline" asChild>
-                <Link href="/vendor/dashboard">Cancel</Link>
+                <Link prefetch href="/vendor/dashboard">
+                  Cancel
+                </Link>
               </Button>
               <Button
                 type="submit"

@@ -252,7 +252,7 @@ const SecondaryCategoryPage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/admin/category/secondaryCategory/add">
+            <Link prefetch href="/admin/category/secondaryCategory/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Secondary Category
               </Button>

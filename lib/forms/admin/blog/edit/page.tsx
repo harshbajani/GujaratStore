@@ -339,7 +339,9 @@ const EditBlog = () => {
               {isSubmitting ? "Submitting..." : "Submit"}
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/admin/blogs">Cancel</Link>
+              <Link prefetch href="/admin/blogs">
+                Cancel
+              </Link>
             </Button>
           </div>
         </form>

@@ -221,6 +221,7 @@ const SimilarProducts = () => {
                     {/* Image Container */}
                     <div className="mb-4 h-40 w-full overflow-hidden rounded-lg">
                       <Link
+                        prefetch
                         href={`/${product.parentCategory?.name}/${product.slug}`}
                       >
                         <Image
@@ -235,6 +236,7 @@ const SimilarProducts = () => {
 
                     {/* Product Info */}
                     <Link
+                      prefetch
                       href={`/${product.parentCategory?.name}/${product.slug}`}
                       className="w-full"
                     >

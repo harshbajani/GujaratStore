@@ -296,13 +296,18 @@ const VendorForm = ({ type }: { type: FormType }) => {
                 : "Already have an account?"}
             </p>
             <Link
+              prefetch
               href={type === "sign-in" ? "/vendor/sign-up" : "/vendor/sign-in"}
               className="font-medium text-brand hover:underline"
             >
               {type === "sign-in" ? "Sign Up" : "Sign In"}
             </Link>
           </div>
-          <Link href="/vendor/forgot-password" className="text-sm text-brand">
+          <Link
+            prefetch
+            href="/vendor/forgot-password"
+            className="text-sm text-brand"
+          >
             Forgot Password?
           </Link>
         </CardFooter>

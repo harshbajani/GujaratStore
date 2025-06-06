@@ -235,6 +235,7 @@ const ContactPage = () => {
                       <div className="flex gap-4">
                         {SocialLinks.map((social, index) => (
                           <Link
+                            prefetch
                             key={index}
                             href={social.url}
                             className="text-white hover:opacity-80 transition-opacity"

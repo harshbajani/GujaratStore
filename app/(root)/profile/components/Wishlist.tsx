@@ -242,7 +242,7 @@ const Wishlist = () => {
         {wishlistItems.map((item) => (
           <Card key={item._id} className="overflow-hidden flex flex-col">
             <CardHeader className="p-0 relative">
-              <Link href={`/product/${item._id}`}>
+              <Link prefetch href={`/product/${item._id}`}>
                 <div className="h-48 w-full relative">
                   {item.productCoverImage && (
                     <Image
@@ -264,7 +264,7 @@ const Wishlist = () => {
               </Button>
             </CardHeader>
             <CardContent className="flex-grow p-4">
-              <Link href={`/product/${item._id}`}>
+              <Link prefetch href={`/product/${item._id}`}>
                 <h3 className="font-medium text-lg hover:text-brand transition-colors line-clamp-1">
                   {item.productName}
                 </h3>

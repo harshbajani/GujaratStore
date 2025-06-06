@@ -162,7 +162,9 @@ const Orders = () => {
           asChild
           className="bg-brand hover:bg-brand/90"
         >
-          <Link href="/shop">Start Shopping</Link>
+          <Link prefetch href="/shop">
+            Start Shopping
+          </Link>
         </Button>
       </div>
     );

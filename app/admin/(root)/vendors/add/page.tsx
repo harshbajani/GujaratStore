@@ -360,7 +360,9 @@ const AddVendorAdminForm = () => {
 
               <div className="flex justify-end gap-4 pt-4">
                 <Button variant="outline" asChild>
-                  <Link href="/admin/vendors">Cancel</Link>
+                  <Link prefetch href="/admin/vendors">
+                    Cancel
+                  </Link>
                 </Button>
                 <Button type="submit" className="bg-brand hover:bg-brand/90">
                   Add Vendor

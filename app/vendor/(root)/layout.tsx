@@ -69,6 +69,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                       <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuItem asChild>
                           <Link
+                            prefetch
                             href="/vendor/account"
                             className="flex items-center"
                           >
