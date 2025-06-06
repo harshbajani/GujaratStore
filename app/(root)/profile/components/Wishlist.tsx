@@ -232,7 +232,7 @@ const Wishlist = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-h-[440px] sm:max-h-[430px] overflow-auto">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">My Wishlist</h2>
         <p className="text-gray-500">{wishlistItems.length} item(s)</p>
@@ -249,7 +249,7 @@ const Wishlist = () => {
                       src={getImageUrl(item.productCoverImage)}
                       alt={item.productName}
                       fill
-                      className="object-cover"
+                      className="object-cover object-top"
                     />
                   )}
                 </div>
