@@ -670,3 +670,42 @@ declare interface IAdminDiscount {
   createdAt: Date;
   updatedAt: Date;
 }
+
+declare interface Address {
+  _id: string;
+  name: string;
+  contact: string;
+  address_line_1: string;
+  address_line_2: string;
+  locality: string;
+  state: string;
+  pincode: string;
+  type: string;
+}
+
+declare interface IOrderItem {
+  productId: string;
+  vendorId: string;
+  productName: string;
+  coverImage: string;
+  price: number;
+  quantity: number;
+  deliveryDate: string;
+  selectedSize?: string;
+}
+
+declare interface OrderEmailData {
+  orderId: string;
+  items: IOrderItem[];
+  subtotal: number;
+  deliveryCharges: number;
+  discountAmount?: number;
+  total: number;
+  paymentOption: string;
+  createdAt: string;
+  address: Address;
+  userName: string;
+  userEmail: string;
+  recipientType?: "user" | "vendor" | "admin";
+  vendorId?: string;
+}
