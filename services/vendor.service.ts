@@ -3,6 +3,7 @@ import { connectToDB } from "@/lib/mongodb";
 import Vendor from "@/lib/models/vendor.model";
 import { VendorUpdateData } from "@/lib/actions/admin/vendor.actions";
 import { CacheService } from "./cache.service";
+import { sendOrderConfirmationEmail } from "@/lib/workflows/email";
 
 export class VendorService {
   private static readonly CACHE_PREFIX = "vendor:";
@@ -291,3 +292,54 @@ export class VendorService {
     }
   }
 }
+
+export const sendOrderEmails = async (orderData: OrderEmailData) => {
+  try {
+    // Send to user
+    await sendOrderConfirmationEmail({
+      ...orderData,
+      recipientType: "user",
+    });
+
+    // Send to admin
+    await sendOrderConfirmationEmail({
+      ...orderData,
+      recipientType: "admin",
+      userEmail: process.env.ADMIN_USERNAME!,
+    });
+
+    // Get unique vendor IDs from order items
+    const vendorIds = [
+      ...new Set(orderData.items.map((item) => item.vendorId)),
+    ];
+
+    // Send to each vendor
+    for (const vendorId of vendorIds) {
+      const vendorResponse = await VendorService.getVendorById(vendorId!);
+
+      if (vendorResponse.success && vendorResponse.data) {
+        // Filter items for this specific vendor
+        const vendorItems = orderData.items.filter(
+          (item) => item.vendorId === vendorId
+        );
+
+        await sendOrderConfirmationEmail({
+          ...orderData,
+          items: vendorItems, // Only send vendor-specific items
+          recipientType: "vendor",
+          userEmail: vendorResponse.data.email,
+          vendorId,
+        });
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending order emails:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to send order emails",
+    };
+  }
+};
