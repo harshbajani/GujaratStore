@@ -9,7 +9,9 @@ const ErrorPage = () => {
       <AlertTriangle className="size-6 text-muted-foreground" />
       <p className="text-sm text-muted-foreground">Something went wrong</p>
       <Button variant="secondary" size="sm" asChild>
-        <Link href="/">Back to home</Link>
+        <Link prefetch href="/">
+          Back to home
+        </Link>
       </Button>
     </div>
   );

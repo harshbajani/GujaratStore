@@ -213,7 +213,7 @@ const AttributePage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/vendor/attribute/add">
+            <Link prefetch href="/vendor/attribute/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Attribute
               </Button>

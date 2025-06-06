@@ -92,7 +92,9 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
               className="text-white px-6 py-2 rounded bg-brand hover:bg-white hover:text-brand"
               asChild
             >
-              <Link href="/shop">Buy Now</Link>
+              <Link prefetch href="/shop">
+                Buy Now
+              </Link>
             </Button>
           </motion.div>
         </motion.div>
@@ -136,7 +138,9 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
             variant="outline"
             asChild
           >
-            <Link href="/shop">Buy Now</Link>
+            <Link prefetch href="/shop">
+              Buy Now
+            </Link>
           </Button>
         </motion.div>
       </motion.div>

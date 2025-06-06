@@ -380,7 +380,7 @@ const AuthForm = ({
                     onClick={() => signIn("google", { callbackUrl: "/" })}
                     asChild
                   >
-                    <Link href="/sign-in?autoSignIn=true">
+                    <Link prefetch href="/sign-in?autoSignIn=true">
                       <FaGoogle className="w-5 h-5" />
                       Continue with Google
                     </Link>
@@ -397,6 +397,7 @@ const AuthForm = ({
                         : "Already have an account?"}
                     </p>
                     <Link
+                      prefetch
                       href={getAuthLink(
                         type === "sign-in" ? "sign-up" : "sign-in"
                       )}
@@ -405,7 +406,11 @@ const AuthForm = ({
                       {type === "sign-in" ? "Sign Up" : "Sign In"}
                     </Link>
                   </div>
-                  <Link href="/forgot-password" className="text-sm text-brand ">
+                  <Link
+                    prefetch
+                    href="/forgot-password"
+                    className="text-sm text-brand "
+                  >
                     Forgot Password?
                   </Link>
                 </CardFooter>

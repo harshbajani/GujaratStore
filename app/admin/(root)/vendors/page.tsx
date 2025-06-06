@@ -194,7 +194,7 @@ const VendorPage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/admin/vendors/add">
+            <Link prefetch href="/admin/vendors/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Vendor
               </Button>

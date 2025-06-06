@@ -255,7 +255,7 @@ const ProductsPage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/vendor/products/add">
+            <Link prefetch href="/vendor/products/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Product
               </Button>

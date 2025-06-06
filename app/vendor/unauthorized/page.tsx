@@ -13,10 +13,14 @@ export default function UnauthorizedPage() {
         </p>
         <div className="flex gap-4 justify-center mt-6">
           <Button asChild variant="outline">
-            <Link href="/">Return Home</Link>
+            <Link prefetch href="/">
+              Return Home
+            </Link>
           </Button>
           <Button asChild>
-            <Link href="/vendor/sign-up">Become a Vendor</Link>
+            <Link prefetch href="/vendor/sign-up">
+              Become a Vendor
+            </Link>
           </Button>
         </div>
       </div>

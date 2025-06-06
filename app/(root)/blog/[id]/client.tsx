@@ -59,7 +59,9 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800">Blog not found</h1>
           <Button asChild className="mt-4 bg-brand hover:bg-brand/90">
-            <Link href="/">Go Home</Link>
+            <Link prefetch href="/">
+              Go Home
+            </Link>
           </Button>
         </div>
       </div>
@@ -76,6 +78,7 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
       <div className="dynamic-container max-w-4xl mx-auto px-4">
         {/* Back Button */}
         <Link
+          prefetch
           href="/"
           className="inline-flex items-center gap-2 text-brand hover:text-brand/80 mb-6 transition-colors"
         >
@@ -143,6 +146,7 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {relatedBlogs.map((relatedBlog) => (
                 <Link
+                  prefetch
                   key={relatedBlog.id}
                   href={`/blog/${relatedBlog.id}`}
                   className="group"

@@ -274,6 +274,7 @@ const CustomersPage = () => {
         return (
           <div>
             <Link
+              prefetch
               href={`mailto:${email}`}
               className="text-blue-600 hover:underline"
             >
@@ -291,6 +292,7 @@ const CustomersPage = () => {
         return (
           <div>
             <Link
+              prefetch
               href={`callto:${phone}`}
               className="text-blue-600 hover:underline"
             >

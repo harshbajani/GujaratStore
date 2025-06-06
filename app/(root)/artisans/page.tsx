@@ -447,7 +447,7 @@ const ArtisanPage = () => {
                 >
                   {/* Image Container */}
                   <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
-                    <Link href={`/artisans/${product.slug}`}>
+                    <Link prefetch href={`/artisans/${product.slug}`}>
                       <Image
                         src={getImageUrl(product.productCoverImage)}
                         alt={product.productName}
@@ -459,7 +459,7 @@ const ArtisanPage = () => {
                   </div>
 
                   {/* Product Info */}
-                  <Link href={`/artisans/${product.slug}`}>
+                  <Link prefetch href={`/artisans/${product.slug}`}>
                     <div className="flex w-full flex-1 flex-col items-center">
                       <TooltipProvider>
                         <Tooltip>

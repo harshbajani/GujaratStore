@@ -215,7 +215,7 @@ const ParentCategoryPage = () => {
               }
               className="max-w-sm"
             />
-            <Link href="/admin/category/parentCategory/add">
+            <Link prefetch href="/admin/category/parentCategory/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Parent Category
               </Button>

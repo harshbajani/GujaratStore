@@ -196,7 +196,9 @@ const AddBrandForm = () => {
                 {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/vendor/brand">Cancel</Link>
+                <Link prefetch href="/vendor/brand">
+                  Cancel
+                </Link>
               </Button>
             </div>
           </form>

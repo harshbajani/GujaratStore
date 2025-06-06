@@ -82,7 +82,8 @@ const CategorySection = ({ title, items }: CategorySectionProps) => {
       const response = await getAllPrimaryCategories();
 
       if (response.success && response.data) {
-        const categories = response.data as PrimaryCategoryWithPopulatedFields[];
+        const categories =
+          response.data as PrimaryCategoryWithPopulatedFields[];
         const filteredCategories = categories.filter(
           (category) =>
             category.parentCategory?.name.toLowerCase() === title.toLowerCase()
@@ -160,7 +161,9 @@ const CategorySection = ({ title, items }: CategorySectionProps) => {
             whileHover="hover"
             whileTap="tap"
           >
-            <Link href={`/product-category/${item._id}`}> {/* Changed from id to _id */}
+            <Link prefetch href={`/product-category/${item._id}`}>
+              {" "}
+              {/* Changed from id to _id */}
               <motion.div
                 className="w-full h-44 relative"
                 variants={imageHoverVariants}
