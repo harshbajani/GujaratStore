@@ -2,42 +2,6 @@
 import nodemailer from "nodemailer";
 import { format } from "date-fns";
 
-interface OrderItem {
-  productId: string;
-  productName: string;
-  coverImage: string;
-  price: number;
-  quantity: number;
-  deliveryDate: string;
-  selectedSize?: string;
-}
-
-interface Address {
-  _id: string;
-  name: string;
-  contact: string;
-  address_line_1: string;
-  address_line_2: string;
-  locality: string;
-  state: string;
-  pincode: string;
-  type: string;
-}
-
-interface OrderEmailData {
-  orderId: string;
-  items: OrderItem[];
-  subtotal: number;
-  deliveryCharges: number;
-  discountAmount?: number;
-  total: number;
-  paymentOption: string;
-  createdAt: string;
-  address: Address;
-  userName: string;
-  userEmail: string;
-}
-
 export const sendOrderConfirmationEmail = async (orderData: OrderEmailData) => {
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -52,6 +16,28 @@ export const sendOrderConfirmationEmail = async (orderData: OrderEmailData) => {
     new Date(orderData.createdAt),
     "d MMM yyyy, h:mm a"
   );
+
+  const getGreeting = (recipientType: string, name?: string) => {
+    switch (recipientType) {
+      case "vendor":
+        return "Dear Vendor,";
+      case "admin":
+        return "Dear Admin,";
+      default:
+        return `Dear ${name},`;
+    }
+  };
+
+  const getIntroText = (recipientType: string) => {
+    switch (recipientType) {
+      case "vendor":
+        return "You have received a new order for your products. Here are the order details:";
+      case "admin":
+        return "A new order has been placed on The Gujarat Store. Here are the order details:";
+      default:
+        return "Thank you for your order! We're pleased to confirm that your order has been received and is being processed.";
+    }
+  };
 
   // Generate items HTML
   const itemsHTML = orderData.items
@@ -122,10 +108,13 @@ export const sendOrderConfirmationEmail = async (orderData: OrderEmailData) => {
                 <tr>
                   <td style="padding: 30px 30px 10px;">
                     <h1 style="margin: 0 0 20px; color: #C93326; text-align: center; font-size: 24px;">Order Confirmation</h1>
-                    <p style="margin: 0 0 15px; color: #333; font-size: 16px;">Dear ${
+                    <p style="margin: 0 0 15px; color: #333; font-size: 16px;">${getGreeting(
+                      orderData.recipientType || "user",
                       orderData.userName
-                    },</p>
-                    <p style="margin: 0 0 25px; color: #333; font-size: 16px;">Thank you for your order! We're pleased to confirm that your order has been received and is being processed.</p>
+                    )}</p>
+                    <p style="margin: 0 0 25px; color: #333; font-size: 16px;">${getIntroText(
+                      orderData.recipientType || "user"
+                    )}</p>
                     
                     <!-- Order Info -->
                     <table style="width: 100%; margin-bottom: 30px; border-collapse: collapse;">
