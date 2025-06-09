@@ -7,6 +7,7 @@ pipeline {
         // Checkout with PAT
         git(
           url: 'https://github.com/harshbajani/GujaratStore.git',
+          credentialsId: 'github-pat',
           branch: 'main'
         )
         script {
