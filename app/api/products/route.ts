@@ -22,6 +22,7 @@ const populateConfig = [
 
 export async function POST(request: Request) {
   try {
+    await connectToDB();
     const vendorResponse = await getCurrentVendor();
     if (!vendorResponse.success) {
       return NextResponse.json(
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: NextRequest) {
   try {
+    await connectToDB();
     const searchParams = request.nextUrl.searchParams;
     const fetchAll = searchParams.get("all") === "true";
 
