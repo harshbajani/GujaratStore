@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
+export const runtime = "nodejs";
 import { getCurrentVendor } from "@/lib/actions/vendor.actions";
 import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
