@@ -3,15 +3,6 @@ import { GridFSBucket } from "mongodb";
 
 let bucket: GridFSBucket;
 
-const opts = {
-  bufferCommands: false,
-  serverSelectionTimeoutMS: 10_000,
-  socketTimeoutMS: 45_000,
-  connectTimeoutMS: 30_000,
-  keepAlive: true,
-  keepAliveInitialDelay: 300_000,
-};
-
 export const connectToDB = async () => {
   mongoose.set("strictQuery", true);
 
@@ -20,7 +11,7 @@ export const connectToDB = async () => {
   }
 
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URL, opts);
+    const conn = await mongoose.connect(process.env.MONGODB_URL);
 
     // Initialize GridFS bucket
     if (!conn.connection.db) {
