@@ -71,9 +71,6 @@ export async function PUT(request: Request) {
       });
     }
 
-    // Update the cart quantity in user's session/state
-    // Note: We're not reducing inventory yet, that happens at checkout
-
     return NextResponse.json({
       success: true,
       data: {

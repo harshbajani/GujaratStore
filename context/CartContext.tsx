@@ -41,10 +41,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       body: JSON.stringify({ productId }),
     });
     const json = await res.json();
+
     if (!json.success) {
       toast({
         title: "Error",
-        description: json.error,
+        description: json.message,
         variant: "destructive",
       });
       // rollback
@@ -65,7 +66,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     if (!json.success) {
       toast({
         title: "Error",
-        description: json.error,
+        description: json.message,
         variant: "destructive",
       });
       // rollback
