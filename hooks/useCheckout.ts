@@ -2,6 +2,7 @@ import { useReducer, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { generateOrderId } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 // Define the shape of our checkout state
 interface CheckoutState {
@@ -231,6 +232,7 @@ async function checkReferralDiscount(
 
 export function useCheckout() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [state, dispatch] = useReducer(checkoutReducer, initialState);
   const [referralDiscount, setReferralDiscount] = useState(0);
   const [referralDiscountType, setReferralDiscountType] = useState<
@@ -244,40 +246,7 @@ export function useCheckout() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const userResponse = await fetch("/api/user/current");
-        const userData = await userResponse.json();
-
-        if (!userData.success) {
-          router.push("/login");
-          return;
-        }
-
-        dispatch({ type: "SET_USER_DATA", payload: userData.data });
-
-        // Fetch user's reward points from the API
-        if (userData.data?._id) {
-          try {
-            const rewardPointsResponse = await fetch(
-              `/api/rewards/redeem?userId=${userData.data._id}`
-            );
-            const rewardPointsData = await rewardPointsResponse.json();
-
-            if (rewardPointsData.success) {
-              // Update user data with actual reward points from the API
-              dispatch({
-                type: "SET_USER_DATA",
-                payload: {
-                  ...userData.data,
-                  rewardPoints: rewardPointsData.data.rewardPoints,
-                },
-              });
-            }
-          } catch (rewardError) {
-            console.error("Error fetching reward points:", rewardError);
-            // Continue with the rest of the process even if reward points fetch fails
-          }
-        }
-
+        // Check for checkout data first
         const storedData = sessionStorage.getItem("checkoutData");
         if (!storedData) {
           router.push("/cart");
@@ -287,36 +256,69 @@ export function useCheckout() {
         dispatch({ type: "SET_CHECKOUT_DATA", payload: parsedData });
         dispatch({ type: "SET_ORIGINAL_TOTAL", payload: parsedData.total });
 
-        // Check for referral discount
-        const referralDiscountResult = await checkReferralDiscount(
-          userData.data,
-          parsedData
-        );
+        // Handle authenticated user data
+        if (session) {
+          const userResponse = await fetch("/api/user/current");
+          const userData = await userResponse.json();
 
-        if (referralDiscountResult.referralDiscount > 0) {
-          setReferralDiscount(referralDiscountResult.referralDiscount);
-          setReferralDiscountType(referralDiscountResult.referralDiscountType);
-          setReferralCode(referralDiscountResult.referralCode);
+          if (userData.success) {
+            dispatch({ type: "SET_USER_DATA", payload: userData.data });
 
-          // Update checkout data with referral discount
-          const newTotal =
-            parsedData.total - referralDiscountResult.referralDiscount;
-          const updatedCheckoutData: CheckoutData = {
-            ...parsedData,
-            discountAmount:
-              (parsedData.discountAmount || 0) +
-              referralDiscountResult.referralDiscount,
-            total: newTotal,
-          };
+            // Fetch user's reward points
+            if (userData.data?._id) {
+              try {
+                const rewardPointsResponse = await fetch(
+                  `/api/rewards/redeem?userId=${userData.data._id}`
+                );
+                const rewardPointsData = await rewardPointsResponse.json();
 
-          dispatch({
-            type: "UPDATE_CHECKOUT_DATA",
-            payload: updatedCheckoutData,
-          });
-          sessionStorage.setItem(
-            "checkoutData",
-            JSON.stringify(updatedCheckoutData)
-          );
+                if (rewardPointsData.success) {
+                  dispatch({
+                    type: "SET_USER_DATA",
+                    payload: {
+                      ...userData.data,
+                      rewardPoints: rewardPointsData.data.rewardPoints,
+                    },
+                  });
+                }
+              } catch (rewardError) {
+                console.error("Error fetching reward points:", rewardError);
+              }
+            }
+
+            // Check for referral discount for authenticated users
+            const referralDiscountResult = await checkReferralDiscount(
+              userData.data,
+              parsedData
+            );
+
+            if (referralDiscountResult.referralDiscount > 0) {
+              setReferralDiscount(referralDiscountResult.referralDiscount);
+              setReferralDiscountType(
+                referralDiscountResult.referralDiscountType
+              );
+              setReferralCode(referralDiscountResult.referralCode);
+
+              const newTotal =
+                parsedData.total - referralDiscountResult.referralDiscount;
+              const updatedCheckoutData: CheckoutData = {
+                ...parsedData,
+                discountAmount:
+                  (parsedData.discountAmount || 0) +
+                  referralDiscountResult.referralDiscount,
+                total: newTotal,
+              };
+
+              dispatch({
+                type: "UPDATE_CHECKOUT_DATA",
+                payload: updatedCheckoutData,
+              });
+              sessionStorage.setItem(
+                "checkoutData",
+                JSON.stringify(updatedCheckoutData)
+              );
+            }
+          }
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -331,7 +333,7 @@ export function useCheckout() {
     };
 
     fetchData();
-  }, [router]);
+  }, [router, session]);
 
   // Helper: update checkout data in state and session storage
   const updateCheckoutData = (newData: CheckoutData) => {
@@ -340,7 +342,7 @@ export function useCheckout() {
   };
 
   // Update quantity for a given product in checkout
-  const updateQuantity = (productId: string, newQuantity: number) => {
+  const updateQuantity = async (productId: string, newQuantity: number) => {
     if (!state.checkoutData || newQuantity < 1) return;
 
     const updatedItems = state.checkoutData.items.map((item) =>
@@ -371,16 +373,18 @@ export function useCheckout() {
     if (!state.checkoutData) return;
 
     try {
-      // Remove item from cart via API
-      const response = await fetch("/api/user/cart", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId }),
-      });
-      const result = await response.json();
+      if (session) {
+        // Remove item from authenticated user's cart
+        const response = await fetch("/api/user/cart", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId }),
+        });
+        const result = await response.json();
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to remove item from cart");
+        if (!result.success) {
+          throw new Error(result.error || "Failed to remove item from cart");
+        }
       }
 
       // Update local checkout data

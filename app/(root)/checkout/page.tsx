@@ -1,11 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Loader from "@/components/Loader";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { addAddress } from "@/lib/actions/address.actions";
+import AddressDialog from "@/lib/forms/addressForm";
+import { z } from "zod";
+import { Address as AddressSchema } from "@/lib/validations";
 
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 import OrderConfirmationDialog from "@/components/OrderConfirmationDialog";
@@ -13,8 +20,15 @@ import DiscountSection from "@/components/Discount";
 import AccordionSection from "@/components/AccordionSection";
 import { useCheckout } from "@/hooks/useCheckout"; // Adjust the import path as needed
 import { RewardRedemptionComponent } from "@/components/RewardPointsSection";
+import GuestCheckoutForm from "@/components/GuestCheckoutForm";
+
+type DeliveryAddress = z.infer<typeof AddressSchema>;
 
 const CheckoutPage = () => {
+  const { data: session } = useSession();
+  const [showGuestForm, setShowGuestForm] = useState(false);
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
+  const { toast } = useToast();
   const {
     state,
     dispatch,
@@ -30,19 +44,148 @@ const CheckoutPage = () => {
   const { referralDiscount, referralDiscountType, referralCode } =
     getReferralDiscountDetails();
 
+  useEffect(() => {
+    // Reset guest form visibility when session changes
+    if (session) {
+      setShowGuestForm(false);
+    }
+  }, [session]);
+
+  const handleAddressSubmit = async (formData: DeliveryAddress) => {
+    try {
+      const response = await addAddress(formData);
+      if (response.success) {
+        // Update user data in checkout state with the new address
+        dispatch({
+          type: "SET_USER_DATA",
+          payload: {
+            ...state.userData!,
+            addresses: [
+              ...(state.userData?.addresses || []),
+              response.addresses,
+            ],
+          },
+        });
+
+        // Set the newly added address as selected
+        dispatch({
+          type: "SET_SELECTED_ADDRESS",
+          payload: response.addresses._id,
+        });
+
+        toast({
+          title: "Success",
+          description: "Address added successfully",
+        });
+        setShowAddressDialog(false);
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to add address",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error adding address:", error);
+      toast({
+        title: "Error",
+        description: "Something went wrong",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (state.loading) return <Loader />;
-  if (!state.checkoutData || !state.userData) return null;
+  if (!state.checkoutData) return null;
 
   // Helper function to set points to redeem
   const setPointsToRedeem = (points: number) => {
     dispatch({ type: "SET_POINTS_TO_REDEEM", payload: points });
   };
 
+  const handleGuestCheckoutSuccess = (userData: {
+    id: string;
+    email: string;
+    name: string;
+  }) => {
+    // Update user data in checkout state
+    dispatch({
+      type: "SET_USER_DATA",
+      payload: {
+        _id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        phone: "", // Will be updated in the address form
+        password: "", // Not needed in the frontend
+        addresses: [],
+        role: "user" as const,
+        isVerified: true,
+        __v: 0,
+        cart: [],
+        wishlist: [],
+        order: [],
+      },
+    });
+    setShowGuestForm(false);
+  };
+
+  // Show guest checkout form if user is not authenticated
+  if (!session && !showGuestForm) {
+    return (
+      <div className="bg-gray-50 py-16">
+        <BreadcrumbHeader title="Home" subtitle="Checkout" titleHref="/" />
+        <div className="dynamic-container min-h-screen mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
+            <h2 className="text-2xl font-bold mb-4">Checkout Options</h2>
+            <div className="space-y-4">
+              <Button
+                className="w-full primary-btn"
+                onClick={() => (window.location.href = "/sign-in")}
+              >
+                Sign In to Checkout
+              </Button>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-500">Or</span>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowGuestForm(true)}
+              >
+                Continue as Guest
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show guest checkout form
+  if (!session && showGuestForm) {
+    return (
+      <div className=" py-16 bg-gray-50">
+        <BreadcrumbHeader title="Home" subtitle="Checkout" titleHref="/" />
+        <div className="dynamic-container mx-auto px-4 py-8 min-h-screen">
+          <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
+            <h2 className="text-2xl font-bold mb-4">Guest Checkout</h2>
+            <GuestCheckoutForm onSuccess={handleGuestCheckoutSuccess} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="py-14 bg-gray-50">
       <BreadcrumbHeader title="Home" subtitle="Checkout" titleHref="/" />
 
-      <div className="dynamic-container mx-auto px-4 py-8">
+      <div className="dynamic-container mx-auto px-4 py-8 min-h-screen">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Checkout Details */}
           <div className="lg:col-span-2 space-y-4">
@@ -54,8 +197,8 @@ const CheckoutPage = () => {
               expandedSection={state.expandedSection}
               onToggle={toggleSection}
             >
-              <p className="font-medium">{state.userData.name}</p>
-              <p className="text-gray-600">{state.userData.phone}</p>
+              <p className="font-medium">{state.userData?.name}</p>
+              <p className="text-gray-600">{state.userData?.phone}</p>
             </AccordionSection>
 
             {/* Delivery Address */}
@@ -66,7 +209,8 @@ const CheckoutPage = () => {
               expandedSection={state.expandedSection}
               onToggle={toggleSection}
             >
-              {state.userData.addresses.length > 0 ? (
+              {state.userData?.addresses &&
+              state.userData.addresses.length > 0 ? (
                 <div className="space-y-3">
                   {state.userData.addresses.map((address) => (
                     <div
@@ -113,10 +257,25 @@ const CheckoutPage = () => {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p>No addresses found.</p>
+                  <p>No addresses found. Please add a delivery address.</p>
+                  <Button
+                    className="mt-4 primary-btn"
+                    onClick={() => setShowAddressDialog(true)}
+                  >
+                    Add New Address
+                  </Button>
                 </div>
               )}
             </AccordionSection>
+
+            {/* Address Dialog */}
+            <AddressDialog
+              open={showAddressDialog}
+              onOpenChange={setShowAddressDialog}
+              isEditing={false}
+              editingAddress={null}
+              onSubmit={handleAddressSubmit}
+            />
 
             {/* Order Summary */}
             <AccordionSection

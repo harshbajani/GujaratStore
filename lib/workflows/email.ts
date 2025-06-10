@@ -275,3 +275,52 @@ export const sendOrderConfirmationEmail = async (orderData: OrderEmailData) => {
     html: emailTemplate,
   });
 };
+
+interface WelcomeEmailData {
+  email: string;
+  name: string;
+  password: string;
+}
+
+export async function sendWelcomeEmail(data: WelcomeEmailData) {
+  const { email, name, password } = data;
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || "587"),
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+  });
+
+  const emailTemplate = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Welcome to Gujarat Store</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; padding: 20px;">
+          <h1 style="color: #C93326; text-align: center;">Welcome to Gujarat Store!</h1>
+          <p>Dear ${name},</p>
+          <p>Your account has been created successfully. Here are your login credentials:</p>
+          <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
+          </div>
+          <p>Please keep these credentials safe and change your password after logging in.</p>
+          <p>Thank you for shopping with us!</p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: email,
+    subject: "Welcome to Gujarat Store - Your Account Details",
+    html: emailTemplate,
+  });
+}
