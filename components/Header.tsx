@@ -97,6 +97,15 @@ const Header = () => {
     }, 300);
   };
 
+  // Add cleanup effect for search timeout
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Function to handle product selection and clear input
   const handleProductSelect = () => {
     setSearchQuery("");

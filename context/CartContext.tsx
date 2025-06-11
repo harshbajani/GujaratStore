@@ -3,6 +3,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "@/hooks/use-toast";
+import { useGuest } from "./GuestContext";
+import Cookies from "js-cookie";
 
 interface CartContextType {
   cartItems: IProductResponse[];
@@ -16,20 +18,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<IProductResponse[]>([]);
   const { data: session } = useSession();
-  const [guestCart, setGuestCart] = useState<string[]>([]);
-
-  // Load guest cart from localStorage on mount
-  useEffect(() => {
-    if (!session) {
-      const storedCart = localStorage.getItem("guestCart");
-      if (storedCart) {
-        const cartIds = JSON.parse(storedCart);
-        setGuestCart(cartIds);
-        // Fetch product details for guest cart items
-        fetchGuestCartItems(cartIds);
-      }
-    }
-  }, [session]);
+  const { guestCart, addToGuestCart, removeFromGuestCart } = useGuest();
 
   // Fetch cart items based on session status
   useEffect(() => {
@@ -52,27 +41,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
           console.error("Error fetching cart items:", error);
         }
+      } else if (guestCart.length > 0) {
+        // Fetch product details for guest cart items
+        try {
+          const productPromises = guestCart.map((id) =>
+            fetch(`/api/products/${id}`).then((res) => res.json())
+          );
+          const products = await Promise.all(productPromises);
+          const cartProducts = products
+            .filter((p) => p.success)
+            .map((p) => ({ ...p.data, inCart: true }));
+          setCartItems(cartProducts);
+        } catch (error) {
+          console.error("Error fetching guest cart items:", error);
+        }
+      } else {
+        setCartItems([]);
       }
     };
 
     fetchCartItems();
-  }, [session]);
-
-  // Fetch product details for guest cart items
-  const fetchGuestCartItems = async (cartIds: string[]) => {
-    try {
-      const productPromises = cartIds.map((id) =>
-        fetch(`/api/products/${id}`).then((res) => res.json())
-      );
-      const products = await Promise.all(productPromises);
-      const cartProducts = products
-        .filter((p) => p.success)
-        .map((p) => ({ ...p.data, inCart: true }));
-      setCartItems(cartProducts);
-    } catch (error) {
-      console.error("Error fetching guest cart items:", error);
-    }
-  };
+  }, [session, guestCart]); // Re-fetch when session or guestCart changes
 
   const addToCart = async (productId: string) => {
     try {
@@ -102,10 +91,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Failed to add to cart");
         }
       } else {
-        // Handle guest cart
-        const newGuestCart = [...guestCart, productId];
-        setGuestCart(newGuestCart);
-        localStorage.setItem("guestCart", JSON.stringify(newGuestCart));
+        // Use GuestContext to handle guest cart
+        addToGuestCart(productId);
       }
 
       toast({
@@ -151,10 +138,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Failed to remove from cart");
         }
       } else {
-        // Handle guest cart
-        const newGuestCart = guestCart.filter((id) => id !== productId);
-        setGuestCart(newGuestCart);
-        localStorage.setItem("guestCart", JSON.stringify(newGuestCart));
+        // Use GuestContext to handle guest cart
+        removeFromGuestCart(productId);
       }
 
       toast({
@@ -193,9 +178,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Failed to clear cart");
         }
       } else {
-        // Handle guest cart
-        setGuestCart([]);
-        localStorage.removeItem("guestCart");
+        // Clear guest cart cookie
+        Cookies.remove("guestCart");
       }
     } catch (error) {
       console.error("Error clearing cart:", error);
