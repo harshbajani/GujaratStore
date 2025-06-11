@@ -19,8 +19,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           refetchOnWindowFocus={false}
         >
           <ParallaxProvider>
-            <CartProvider>
-              <GuestProvider>
+            <GuestProvider>
+              <CartProvider>
                 <WishlistProvider>
                   <div className="smooth-scroll-container">
                     <Header />
@@ -31,8 +31,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   </div>
                   <Toaster />
                 </WishlistProvider>
-              </GuestProvider>
-            </CartProvider>
+              </CartProvider>
+            </GuestProvider>
           </ParallaxProvider>
         </SessionProvider>
       </body>

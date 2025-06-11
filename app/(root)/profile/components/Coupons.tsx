@@ -61,10 +61,12 @@ const Coupons = () => {
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
 
-      // Reset copied status after 2 seconds
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setCopiedId(null);
       }, 2000);
+
+      // Clean up the timeout if the component unmounts
+      return () => clearTimeout(timeoutId);
     } catch (err) {
       console.error("Failed to copy text: ", err);
     }

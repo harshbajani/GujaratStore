@@ -204,9 +204,17 @@ export const useCart = () => {
           throw new Error(data.error);
         }
       } else {
-        // Remove from guest cart
+        // Remove from guest cart and immediately update UI
         removeFromGuestCart(productId);
+        // No need to wait for fetchCartItems since we've already updated the UI
+        // and the guestCart state change will trigger a re-fetch
       }
+
+      toast({
+        title: "Success",
+        description: "Item removed from cart",
+        className: "bg-green-500 text-white",
+      });
     } catch (error) {
       console.error("Error removing item from cart:", error);
       toast({

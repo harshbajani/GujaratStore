@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 
 interface Filters {
   primaryCategories: string[];
@@ -15,103 +15,99 @@ const useProductFilter = (products: IProductResponse[]) => {
     priceRange: [0, 0], // Initial placeholder
   });
 
-  const [filteredProducts, setFilteredProducts] =
-    useState<IProductResponse[]>(products);
-
-  // Calculate and set initial price range when products change
-  useEffect(() => {
-    if (products.length > 0) {
-      const prices = products.map((p) => p.netPrice);
-      const minPrice = Math.floor(Math.min(...prices));
-      const maxPrice = Math.ceil(Math.max(...prices));
-
-      setFilters((prev) => ({
-        ...prev,
-        priceRange: [minPrice, maxPrice],
-      }));
-    }
+  // Memoize price range calculations
+  const priceRange = useMemo((): [number, number] => {
+    if (products.length === 0) return [0, 0];
+    const prices = products.map((p) => p.netPrice);
+    const min = Math.floor(Math.min(...prices));
+    const max = Math.ceil(Math.max(...prices));
+    return [min, max];
   }, [products]);
 
+  // Set initial price range when products change
   useEffect(() => {
-    // Apply all filters
-    const applyFilters = () => {
-      let result = products;
+    if (products.length > 0) {
+      setFilters((prev) => ({
+        ...prev,
+        priceRange: priceRange,
+      }));
+    }
+  }, [priceRange]);
 
-      // Primary Category Filter
-      if (filters.primaryCategories.length > 0) {
-        result = result.filter((p) =>
-          filters.primaryCategories.includes(p.primaryCategory?._id || "")
-        );
-      }
+  // Memoize filtered products
+  const filteredProducts = useMemo(() => {
+    let result = products;
 
-      // Secondary Category Filter
-      if (filters.secondaryCategories.length > 0) {
-        result = result.filter((p) =>
-          filters.secondaryCategories.includes(p.secondaryCategory?._id || "")
-        );
-      }
-
-      // Color Filter
-      if (filters.colors.length > 0) {
-        result = result.filter((p) =>
-          filters.colors.includes(p.productColor?.toLowerCase() || "")
-        );
-      }
-
-      // Price Range Filter
-      result = result.filter(
-        (p) =>
-          p.netPrice >= filters.priceRange[0] &&
-          p.netPrice <= filters.priceRange[1]
+    // Primary Category Filter
+    if (filters.primaryCategories.length > 0) {
+      result = result.filter((p) =>
+        filters.primaryCategories.includes(p.primaryCategory?._id || "")
       );
+    }
 
-      setFilteredProducts(result);
-    };
+    // Secondary Category Filter
+    if (filters.secondaryCategories.length > 0) {
+      result = result.filter((p) =>
+        filters.secondaryCategories.includes(p.secondaryCategory?._id || "")
+      );
+    }
 
-    applyFilters();
+    // Color Filter
+    if (filters.colors.length > 0) {
+      result = result.filter((p) =>
+        filters.colors.includes(p.productColor?.toLowerCase() || "")
+      );
+    }
+
+    // Price Range Filter
+    result = result.filter(
+      (p) =>
+        p.netPrice >= filters.priceRange[0] &&
+        p.netPrice <= filters.priceRange[1]
+    );
+
+    return result;
   }, [products, filters]);
 
-  // Method to update filters
-  const updateFilter = (
-    filterType: keyof Filters,
-    value: string | [number, number],
-    checked?: boolean
-  ) => {
-    setFilters((prev) => {
-      switch (filterType) {
-        case "primaryCategories":
-        case "secondaryCategories":
-        case "colors":
-          const currentFilter = prev[filterType];
-          return {
-            ...prev,
-            [filterType]: checked
-              ? [...currentFilter, value as string]
-              : currentFilter.filter((v) => v !== value),
-          };
-        case "priceRange":
-          return {
-            ...prev,
-            priceRange: value as [number, number],
-          };
-      }
-    });
-  };
+  // Memoize filter update function
+  const updateFilter = useCallback(
+    (
+      filterType: keyof Filters,
+      value: string | [number, number],
+      checked?: boolean
+    ) => {
+      setFilters((prev) => {
+        switch (filterType) {
+          case "primaryCategories":
+          case "secondaryCategories":
+          case "colors":
+            const currentFilter = prev[filterType];
+            return {
+              ...prev,
+              [filterType]: checked
+                ? [...currentFilter, value as string]
+                : currentFilter.filter((v) => v !== value),
+            };
+          case "priceRange":
+            return {
+              ...prev,
+              priceRange: value as [number, number],
+            };
+        }
+      });
+    },
+    []
+  );
 
-  // Method to clear all filters
-  const clearFilters = () => {
-    // Recalculate price range when clearing filters
-    const prices = products.map((p) => p.netPrice);
-    const minPrice = Math.floor(Math.min(...prices));
-    const maxPrice = Math.ceil(Math.max(...prices));
-
+  // Memoize clear filters function
+  const clearFilters = useCallback(() => {
     setFilters({
       primaryCategories: [],
       secondaryCategories: [],
       colors: [],
-      priceRange: [minPrice, maxPrice],
+      priceRange: priceRange,
     });
-  };
+  }, [priceRange]);
 
   return {
     filters,

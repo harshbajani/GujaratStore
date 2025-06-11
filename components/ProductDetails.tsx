@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/accordion";
 import { motion } from "framer-motion";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import ProductGallery from "@/components/ProductGallery";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -48,101 +48,20 @@ const ProductsDetailPage = () => {
   const { cartItems, addToCart, removeFromCart } = useCart();
   const { wishlistItems, addToWishlist, removeFromWishlist } = useWishlist();
 
-  // Handle cart/wishlist actions
-  const handleToggleCart = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!product?._id) return;
-
-    try {
-      const isInCart = cartItems.some((item) => item._id === product._id);
-
-      if (isInCart) {
-        await removeFromCart(product._id);
-        setProduct((prev) => (prev ? { ...prev, inCart: false } : null));
-        toast({
-          title: "Success",
-          description: "Product removed from cart",
-          className: "bg-green-500 text-white",
-        });
-      } else {
-        await addToCart(product._id);
-        setProduct((prev) => (prev ? { ...prev, inCart: true } : null));
-        toast({
-          title: "Success",
-          description: "Product added to cart",
-          className: "bg-green-500 text-white",
-        });
-      }
-    } catch (error) {
-      console.error("Error updating cart:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update cart",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleToggleWishlist = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!product?._id) return;
-
-    try {
-      const isInWishlist = wishlistItems.some(
-        (item) => item._id === product._id
-      );
-
-      if (isInWishlist) {
-        await removeFromWishlist(product._id);
-        setProduct((prev) => (prev ? { ...prev, wishlist: false } : null));
-        toast({
-          title: "Success",
-          description: "Product removed from wishlist",
-          className: "bg-green-500 text-white",
-        });
-      } else {
-        await addToWishlist(product._id);
-        setProduct((prev) => (prev ? { ...prev, wishlist: true } : null));
-        toast({
-          title: "Success",
-          description: "Product added to wishlist",
-          className: "bg-green-500 text-white",
-        });
-      }
-    } catch (error) {
-      console.error("Error updating wishlist:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update wishlist",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Replace the existing formattedDeliveryDate calculation with this:
-  const formattedDeliveryDate = product
-    ? (() => {
-        const currentDate = new Date();
-        const deliveryDate = new Date(
-          currentDate.getTime() + product.deliveryDays * 24 * 60 * 60 * 1000
-        );
-        return deliveryDate
-          .toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          })
-          .replace(/\//g, "/");
-      })()
-    : "Not available";
-
   // Fetch product data and check cart/wishlist status
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
     const fetchProductAndUserData = async () => {
       try {
         // Always fetch product data
-        const productResp = await fetch(`/api/products/slug/${productSlug}`);
+        const productResp = await fetch(`/api/products/slug/${productSlug}`, {
+          signal: controller.signal,
+        });
         const productData = await productResp.json();
+
+        if (!isMounted) return;
 
         if (!productData.success) {
           setError("Failed to fetch product");
@@ -161,18 +80,122 @@ const ProductsDetailPage = () => {
         };
 
         setProduct(productWithStatus);
-      } catch (err) {
+      } catch (err: unknown) {
+        if (!isMounted) return;
+        if (err instanceof Error && err.name === "AbortError") return;
+
         console.error(err);
         setError("Error fetching product");
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     if (productSlug) {
       fetchProductAndUserData();
     }
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, [productSlug, cartItems, wishlistItems]);
+
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleToggleCart = useCallback(
+    async (e: React.MouseEvent) => {
+      e.preventDefault();
+      if (!product?._id) return;
+
+      try {
+        const isInCart = cartItems.some((item) => item._id === product._id);
+
+        if (isInCart) {
+          await removeFromCart(product._id);
+          setProduct((prev) => (prev ? { ...prev, inCart: false } : null));
+          toast({
+            title: "Success",
+            description: "Product removed from cart",
+            className: "bg-green-500 text-white",
+          });
+        } else {
+          await addToCart(product._id);
+          setProduct((prev) => (prev ? { ...prev, inCart: true } : null));
+          toast({
+            title: "Success",
+            description: "Product added to cart",
+            className: "bg-green-500 text-white",
+          });
+        }
+      } catch (error) {
+        console.error("Error updating cart:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update cart",
+          variant: "destructive",
+        });
+      }
+    },
+    [product?._id, cartItems, removeFromCart, addToCart]
+  );
+
+  const handleToggleWishlist = useCallback(
+    async (e: React.MouseEvent) => {
+      e.preventDefault();
+      if (!product?._id) return;
+
+      try {
+        const isInWishlist = wishlistItems.some(
+          (item) => item._id === product._id
+        );
+
+        if (isInWishlist) {
+          await removeFromWishlist(product._id);
+          setProduct((prev) => (prev ? { ...prev, wishlist: false } : null));
+          toast({
+            title: "Success",
+            description: "Product removed from wishlist",
+            className: "bg-green-500 text-white",
+          });
+        } else {
+          await addToWishlist(product._id);
+          setProduct((prev) => (prev ? { ...prev, wishlist: true } : null));
+          toast({
+            title: "Success",
+            description: "Product added to wishlist",
+            className: "bg-green-500 text-white",
+          });
+        }
+      } catch (error) {
+        console.error("Error updating wishlist:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update wishlist",
+          variant: "destructive",
+        });
+      }
+    },
+    [product?._id, wishlistItems, removeFromWishlist, addToWishlist]
+  );
+
+  // Memoize delivery date calculation
+  const formattedDeliveryDate = useMemo(() => {
+    if (!product) return "Not available";
+
+    const currentDate = new Date();
+    const deliveryDate = new Date(
+      currentDate.getTime() + product.deliveryDays * 24 * 60 * 60 * 1000
+    );
+    return deliveryDate
+      .toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+      .replace(/\//g, "/");
+  }, [product?.deliveryDays]);
 
   if (loading) {
     return <Loader />;

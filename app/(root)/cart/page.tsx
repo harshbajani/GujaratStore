@@ -39,7 +39,33 @@ const CartPage = () => {
 
   // Force a cart refresh when the page loads
   useEffect(() => {
-    fetchCartItems();
+    const refreshCart = async () => {
+      try {
+        await fetchCartItems();
+      } catch (error) {
+        console.error("Error refreshing cart:", error);
+        toast({
+          title: "Error",
+          description: "Failed to refresh cart items",
+          variant: "destructive",
+        });
+      }
+    };
+
+    refreshCart();
+  }, [fetchCartItems]);
+
+  // Listen for navigation events to refresh cart
+  useEffect(() => {
+    // Subscribe to router events
+    const handleRouteChange = () => {
+      fetchCartItems();
+    };
+
+    window.addEventListener("popstate", handleRouteChange);
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange);
+    };
   }, [fetchCartItems]);
 
   const handleSizeSelect = (productId: string, sizeId: string) => {
