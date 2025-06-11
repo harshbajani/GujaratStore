@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import Cookies from "js-cookie";
 
 interface GuestContextType {
   guestCart: string[];
@@ -21,12 +22,12 @@ export const GuestProvider = ({ children }: { children: React.ReactNode }) => {
   const [guestWishlist, setGuestWishlist] = useState<string[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load guest data from localStorage on mount
+  // Load guest data from cookies on mount
   useEffect(() => {
     if (!session && !isInitialized) {
       try {
-        const storedCart = localStorage.getItem("guestCart");
-        const storedWishlist = localStorage.getItem("guestWishlist");
+        const storedCart = Cookies.get("guestCart");
+        const storedWishlist = Cookies.get("guestWishlist");
 
         if (storedCart) {
           const parsedCart = JSON.parse(storedCart);
@@ -34,7 +35,7 @@ export const GuestProvider = ({ children }: { children: React.ReactNode }) => {
             setGuestCart(parsedCart);
           } else {
             console.error("Invalid guest cart data format");
-            localStorage.removeItem("guestCart");
+            Cookies.remove("guestCart");
           }
         }
 
@@ -44,25 +45,28 @@ export const GuestProvider = ({ children }: { children: React.ReactNode }) => {
             setGuestWishlist(parsedWishlist);
           } else {
             console.error("Invalid guest wishlist data format");
-            localStorage.removeItem("guestWishlist");
+            Cookies.remove("guestWishlist");
           }
         }
       } catch (error) {
         console.error("Error loading guest data:", error);
-        localStorage.removeItem("guestCart");
-        localStorage.removeItem("guestWishlist");
+        Cookies.remove("guestCart");
+        Cookies.remove("guestWishlist");
       } finally {
         setIsInitialized(true);
       }
     }
   }, [session, isInitialized]);
 
-  // Update localStorage when guest data changes
+  // Update cookies when guest data changes
   useEffect(() => {
     if (!session && isInitialized) {
       try {
-        localStorage.setItem("guestCart", JSON.stringify(guestCart));
-        localStorage.setItem("guestWishlist", JSON.stringify(guestWishlist));
+        // Set cookies with a 7-day expiry
+        Cookies.set("guestCart", JSON.stringify(guestCart), { expires: 7 });
+        Cookies.set("guestWishlist", JSON.stringify(guestWishlist), {
+          expires: 7,
+        });
       } catch (error) {
         console.error("Error saving guest data:", error);
       }
@@ -92,8 +96,8 @@ export const GuestProvider = ({ children }: { children: React.ReactNode }) => {
   const clearGuestData = () => {
     setGuestCart([]);
     setGuestWishlist([]);
-    localStorage.removeItem("guestCart");
-    localStorage.removeItem("guestWishlist");
+    Cookies.remove("guestCart");
+    Cookies.remove("guestWishlist");
   };
 
   // Clear guest data when user signs in

@@ -46,13 +46,17 @@ const OtpModal = ({
   const router = useRouter();
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: NodeJS.Timeout | undefined;
     if (countdown > 0) {
       timer = setTimeout(() => setCountdown(countdown - 1), 1000);
     } else {
       setResendDisabled(false);
     }
-    return () => clearTimeout(timer);
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
   }, [countdown]);
 
   const handleSubmit = async (e: React.MouseEvent) => {

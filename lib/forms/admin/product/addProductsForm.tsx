@@ -293,6 +293,8 @@ const AddProductsForm = () => {
   };
   // * fetching the data for the select components
   useEffect(() => {
+    let isSubscribed = true;
+
     const fetchData = async () => {
       try {
         const parentCategoryResponse = await getAllParentCategory();
@@ -301,6 +303,8 @@ const AddProductsForm = () => {
         const attributeResponse = await getAllAttributes();
         const brandResponse = await getAllBrands();
         const sizesResponse = await getAllSizes();
+
+        if (!isSubscribed) return;
 
         if (parentCategoryResponse.success) {
           setParentCategories(parentCategoryResponse.data as IParentCategory[]);
@@ -336,6 +340,10 @@ const AddProductsForm = () => {
     };
 
     fetchData();
+
+    return () => {
+      isSubscribed = false;
+    };
   }, []);
 
   // * Add cleanup for object URLs
