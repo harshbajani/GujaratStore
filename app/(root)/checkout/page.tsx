@@ -55,22 +55,22 @@ const CheckoutPage = () => {
     try {
       const response = await addAddress(formData);
       if (response.success) {
-        // Update user data in checkout state with the new address
+        // Get the newly added address (last item in the addresses array)
+        const newAddress = response.addresses[response.addresses.length - 1];
+
+        // Update user data in checkout state with all addresses
         dispatch({
           type: "SET_USER_DATA",
           payload: {
             ...state.userData!,
-            addresses: [
-              ...(state.userData?.addresses || []),
-              response.addresses,
-            ],
+            addresses: response.addresses,
           },
         });
 
         // Set the newly added address as selected
         dispatch({
           type: "SET_SELECTED_ADDRESS",
-          payload: response.addresses._id,
+          payload: newAddress._id,
         });
 
         toast({
@@ -132,7 +132,7 @@ const CheckoutPage = () => {
   // Show guest checkout form if user is not authenticated
   if (!session && !showGuestForm) {
     return (
-      <div className="bg-gray-50 py-16">
+      <div className="bg-gray-50">
         <BreadcrumbHeader title="Home" subtitle="Checkout" titleHref="/" />
         <div className="dynamic-container min-h-screen mx-auto px-4 py-8">
           <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
@@ -182,7 +182,7 @@ const CheckoutPage = () => {
   }
 
   return (
-    <div className="py-14 bg-gray-50">
+    <div className=" bg-gray-50">
       <BreadcrumbHeader title="Home" subtitle="Checkout" titleHref="/" />
 
       <div className="dynamic-container mx-auto px-4 py-8 min-h-screen">
