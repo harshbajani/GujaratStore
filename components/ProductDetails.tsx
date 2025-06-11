@@ -31,6 +31,8 @@ import {
 import QuantitySelector from "@/components/ui/quantity-selector";
 import Loader from "@/components/Loader";
 import ReviewSection from "@/components/Review";
+import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 const ProductsDetailPage = () => {
   const params = useParams();
@@ -43,60 +45,75 @@ const ProductsDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { cartItems, addToCart, removeFromCart } = useCart();
+  const { wishlistItems, addToWishlist, removeFromWishlist } = useWishlist();
 
-  // Handle cart/wishlist actions with authentication check
-  const handleAuthAction = async (action: "cart" | "wishlist") => {
-    if (!product) return;
-
-    let userStatus;
-
-    if (userStatus === "unauthenticated") {
-      // Show login prompt
-      toast({
-        title: "Authentication Required",
-        description: `Please log in to add to ${action}!`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const endpoint = `/api/user/${action}`;
-    const isInCollection =
-      action === "cart" ? product.inCart : product.wishlist;
+  // Handle cart/wishlist actions
+  const handleToggleCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!product?._id) return;
 
     try {
-      const response = await fetch(endpoint, {
-        method: isInCollection ? "DELETE" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: product._id }),
-      });
+      const isInCart = cartItems.some((item) => item._id === product._id);
 
-      const data = await response.json();
-
-      if (data.success) {
-        setProduct((prev) => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            [action === "cart" ? "inCart" : "wishlist"]: !isInCollection,
-          };
-        });
-
+      if (isInCart) {
+        await removeFromCart(product._id);
+        setProduct((prev) => (prev ? { ...prev, inCart: false } : null));
         toast({
           title: "Success",
-          description: `Product ${
-            isInCollection ? "removed from" : "added to"
-          } ${action}`,
+          description: "Product removed from cart",
           className: "bg-green-500 text-white",
         });
       } else {
-        throw new Error(data.message);
+        await addToCart(product._id);
+        setProduct((prev) => (prev ? { ...prev, inCart: true } : null));
+        toast({
+          title: "Success",
+          description: "Product added to cart",
+          className: "bg-green-500 text-white",
+        });
       }
-    } catch (err) {
-      console.error(`Error updating ${action}:`, err);
+    } catch (error) {
+      console.error("Error updating cart:", error);
       toast({
         title: "Error",
-        description: `Failed to update ${action}, Log in and try again!`,
+        description: "Failed to update cart",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!product?._id) return;
+
+    try {
+      const isInWishlist = wishlistItems.some(
+        (item) => item._id === product._id
+      );
+
+      if (isInWishlist) {
+        await removeFromWishlist(product._id);
+        setProduct((prev) => (prev ? { ...prev, wishlist: false } : null));
+        toast({
+          title: "Success",
+          description: "Product removed from wishlist",
+          className: "bg-green-500 text-white",
+        });
+      } else {
+        await addToWishlist(product._id);
+        setProduct((prev) => (prev ? { ...prev, wishlist: true } : null));
+        toast({
+          title: "Success",
+          description: "Product added to wishlist",
+          className: "bg-green-500 text-white",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating wishlist:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update wishlist",
         variant: "destructive",
       });
     }
@@ -118,11 +135,8 @@ const ProductsDetailPage = () => {
           .replace(/\//g, "/");
       })()
     : "Not available";
-  // Simplified handlers that use the common function
-  const handleToggleCart = () => handleAuthAction("cart");
-  const handleToggleWishlist = () => handleAuthAction("wishlist");
 
-  // Fetch product data and check cart/wishlist status if user is logged in
+  // Fetch product data and check cart/wishlist status
   useEffect(() => {
     const fetchProductAndUserData = async () => {
       try {
@@ -137,26 +151,14 @@ const ProductsDetailPage = () => {
 
         let productWithStatus = productData.data;
 
-        // Only fetch user data if logged in
-
-        try {
-          const userResp = await fetch("/api/user/current");
-          const userData = await userResp.json();
-
-          if (userData.success && userData.data) {
-            const wishlistIds = userData.data.wishlist || [];
-            const cartIds = userData.data.cart || [];
-
-            productWithStatus = {
-              ...productWithStatus,
-              wishlist: wishlistIds.includes(productWithStatus._id),
-              inCart: cartIds.includes(productWithStatus._id),
-            };
-          }
-        } catch (userErr) {
-          console.error("Error fetching user data:", userErr);
-          // Continue with basic product display
-        }
+        // Update product status based on cart and wishlist items
+        productWithStatus = {
+          ...productWithStatus,
+          wishlist: wishlistItems.some(
+            (item) => item._id === productWithStatus._id
+          ),
+          inCart: cartItems.some((item) => item._id === productWithStatus._id),
+        };
 
         setProduct(productWithStatus);
       } catch (err) {
@@ -170,7 +172,7 @@ const ProductsDetailPage = () => {
     if (productSlug) {
       fetchProductAndUserData();
     }
-  }, [productSlug]);
+  }, [productSlug, cartItems, wishlistItems]);
 
   if (loading) {
     return <Loader />;

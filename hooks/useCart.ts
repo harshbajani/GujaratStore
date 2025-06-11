@@ -1,15 +1,21 @@
-// hooks/useCart.ts
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
+import { useSession } from "next-auth/react";
+import { useGuest } from "@/context/GuestContext";
 
 interface CartItem extends IProductResponse {
   cartQuantity: number;
 }
 
 export const useCart = () => {
+  const { data: session } = useSession();
+  const { guestCart, addToGuestCart, removeFromGuestCart } = useGuest();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isGuest = !session;
 
   // Calculate cart totals
   const subtotal = cartItems.reduce(
@@ -25,12 +31,15 @@ export const useCart = () => {
   const total = subtotal + deliveryCharges;
 
   // Helper function to calculate delivery charges
-  const calculateDeliveryCharges = (product: IProductResponse): number => {
-    return product.deliveryCharges;
-  };
+  const calculateDeliveryCharges = useCallback(
+    (product: IProductResponse): number => {
+      return product.deliveryCharges;
+    },
+    []
+  );
 
   // Helper for formatted delivery date
-  const formattedDeliveryDate = (deliveryDays: number) => {
+  const formattedDeliveryDate = useCallback((deliveryDays: number) => {
     const currentDate = new Date();
     const deliveryDate = new Date(
       currentDate.getTime() + deliveryDays * 24 * 60 * 60 * 1000
@@ -42,42 +51,85 @@ export const useCart = () => {
         year: "numeric",
       })
       .replace(/\//g, "/");
-  };
+  }, []);
 
   const fetchCartItems = useCallback(async () => {
     try {
       setLoading(true);
-      const userResponse = await fetch("/api/user/cart");
-      const userData = await userResponse.json();
+      setError(null);
 
-      if (!userData.success || !userData.data) {
-        setError("Please login to view cart");
-        setCartItems([]); // Clear cart if not logged in
-        return;
+      if (session) {
+        // Fetch authenticated user's cart
+        const userResponse = await fetch("/api/user/cart");
+        const userData = await userResponse.json();
+
+        if (!userData.success) {
+          setError("Failed to load cart");
+          setCartItems([]);
+          return;
+        }
+
+        const cartProductIds = userData.data?.cart || [];
+        if (cartProductIds.length === 0) {
+          setCartItems([]);
+          setLoading(false);
+          return;
+        }
+
+        const productPromises = cartProductIds.map((id: string) =>
+          fetch(`/api/products/${id}`).then((res) => res.json())
+        );
+
+        const productResponses = await Promise.all(productPromises);
+        const cartProducts = productResponses
+          .filter((response) => response.success)
+          .map((response) => ({
+            ...response.data,
+            cartQuantity: 1,
+            deliveryCharges: calculateDeliveryCharges(response.data),
+            inCart: true,
+          }));
+
+        setCartItems(cartProducts);
+      } else if (guestCart && guestCart.length > 0) {
+        // Handle guest cart
+        try {
+          const productPromises = guestCart.map((id) =>
+            fetch(`/api/products/${id}`).then((res) => res.json())
+          );
+
+          const productResponses = await Promise.all(productPromises);
+          const cartProducts = productResponses
+            .filter((response) => response.success)
+            .map((response) => ({
+              ...response.data,
+              cartQuantity: 1,
+              deliveryCharges: calculateDeliveryCharges(response.data),
+              inCart: true,
+            }));
+
+          setCartItems(cartProducts);
+        } catch (err) {
+          console.error("Error fetching guest cart items:", err);
+          setError("Failed to load guest cart items");
+          setCartItems([]);
+        }
+      } else {
+        setCartItems([]);
       }
-
-      const cartProductIds = userData.data.cart || [];
-      const productPromises = cartProductIds.map((id: string) =>
-        fetch(`/api/products/${id}`).then((res) => res.json())
-      );
-
-      const productResponses = await Promise.all(productPromises);
-      const cartProducts = productResponses
-        .filter((response) => response.success)
-        .map((response) => ({
-          ...response.data,
-          cartQuantity: 1,
-          deliveryCharges: calculateDeliveryCharges(response.data),
-        }));
-
-      setCartItems(cartProducts);
     } catch (err) {
       console.error("Error fetching cart:", err);
       setError("Failed to load cart items");
+      setCartItems([]);
     } finally {
       setLoading(false);
     }
-  }, []); // Add useCallback to prevent unnecessary recreations
+  }, [session, guestCart, calculateDeliveryCharges]);
+
+  // Initialize cart items when session or guestCart changes
+  useEffect(() => {
+    fetchCartItems();
+  }, [session?.user?.email, guestCart]); // Only depend on session email and guestCart
 
   const updateQuantity = async (productId: string, newQuantity: number) => {
     try {
@@ -90,19 +142,32 @@ export const useCart = () => {
         )
       );
 
-      const response = await fetch("/api/user/cart", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, quantity: newQuantity }),
-      });
+      if (session) {
+        // Update quantity for authenticated user
+        const response = await fetch("/api/user/cart", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId, quantity: newQuantity }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!data.success) {
-        // Revert changes if API call fails
-        await fetchCartItems();
-        throw new Error(data.error);
+        if (!data.success) {
+          // Revert changes if API call fails
+          const prevItem = cartItems.find((item) => item._id === productId);
+          if (prevItem) {
+            setCartItems((prev) =>
+              prev.map((item) =>
+                item._id === productId
+                  ? { ...item, cartQuantity: prevItem.cartQuantity }
+                  : item
+              )
+            );
+          }
+          throw new Error(data.error);
+        }
       }
+      // For guest users, the quantity is only maintained in local state
     } catch (err) {
       console.error("Error updating quantity:", err);
       toast({
@@ -115,21 +180,32 @@ export const useCart = () => {
 
   const removeFromCart = async (productId: string) => {
     try {
+      // Store the item being removed for potential rollback
+      const removedItem = cartItems.find((item) => item._id === productId);
+
       // Optimistically update UI
       setCartItems((prev) => prev.filter((item) => item._id !== productId));
 
-      const response = await fetch("/api/user/cart", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId }),
-      });
+      if (session) {
+        // Remove from authenticated user's cart
+        const response = await fetch("/api/user/cart", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!data.success) {
-        // Revert if API call fails
-        await fetchCartItems();
-        throw new Error(data.error);
+        if (!data.success) {
+          // Revert if API call fails
+          if (removedItem) {
+            setCartItems((prev) => [...prev, removedItem]);
+          }
+          throw new Error(data.error);
+        }
+      } else {
+        // Remove from guest cart
+        removeFromGuestCart(productId);
       }
     } catch (error) {
       console.error("Error removing item from cart:", error);
@@ -146,41 +222,53 @@ export const useCart = () => {
       const existingItem = cartItems.find((item) => item._id === productId);
 
       if (existingItem) {
-        setCartItems((prev) =>
-          prev.map((item) =>
-            item._id === productId
-              ? { ...item, cartQuantity: item.cartQuantity + 1 }
-              : item
-          )
-        );
-      } else {
-        const productResponse = await fetch(`/api/products/${productId}`);
-        const productData = await productResponse.json();
+        await updateQuantity(productId, existingItem.cartQuantity + 1);
+        return;
+      }
 
-        if (productData.success) {
-          setCartItems((prev) => [
-            ...prev,
-            {
-              ...productData.data,
-              cartQuantity: 1,
-              deliveryCharges: calculateDeliveryCharges(productData.data),
-            },
-          ]);
+      // Fetch product data first
+      const productResponse = await fetch(`/api/products/${productId}`);
+      const productData = await productResponse.json();
+
+      if (!productData.success) {
+        throw new Error("Failed to fetch product data");
+      }
+
+      // Optimistically update UI
+      const newItem = {
+        ...productData.data,
+        cartQuantity: 1,
+        deliveryCharges: calculateDeliveryCharges(productData.data),
+        inCart: true,
+      };
+
+      setCartItems((prev) => [...prev, newItem]);
+
+      if (session) {
+        // Add to authenticated user's cart
+        const response = await fetch("/api/user/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId }),
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          // Revert optimistic update
+          setCartItems((prev) => prev.filter((item) => item._id !== productId));
+          throw new Error(data.error);
         }
+      } else {
+        // Add to guest cart
+        addToGuestCart(productId);
       }
 
-      const response = await fetch("/api/user/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId }),
+      toast({
+        title: "Success",
+        description: "Item added to cart",
+        className: "bg-green-500 text-white",
       });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        await fetchCartItems();
-        throw new Error(data.error);
-      }
     } catch (error) {
       console.error("Error adding item to cart:", error);
       toast({
@@ -190,10 +278,6 @@ export const useCart = () => {
       });
     }
   };
-
-  useEffect(() => {
-    fetchCartItems();
-  }, [fetchCartItems]);
 
   return {
     cartItems,
@@ -207,5 +291,6 @@ export const useCart = () => {
     updateQuantity,
     removeFromCart,
     addToCart,
+    isGuest,
   };
 };

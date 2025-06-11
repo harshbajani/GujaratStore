@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Card,
   CardContent,
@@ -15,191 +15,70 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-
-type Product = {
-  _id: string;
-  productName: string;
-  productCoverImage: string;
-  mrp: number;
-  netPrice: number;
-  discountValue: number;
-  discountType: "percentage" | "amount";
-  productQuantity: number;
-  productStatus: boolean;
-  inCart?: boolean;
-};
+import { useWishlist } from "@/context/WishlistContext";
+import { useCart } from "@/context/CartContext";
 
 const Wishlist = () => {
-  const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [cartItems, setCartItems] = useState<string[]>([]);
+  const {
+    wishlistItems,
+    loading: isLoading,
+    removeFromWishlist,
+  } = useWishlist();
+  const { cartItems, addToCart, removeFromCart } = useCart();
   const { toast } = useToast();
   const router = useRouter();
 
   const getImageUrl = (imageId: string | File) => `/api/files/${imageId}`;
 
-  useEffect(() => {
-    fetchWishlistItems();
-    fetchCartItems();
-  }, []);
+  const handleToggleCart = async (
+    e: React.MouseEvent,
+    product: IProductResponse
+  ) => {
+    e.preventDefault();
+    if (!product._id) return;
 
-  const fetchWishlistItems = async () => {
     try {
-      setIsLoading(true);
-      const response = await fetch("/api/user/wishlist");
-      const result = await response.json();
+      const isInCart = cartItems.some((item) => item._id === product._id);
 
-      if (result.success) {
-        setWishlistItems(result.data);
-      } else {
-        toast({
-          title: "Error",
-          description: result.message || "Failed to fetch wishlist items",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching wishlist:", error);
-      toast({
-        title: "Error",
-        description: "Something went wrong while fetching your wishlist",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchCartItems = async () => {
-    try {
-      const response = await fetch("/api/user/get-cart-items");
-      const result = await response.json();
-
-      if (result.success) {
-        // Extract just the product IDs from cart items
-        const cartIds = result.data.map((item: Product) => item._id);
-        setCartItems(cartIds);
-
-        // Update wishlist items with inCart status
-        setWishlistItems((prevItems) =>
-          prevItems.map((item) => ({
-            ...item,
-            inCart: cartIds.includes(item._id),
-          }))
-        );
-      }
-    } catch (error) {
-      console.error("Error fetching cart items:", error);
-    }
-  };
-
-  const removeFromWishlist = async (productId: string) => {
-    try {
-      const response = await fetch("/api/user/wishlist", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ productId }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setWishlistItems((prevItems) =>
-          prevItems.filter((item) => item._id !== productId)
-        );
+      if (isInCart) {
+        await removeFromCart(product._id);
         toast({
           title: "Success",
-          description: "Item removed from wishlist",
+          description: "Item removed from cart",
         });
       } else {
+        await addToCart(product._id);
         toast({
-          title: "Error",
-          description: result.message || "Failed to remove item from wishlist",
-          variant: "destructive",
+          title: "Success",
+          description: "Item added to cart",
         });
-      }
-    } catch (error) {
-      console.error("Error removing from wishlist:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove item from wishlist",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleToggleCart = async (product: Product) => {
-    try {
-      if (product.inCart) {
-        // Remove from cart
-        const response = await fetch("/api/user/cart", {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ productId: product._id }),
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          // Update local state
-          setCartItems((prev) => prev.filter((id) => id !== product._id));
-          setWishlistItems((prevItems) =>
-            prevItems.map((item) =>
-              item._id === product._id ? { ...item, inCart: false } : item
-            )
-          );
-          toast({
-            title: "Success",
-            description: "Item removed from cart",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: result.message || "Failed to remove item from cart",
-            variant: "destructive",
-          });
-        }
-      } else {
-        // Add to cart
-        const response = await fetch("/api/user/cart", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ productId: product._id }),
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          // Update local state
-          setCartItems((prev) => [...prev, product._id]);
-          setWishlistItems((prevItems) =>
-            prevItems.map((item) =>
-              item._id === product._id ? { ...item, inCart: true } : item
-            )
-          );
-          toast({
-            title: "Success",
-            description: "Item added to cart",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: result.message || "Failed to add item to cart",
-            variant: "destructive",
-          });
-        }
       }
     } catch (error) {
       console.error("Error toggling cart item:", error);
       toast({
         title: "Error",
         description: "Failed to update cart",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveFromWishlist = async (
+    e: React.MouseEvent,
+    productId: string
+  ) => {
+    e.preventDefault();
+    try {
+      await removeFromWishlist(productId);
+      toast({
+        title: "Success",
+        description: "Item removed from wishlist",
+      });
+    } catch (error) {
+      console.error("Error removing from wishlist:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove item from wishlist",
         variant: "destructive",
       });
     }
@@ -258,7 +137,7 @@ const Wishlist = () => {
                 variant="ghost"
                 size="icon"
                 className="absolute top-2 right-2 bg-white rounded-full h-8 w-8 shadow-md hover:bg-red-100"
-                onClick={() => removeFromWishlist(item._id)}
+                onClick={(e) => handleRemoveFromWishlist(e, item._id!)}
               >
                 <Trash2 className="h-4 w-4 text-red-500" />
               </Button>
@@ -300,23 +179,27 @@ const Wishlist = () => {
             <CardFooter className="p-4 pt-0">
               <Button
                 variant="secondary"
-                className=" shadow-md flex items-center gap-2"
+                className="shadow-md flex items-center gap-2"
                 disabled={!item.productStatus || item.productQuantity <= 0}
-                onClick={() => handleToggleCart(item)}
+                onClick={(e) => handleToggleCart(e, item)}
               >
                 <div
                   className={cn(
-                    item.inCart ? "bg-secondary/90" : "bg-brand",
+                    cartItems.some((cartItem) => cartItem._id === item._id)
+                      ? "bg-secondary/90"
+                      : "bg-brand",
                     "p-2 rounded -ml-3 transition-all duration-300"
                   )}
                 >
-                  {item.inCart ? (
+                  {cartItems.some((cartItem) => cartItem._id === item._id) ? (
                     <Check className="size-5 text-green-500" />
                   ) : (
                     <ShoppingCart className="size-5 text-white" />
                   )}
                 </div>
-                {item.inCart ? "Remove from Cart" : "Add to Cart"}
+                {cartItems.some((cartItem) => cartItem._id === item._id)
+                  ? "Remove from Cart"
+                  : "Add to Cart"}
               </Button>
             </CardFooter>
           </Card>

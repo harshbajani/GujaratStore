@@ -10,6 +10,8 @@ import { cn, getProductRating } from "@/lib/utils";
 import Loader from "@/components/Loader";
 import { toast } from "@/hooks/use-toast";
 import useProductFilter from "@/hooks/useProductFilter";
+import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -51,6 +53,8 @@ interface Category {
 const ProductCategoryPage = () => {
   const params = useParams();
   const categoryId = params.id as string;
+  const { cartItems, addToCart, removeFromCart } = useCart();
+  const { wishlistItems, addToWishlist, removeFromWishlist } = useWishlist();
 
   const [products, setProducts] = useState<IProductResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,73 +101,83 @@ const ProductCategoryPage = () => {
 
   // Toggle wishlist status
   const handleToggleWishlist = async (product: IProductResponse) => {
+    if (!product._id) return;
+
     try {
-      let response;
-      if (product.wishlist) {
-        response = await fetch("/api/user/wishlist", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: product._id }),
+      const isInWishlist = wishlistItems.some(
+        (item) => item._id === product._id
+      );
+
+      if (isInWishlist) {
+        await removeFromWishlist(product._id);
+        setProducts((prev) =>
+          prev.map((p) =>
+            p._id === product._id ? { ...p, wishlist: false } : p
+          )
+        );
+        toast({
+          title: "Success",
+          description: "Product removed from wishlist",
+          className: "bg-green-500 text-white",
         });
       } else {
-        response = await fetch("/api/user/wishlist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: product._id }),
-        });
-      }
-      const data = await response.json();
-      if (!data.success && data.message === "Not authenticated") {
+        await addToWishlist(product._id);
+        setProducts((prev) =>
+          prev.map((p) =>
+            p._id === product._id ? { ...p, wishlist: true } : p
+          )
+        );
         toast({
-          title: "Error",
-          description: "Please log in to add to wishlist!",
-          variant: "destructive",
+          title: "Success",
+          description: "Product added to wishlist",
+          className: "bg-green-500 text-white",
         });
-        return;
       }
-      setProducts((prev) =>
-        prev.map((p) =>
-          p._id === product._id ? { ...p, wishlist: !p.wishlist } : p
-        )
-      );
-    } catch (err) {
-      console.error("Error toggling wishlist:", err);
+    } catch (error) {
+      console.error("Error updating wishlist:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update wishlist",
+        variant: "destructive",
+      });
     }
   };
 
   // Toggle cart status
   const handleToggleCart = async (product: IProductResponse) => {
+    if (!product._id) return;
+
     try {
-      let response;
-      if (product.inCart) {
-        response = await fetch("/api/user/cart", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: product._id }),
+      const isInCart = cartItems.some((item) => item._id === product._id);
+
+      if (isInCart) {
+        await removeFromCart(product._id);
+        setProducts((prev) =>
+          prev.map((p) => (p._id === product._id ? { ...p, inCart: false } : p))
+        );
+        toast({
+          title: "Success",
+          description: "Product removed from cart",
+          className: "bg-green-500 text-white",
         });
       } else {
-        response = await fetch("/api/user/cart", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: product._id }),
-        });
-      }
-      const data = await response.json();
-      if (!data.success && data.message === "Not authenticated") {
+        await addToCart(product._id);
+        setProducts((prev) =>
+          prev.map((p) => (p._id === product._id ? { ...p, inCart: true } : p))
+        );
         toast({
-          title: "Error",
-          description: "Please log in to add to cart!",
-          variant: "destructive",
+          title: "Success",
+          description: "Product added to cart",
+          className: "bg-green-500 text-white",
         });
-        return;
       }
-      setProducts((prev) =>
-        prev.map((p) =>
-          p._id === product._id ? { ...p, inCart: !p.inCart } : p
-        )
-      );
-    } catch (err) {
-      console.error("Error toggling cart:", err);
+    } catch (error) {
+      console.error("Error updating cart:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update cart",
+        variant: "destructive",
+      });
     }
   };
 
@@ -266,20 +280,14 @@ const ProductCategoryPage = () => {
               product.primaryCategory?._id === categoryId
           );
 
-          // Fetch current user data to mark wishlist and cart
-          const userResponse = await fetch("/api/user/current");
-          const userData = await userResponse.json();
-          if (userData.success && userData.data) {
-            const wishlistIds: string[] = userData.data.wishlist || [];
-            const cartIds: string[] = userData.data.cart || [];
-            filteredProducts = filteredProducts.map(
-              (product: IProductResponse) => ({
-                ...product,
-                wishlist: wishlistIds.includes(product._id!),
-                inCart: cartIds.includes(product._id!),
-              })
-            );
-          }
+          // Update cart and wishlist status for each product
+          filteredProducts = filteredProducts.map(
+            (product: IProductResponse) => ({
+              ...product,
+              wishlist: wishlistItems.some((item) => item._id === product._id),
+              inCart: cartItems.some((item) => item._id === product._id),
+            })
+          );
 
           setProducts(filteredProducts);
 
@@ -359,7 +367,7 @@ const ProductCategoryPage = () => {
     };
 
     fetchProducts();
-  }, [categoryId]);
+  }, [categoryId, cartItems, wishlistItems]);
 
   if (loading) {
     return (
