@@ -26,6 +26,7 @@ type OrderEmailData = Pick<
     pincode: string;
     type: string;
   };
+  vendorId?: string;
 };
 
 export const sendOrderConfirmationEmail = async (orderData: OrderEmailData) => {
