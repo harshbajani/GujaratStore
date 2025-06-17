@@ -1,6 +1,8 @@
 import { OrdersService } from "@/services/orders.service";
 import { connectToDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
+import { sendOrderCancellationEmail } from "@/lib/workflows/email";
+import User from "@/lib/models/user.model";
 
 export async function GET(request: Request, { params }: RouteParams) {
   try {
@@ -86,6 +88,46 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         { success: false, message: result.message },
         { status: 400 }
       );
+    }
+
+    // If the order is being cancelled, send a cancellation email
+    if (status === "cancelled" && result.data) {
+      try {
+        const orderData = result.data as IOrder;
+        // Get user details from the order's userId
+        const user = await User.findById(orderData.userId);
+
+        if (!user) {
+          console.error("User not found for order cancellation email");
+          return NextResponse.json(result, { status: 200 });
+        }
+
+        await sendOrderCancellationEmail({
+          orderId: orderData.orderId,
+          userName: user.name,
+          userEmail: user.email,
+          items: orderData.items,
+          subtotal: orderData.subtotal,
+          deliveryCharges: orderData.deliveryCharges,
+          total: orderData.total,
+          createdAt: orderData.createdAt,
+          paymentOption: orderData.paymentOption,
+          address: orderData.address || {
+            name: "",
+            contact: "",
+            address_line_1: "",
+            address_line_2: "",
+            locality: "",
+            state: "",
+            pincode: "",
+            type: "",
+          },
+          discountAmount: orderData.discountAmount,
+        });
+      } catch (emailError) {
+        console.error("Failed to send cancellation email:", emailError);
+        // Don't fail the request if email sending fails
+      }
     }
 
     return NextResponse.json(result, { status: 200 });
