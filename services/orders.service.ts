@@ -6,6 +6,22 @@ import Product from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
 import User from "@/lib/models/user.model";
 
+interface IOrder {
+  _id: string;
+  orderId: string;
+  status: string;
+  userId: string;
+  items: OrderItem[];
+  subtotal: number;
+  deliveryCharges: number;
+  total: number;
+  addressId: string;
+  paymentOption: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
 const CACHE_KEYS = {
   ORDER_DETAILS: "order:details:",
   ORDER_LIST: "order:list:",
