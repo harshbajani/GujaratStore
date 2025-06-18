@@ -79,6 +79,65 @@ const Orders = () => {
 
   const getImageUrl = (imageId: string | File) => `/api/files/${imageId}`;
 
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      const order = orders.find((o) => o._id === orderId);
+
+      if (!order) {
+        toast({
+          title: "Error",
+          description: "Order not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (order.status === "shipped" || order.status === "delivered") {
+        toast({
+          title: "Cannot Cancel",
+          description:
+            "Orders that are already shipped or delivered cannot be cancelled",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(`/api/order/byId/${orderId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || "Failed to cancel order");
+      }
+
+      // Update local state
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
+          o._id === orderId ? { ...o, status: "cancelled" } : o
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: "Order cancelled successfully",
+      });
+    } catch (error) {
+      console.error("Failed to cancel order", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to cancel order",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -241,15 +300,28 @@ const Orders = () => {
                     {order.deliveryCharges}
                   </p>
                 </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => handleCancelOrder(order._id)}
+                    disabled={
+                      order.status === "shipped" || order.status === "delivered"
+                    }
+                  >
+                    Cancel Order
+                  </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1"
-                  onClick={() => handleViewDetails(order.orderId)}
-                >
-                  View Details <ChevronRight className="h-4 w-4" />
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => handleViewDetails(order.orderId)}
+                  >
+                    View Details <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -498,20 +498,55 @@ declare interface OrderItem {
   vendorId?: string;
 }
 
+// declare interface IOrder {
+//   _id: string;
+//   orderId: string;
+//   status: string;
+//   userId: string;
+//   items: OrderItem[];
+//   subtotal: number;
+//   deliveryCharges: number;
+//   total: number;
+//   addressId: string;
+//   paymentOption: string;
+//   createdAt: string;
+//   updatedAt: string;
+//   __v: number;
+// }
+
 declare interface IOrder {
   _id: string;
   orderId: string;
-  status: string;
+  status:
+    | "confirmed"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "returned";
   userId: string;
-  items: OrderItem[];
+  items: IOrderItem[];
   subtotal: number;
   deliveryCharges: number;
+  discountAmount?: number;
+  discountCode?: string;
   total: number;
   addressId: string;
   paymentOption: string;
   createdAt: string;
   updatedAt: string;
-  __v: number;
+  userName?: string;
+  userEmail?: string;
+  address?: {
+    name: string;
+    contact: string;
+    address_line_1: string;
+    address_line_2: string;
+    locality: string;
+    state: string;
+    pincode: string;
+    type: string;
+  };
 }
 
 declare interface ISalesSummary {
@@ -685,13 +720,13 @@ declare interface Address {
 
 declare interface IOrderItem {
   productId: string;
-  vendorId: string;
   productName: string;
   coverImage: string;
   price: number;
   quantity: number;
   deliveryDate: string;
   selectedSize?: string;
+  vendorId?: string;
 }
 
 declare interface OrderEmailData {
@@ -708,4 +743,5 @@ declare interface OrderEmailData {
   userEmail: string;
   recipientType?: "user" | "vendor" | "admin";
   vendorId?: string;
+  cancellationReason?: string;
 }

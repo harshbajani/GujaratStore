@@ -25,17 +25,34 @@ import Loader from "@/components/Loader";
 import Image from "next/image";
 import { useOrder, useShippingAddress } from "@/hooks/useOrderHooks";
 import { useUsers } from "@/hooks/useUsers"; // Updated hook import
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+
+interface CancellationData {
+  cancellationReason?: string;
+  isAdminCancellation: boolean;
+}
 
 const ViewOrderPage = () => {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
+  const { toast } = useToast();
 
   // Use custom hooks
-  const { order, loading, updateStatus } = useOrder(orderId);
-  const { address, loading: addressLoading } = useShippingAddress(
-    order?.addressId
-  );
+  const { order, loading, fetchOrder } = useOrder(orderId);
+  const { address } = useShippingAddress(order?.addressId);
+  const [isLoading, setIsLoading] = useState(false);
+  const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState("");
   // Replace the old hook with the new useUsers hook
   const {
     data: user,
@@ -84,6 +101,111 @@ const ViewOrderPage = () => {
         badgeClass = "bg-gray-100 text-gray-800";
     }
     return { badgeClass, icon };
+  };
+
+  const updateOrderStatus = async (
+    id: string,
+    status: string,
+    cancellationData: CancellationData
+  ) => {
+    try {
+      const response = await fetch(`/api/order/byId/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status, ...cancellationData }),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      return { success: false, message: "Failed to update order status" };
+    }
+  };
+
+  const handleStatusChange = async (status: string) => {
+    if (!order) return;
+
+    try {
+      if (status === "cancelled") {
+        setCancellationDialogOpen(true);
+        return;
+      }
+
+      const response = await updateOrderStatus(order._id, status, {
+        isAdminCancellation: false,
+      });
+
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Order status updated successfully!",
+          variant: "default",
+        });
+        fetchOrder();
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to update order status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancellationConfirm = async () => {
+    if (!order || !cancellationReason.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a reason for cancellation",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true); // Set loading state to true when starting the process
+
+    try {
+      const response = await updateOrderStatus(order._id, "cancelled", {
+        cancellationReason: cancellationReason.trim(),
+        isAdminCancellation: true,
+      });
+
+      if (response.success) {
+        setCancellationDialogOpen(false);
+        setCancellationReason("");
+        fetchOrder();
+        toast({
+          title: "Success",
+          description: "Order cancelled successfully!",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to cancel order",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel order",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false); // Ensure loading state is reset after the process
+    }
   };
 
   if (loading) {
@@ -150,7 +272,7 @@ const ViewOrderPage = () => {
                       order.status === "confirmed" ? "default" : "outline"
                     }
                     className={order.status === "confirmed" ? "bg-brand" : ""}
-                    onClick={() => updateStatus("confirmed")}
+                    onClick={() => handleStatusChange("confirmed")}
                   >
                     Confirm
                   </Button>
@@ -160,7 +282,7 @@ const ViewOrderPage = () => {
                       order.status === "processing" ? "default" : "outline"
                     }
                     className={order.status === "processing" ? "bg-brand" : ""}
-                    onClick={() => updateStatus("processing")}
+                    onClick={() => handleStatusChange("processing")}
                   >
                     Processing
                   </Button>
@@ -168,7 +290,7 @@ const ViewOrderPage = () => {
                     size="sm"
                     variant={order.status === "shipped" ? "default" : "outline"}
                     className={order.status === "shipped" ? "bg-brand" : ""}
-                    onClick={() => updateStatus("shipped")}
+                    onClick={() => handleStatusChange("shipped")}
                   >
                     Shipped
                   </Button>
@@ -178,7 +300,7 @@ const ViewOrderPage = () => {
                       order.status === "delivered" ? "default" : "outline"
                     }
                     className={order.status === "delivered" ? "bg-brand" : ""}
-                    onClick={() => updateStatus("delivered")}
+                    onClick={() => handleStatusChange("delivered")}
                   >
                     Delivered
                   </Button>
@@ -192,7 +314,7 @@ const ViewOrderPage = () => {
                         ? "bg-red-600 hover:bg-red-700 text-white"
                         : "text-red-600 border-red-200 hover:bg-red-50"
                     }
-                    onClick={() => updateStatus("cancelled")}
+                    onClick={() => handleStatusChange("cancelled")}
                   >
                     Cancel
                   </Button>
@@ -236,7 +358,7 @@ const ViewOrderPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {order.items.map((item, index) => (
+                {order?.items.map((item: IOrderItem, index: number) => (
                   <TableRow key={index}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -324,9 +446,7 @@ const ViewOrderPage = () => {
               <p>No customer details available.</p>
             )}
             <h4 className="font-bold mt-4">Customer Address</h4>
-            {addressLoading ? (
-              <p>Loading shipping details...</p>
-            ) : address ? (
+            {address ? (
               <div className="space-y-2">
                 <p className="font-medium">{address.address_line_1}</p>
                 <p>{address.address_line_2}</p>
@@ -340,6 +460,46 @@ const ViewOrderPage = () => {
           </CardContent>
         </Card>
       </div>
+      <Dialog
+        open={cancellationDialogOpen}
+        onOpenChange={setCancellationDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Order</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-500 mb-4">
+              Please provide a reason for cancelling this order. This will be
+              sent to the customer.
+            </p>
+            <Textarea
+              placeholder="Enter cancellation reason..."
+              value={cancellationReason}
+              onChange={(e) => setCancellationReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancellationDialogOpen(false);
+                setCancellationReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCancellationConfirm}
+              className="primary-btn"
+              disabled={isLoading}
+            >
+              Confirm Cancellation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

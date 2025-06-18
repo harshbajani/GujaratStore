@@ -56,11 +56,11 @@ export const FooterLinks = [
     label: "Contact us",
   },
   {
-    route: "/",
+    route: "/privacy-policy",
     label: "Privacy Policy",
   },
   {
-    route: "/",
+    route: "/terms-and-condition",
     label: "Terms & Conditions",
   },
 ];
