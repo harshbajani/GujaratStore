@@ -1,17 +1,28 @@
 "use client";
 
-import {
-  ClipboardList,
-  ArrowLeft,
-  Package,
-  Truck,
-  Check,
-  X,
-} from "lucide-react";
-import { withVendorProtection } from "@/app/vendor/HOC";
-import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import {
+  ArrowLeft,
+  Check,
+  X,
+  Package,
+  Truck,
+  ClipboardList,
+} from "lucide-react";
+import { withVendorProtection } from "@/app/vendor/HOC";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -20,7 +31,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Loader from "@/components/Loader";
 import Image from "next/image";
@@ -30,16 +40,23 @@ import {
   useUserDetails,
 } from "@/hooks/useOrderHooks";
 
+interface CancellationData {
+  cancellationReason?: string;
+  isVendorCancellation: boolean;
+}
+
 const ViewOrderPage = () => {
   const params = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const orderId = params.id as string;
 
-  // Use custom hooks
-  const { order, loading, updateStatus } = useOrder(orderId);
-  const { address, loading: addressLoading } = useShippingAddress(
-    order?.addressId
-  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState("");
+
+  const { order, loading, fetchOrder } = useOrder(orderId);
+  const { address } = useShippingAddress(order?.addressId);
   const { user: userDetails } = useUserDetails(order?.userId);
 
   const getImageUrl = (imageId: string | File) => `/api/files/${imageId}`;
@@ -85,6 +102,103 @@ const ViewOrderPage = () => {
     return { badgeClass, icon };
   };
 
+  const updateOrderStatus = async (
+    id: string,
+    status: string,
+    cancellationData: CancellationData
+  ) => {
+    try {
+      const response = await fetch(`/api/order/byId/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status, ...cancellationData }),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      return { success: false, message: "Failed to update order status" };
+    }
+  };
+
+  const handleStatusChange = async (status: string) => {
+    if (!order) return;
+
+    try {
+      if (status === "cancelled") {
+        setCancellationDialogOpen(true);
+        return;
+      }
+
+      const response = await updateOrderStatus(order._id, status, {
+        isVendorCancellation: false,
+      });
+
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Order status updated successfully!",
+          variant: "default",
+        });
+        fetchOrder();
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to update order status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancellationConfirm = async () => {
+    if (!order || !cancellationReason.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a reason for cancellation",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const response = await updateOrderStatus(order._id, "cancelled", {
+        cancellationReason: cancellationReason.trim(),
+        isVendorCancellation: true,
+      });
+
+      if (response.success) {
+        setCancellationDialogOpen(false);
+        setCancellationReason("");
+        fetchOrder();
+        toast({
+          title: "Success",
+          description: "Order cancelled successfully!",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel order",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (loading) {
     return <Loader />;
   }
@@ -103,7 +217,7 @@ const ViewOrderPage = () => {
   const { badgeClass, icon } = getStatusBadge(order.status);
 
   return (
-    <div className="p-2 space-y-6">
+    <div className="container mx-auto py-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <ClipboardList className="text-brand h-8 w-8" />
@@ -149,7 +263,7 @@ const ViewOrderPage = () => {
                       order.status === "confirmed" ? "default" : "outline"
                     }
                     className={order.status === "confirmed" ? "bg-brand" : ""}
-                    onClick={() => updateStatus("confirmed")}
+                    onClick={() => handleStatusChange("confirmed")}
                   >
                     Confirm
                   </Button>
@@ -159,7 +273,7 @@ const ViewOrderPage = () => {
                       order.status === "processing" ? "default" : "outline"
                     }
                     className={order.status === "processing" ? "bg-brand" : ""}
-                    onClick={() => updateStatus("processing")}
+                    onClick={() => handleStatusChange("processing")}
                   >
                     Processing
                   </Button>
@@ -167,7 +281,7 @@ const ViewOrderPage = () => {
                     size="sm"
                     variant={order.status === "shipped" ? "default" : "outline"}
                     className={order.status === "shipped" ? "bg-brand" : ""}
-                    onClick={() => updateStatus("shipped")}
+                    onClick={() => handleStatusChange("shipped")}
                   >
                     Shipped
                   </Button>
@@ -177,7 +291,7 @@ const ViewOrderPage = () => {
                       order.status === "delivered" ? "default" : "outline"
                     }
                     className={order.status === "delivered" ? "bg-brand" : ""}
-                    onClick={() => updateStatus("delivered")}
+                    onClick={() => handleStatusChange("delivered")}
                   >
                     Delivered
                   </Button>
@@ -191,7 +305,7 @@ const ViewOrderPage = () => {
                         ? "bg-red-600 hover:bg-red-700 text-white"
                         : "text-red-600 border-red-200 hover:bg-red-50"
                     }
-                    onClick={() => updateStatus("cancelled")}
+                    onClick={() => handleStatusChange("cancelled")}
                   >
                     Cancel
                   </Button>
@@ -235,7 +349,7 @@ const ViewOrderPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {order.items.map((item, index) => (
+                {order?.items.map((item: IOrderItem, index: number) => (
                   <TableRow key={index}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -317,9 +431,7 @@ const ViewOrderPage = () => {
               </div>
             )}
             <h4 className="font-bold mt-4">Customer Address</h4>
-            {addressLoading ? (
-              <p>Loading shipping details...</p>
-            ) : address ? (
+            {address ? (
               <div className="space-y-2">
                 <p className="font-medium">{address.address_line_1}</p>
                 <p>{address.address_line_2}</p>
@@ -333,6 +445,48 @@ const ViewOrderPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add the cancellation dialog */}
+      <Dialog
+        open={cancellationDialogOpen}
+        onOpenChange={setCancellationDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Order</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-500 mb-4">
+              Please provide a reason for cancelling this order. This will be
+              sent to the customer.
+            </p>
+            <Textarea
+              placeholder="Enter cancellation reason..."
+              value={cancellationReason}
+              onChange={(e) => setCancellationReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancellationDialogOpen(false);
+                setCancellationReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCancellationConfirm}
+              className="primary-btn"
+              disabled={isLoading}
+            >
+              Confirm Cancellation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

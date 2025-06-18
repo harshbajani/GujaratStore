@@ -1,7 +1,7 @@
 "use client";
 
 import { ClipboardList } from "lucide-react";
-import { withVendorProtection } from "../../HOC";
+
 import React, { useState, useEffect } from "react";
 import { Trash2, Eye } from "lucide-react";
 import {
@@ -34,35 +34,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
 import { useUsers } from "@/hooks/useUsers";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { withVendorProtection } from "../../HOC";
 
-interface OrderItem {
-  productId: string;
-  productName: string;
-  productImage: string;
-  quantity: number;
-  price: number;
-  size: string;
-  color: string;
-  vendorId: string;
-}
-
-interface IOrder {
-  _id: string;
-  orderId: string;
-  status: string;
-  userId: string;
-  items: OrderItem[];
-  subtotal: number;
-  deliveryCharges: number;
-  total: number;
-  addressId: string;
-  paymentOption: string;
-  createdAt: string;
-  updatedAt: string;
+interface CancellationData {
+  cancellationReason?: string;
+  isVendorCancellation: boolean;
 }
 
 // Function to fetch all orders
@@ -110,25 +98,25 @@ const deleteOrder = async (id: string) => {
 };
 
 // Function to update order status
-const updateOrderStatus = async (id: string, status: string) => {
+const updateOrderStatus = async (
+  id: string,
+  status: string,
+  cancellationData: CancellationData
+) => {
   try {
     const response = await fetch(`/api/order/byId/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, ...cancellationData }),
     });
-
-    if (!response.ok) {
-      throw new Error("Failed to update order status");
-    }
 
     const data = await response.json();
     return data;
   } catch (error) {
     console.error("Error updating order status:", error);
-    throw error;
+    return { success: false, message: "Failed to update order status" };
   }
 };
 
@@ -156,6 +144,10 @@ const OrdersPage = () => {
     pageIndex: 0,
     pageSize: 10,
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState("");
+  const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -210,10 +202,24 @@ const OrdersPage = () => {
   // * handle status change
   const handleStatusChange = async (id: string, status: string) => {
     try {
-      const response = await updateOrderStatus(id, status);
+      if (status === "cancelled") {
+        // Find the order in the data array
+        const order = data.find((o) => o._id === id);
+        if (!order) {
+          throw new Error("Order not found");
+        }
+        setSelectedOrder(order);
+        setCancellationDialogOpen(true);
+        return;
+      }
+
+      const response = await updateOrderStatus(id, status, {
+        cancellationReason: "",
+        isVendorCancellation: false,
+      });
 
       if (!response.success) {
-        throw new Error(response.error);
+        throw new Error(response.message);
       }
 
       await fetchAllOrders();
@@ -232,6 +238,45 @@ const OrdersPage = () => {
             : "Failed to update order status",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleCancellationConfirm = async () => {
+    if (!selectedOrder || !cancellationReason.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a reason for cancellation",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const response = await updateOrderStatus(selectedOrder._id, "cancelled", {
+        cancellationReason: cancellationReason.trim(),
+        isVendorCancellation: true,
+      });
+
+      if (response.success) {
+        setCancellationDialogOpen(false);
+        setCancellationReason("");
+        setSelectedOrder(null);
+        fetchAllOrders();
+        toast({
+          title: "Success",
+          description: "Order cancelled successfully!",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel order",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -554,6 +599,50 @@ const OrdersPage = () => {
           </div>
         </div>
       </div>
+
+      <Dialog
+        open={cancellationDialogOpen}
+        onOpenChange={setCancellationDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cancel Order</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="reason" className="text-sm font-medium">
+                Reason for Cancellation
+              </label>
+              <Textarea
+                id="reason"
+                placeholder="Please provide a reason for cancelling this order..."
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancellationDialogOpen(false);
+                setCancellationReason("");
+                setSelectedOrder(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCancellationConfirm}
+              className="primary-btn"
+              disabled={isLoading}
+            >
+              Confirm Cancellation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

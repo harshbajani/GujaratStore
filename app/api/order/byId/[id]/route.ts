@@ -1,7 +1,11 @@
 import { OrdersService } from "@/services/orders.service";
 import { connectToDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import { sendOrderCancellationEmail } from "@/lib/workflows/email";
+import {
+  sendAdminCancellationEmail,
+  sendOrderCancellationEmail,
+  sendVendorCancellationEmail,
+} from "@/lib/workflows/email";
 import User from "@/lib/models/user.model";
 
 export async function GET(request: Request, { params }: RouteParams) {
@@ -47,7 +51,12 @@ export async function GET(request: Request, { params }: RouteParams) {
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const { status } = await request.json();
+    const {
+      status,
+      cancellationReason,
+      isVendorCancellation,
+      isAdminCancellation,
+    } = await request.json();
 
     // Basic validation: Ensure id is provided
     if (!id) {
@@ -102,28 +111,92 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           return NextResponse.json(result, { status: 200 });
         }
 
-        await sendOrderCancellationEmail({
-          orderId: orderData.orderId,
-          userName: user.name,
-          userEmail: user.email,
-          items: orderData.items,
-          subtotal: orderData.subtotal,
-          deliveryCharges: orderData.deliveryCharges,
-          total: orderData.total,
-          createdAt: orderData.createdAt,
-          paymentOption: orderData.paymentOption,
-          address: orderData.address || {
-            name: "",
-            contact: "",
-            address_line_1: "",
-            address_line_2: "",
-            locality: "",
-            state: "",
-            pincode: "",
-            type: "",
-          },
-          discountAmount: orderData.discountAmount,
-        });
+        // If it's a vendor cancellation, use the vendor cancellation email
+        if (isAdminCancellation) {
+          if (!cancellationReason) {
+            console.error(
+              "Cancellation reason is required for vendor cancellations"
+            );
+            return NextResponse.json(result, { status: 200 });
+          }
+          await sendAdminCancellationEmail({
+            orderId: orderData.orderId,
+            userName: user.name,
+            userEmail: user.email,
+            items: orderData.items,
+            subtotal: orderData.subtotal,
+            deliveryCharges: orderData.deliveryCharges,
+            total: orderData.total,
+            createdAt: orderData.createdAt,
+            paymentOption: orderData.paymentOption,
+            address: orderData.address || {
+              name: "",
+              contact: "",
+              address_line_1: "",
+              address_line_2: "",
+              locality: "",
+              state: "",
+              pincode: "",
+              type: "",
+            },
+            discountAmount: orderData.discountAmount,
+            cancellationReason: cancellationReason,
+          });
+        } else if (isVendorCancellation) {
+          if (!cancellationReason) {
+            console.error(
+              "Cancellation reason is required for vendor cancellations"
+            );
+            return NextResponse.json(result, { status: 200 });
+          }
+          await sendVendorCancellationEmail({
+            orderId: orderData.orderId,
+            userName: user.name,
+            userEmail: user.email,
+            items: orderData.items,
+            subtotal: orderData.subtotal,
+            deliveryCharges: orderData.deliveryCharges,
+            total: orderData.total,
+            createdAt: orderData.createdAt,
+            paymentOption: orderData.paymentOption,
+            address: orderData.address || {
+              name: "",
+              contact: "",
+              address_line_1: "",
+              address_line_2: "",
+              locality: "",
+              state: "",
+              pincode: "",
+              type: "",
+            },
+            discountAmount: orderData.discountAmount,
+            cancellationReason: cancellationReason,
+          });
+        } else {
+          // For user cancellations, use the regular cancellation email
+          await sendOrderCancellationEmail({
+            orderId: orderData.orderId,
+            userName: user.name,
+            userEmail: user.email,
+            items: orderData.items,
+            subtotal: orderData.subtotal,
+            deliveryCharges: orderData.deliveryCharges,
+            total: orderData.total,
+            createdAt: orderData.createdAt,
+            paymentOption: orderData.paymentOption,
+            address: orderData.address || {
+              name: "",
+              contact: "",
+              address_line_1: "",
+              address_line_2: "",
+              locality: "",
+              state: "",
+              pincode: "",
+              type: "",
+            },
+            discountAmount: orderData.discountAmount,
+          });
+        }
       } catch (emailError) {
         console.error("Failed to send cancellation email:", emailError);
         // Don't fail the request if email sending fails

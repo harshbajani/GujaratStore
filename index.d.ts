@@ -743,4 +743,5 @@ declare interface OrderEmailData {
   userEmail: string;
   recipientType?: "user" | "vendor" | "admin";
   vendorId?: string;
+  cancellationReason?: string;
 }
