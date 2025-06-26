@@ -14,7 +14,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import Image from "next/image";
 import Link from "next/link";
 import { SocialLinks } from "@/constants";
 import { inquirySchema } from "@/lib/validations";
@@ -240,13 +239,7 @@ const ContactPage = () => {
                             href={social.url}
                             className="text-white hover:opacity-80 transition-opacity"
                           >
-                            <Image
-                              src={social.src}
-                              width={24}
-                              height={24}
-                              alt={`${social.url} icon`}
-                              className="w-5 h-5 sm:w-6 sm:h-6"
-                            />
+                            <social.Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                           </Link>
                         ))}
                       </div>
