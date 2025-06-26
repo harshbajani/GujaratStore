@@ -1,4 +1,4 @@
-import { FooterLinks, SocialLinks } from "@/constants";
+import { FooterLinks, NavLinks, SocialLinks } from "@/constants";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -31,50 +31,93 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Right Side with Links and Social */}
           <div className="w-full md:w-auto">
             <div className="mb-4">
-              <h3 className="text-white mb-2">More Links</h3>
-              <div className="flex flex-wrap gap-x-4">
-                {FooterLinks.map((link, index) => (
+              <h3 className="text-white mb-2">Shopping Links</h3>
+              <div className="flex flex-col gap-x-4 space-y-2">
+                {NavLinks.map((link, index) => (
                   <Link
                     prefetch
                     key={index}
                     href={link.route}
-                    className="text-gray-300 hover:text-brand text-sm"
+                    className="text-gray-300 hover:text-brand hover:underline text-sm"
                   >
                     {link.label}
                   </Link>
                 ))}
               </div>
             </div>
+          </div>
 
-            {/* Social Media Icons */}
-            <div className="flex gap-4 mt-4">
-              {SocialLinks.map((social, index) => (
+          <div className="w-full md:w-auto">
+            <div className="mb-4">
+              <h3 className="text-white">Useful Links:</h3>
+              <div className="flex flex-col gap-x-4 space-y-2">
+                {FooterLinks.map((link, index) => (
+                  <Link
+                    prefetch
+                    key={index}
+                    href={link.route}
+                    className="text-gray-300 hover:text-brand hover:underline text-sm"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+          {/* Right Side with Links and Social */}
+          <div className="w-full md:w-auto">
+            <div className="mb-2 flex items-center gap-2">
+              <h3 className="text-white">Email:</h3>
+              <div className="flex flex-wrap gap-x-4">
                 <Link
                   prefetch
-                  key={index}
-                  href={social.url}
-                  className="text-white"
+                  href={"mailto:thegujaratstore@gmail.com"}
+                  className="text-gray-300 hover:text-brand hover:underline text-sm"
                 >
-                  <Image
-                    src={social.src}
-                    width={20}
-                    height={20}
-                    alt="social media"
-                    className="w-5 h-5"
-                  />
+                  thegujaratstore@gmail.com
                 </Link>
-              ))}
+              </div>
+            </div>
+
+            <div className="mb-2 flex items-center gap-2">
+              <h3 className="text-white">Customer Care:</h3>
+              <div className="flex flex-wrap gap-x-4">
+                <Link
+                  prefetch
+                  href={"tel:123-4567890"}
+                  className="text-gray-300 hover:text-brand hover:underline text-sm"
+                >
+                  +91 123 45 67890
+                </Link>
+              </div>
+            </div>
+
+            {/* Social Media Icons */}
+            <div className="flex items-center gap-2">
+              <h3 className="text-white">Follow us:</h3>
+              <div className="flex flex-wrap gap-x-4">
+                {SocialLinks.map((social, index) => (
+                  <Link
+                    prefetch
+                    key={index}
+                    href={social.url}
+                    className="text-white"
+                  >
+                    <social.Icon className="w-5 h-5 hover:fill-brand" />
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Copyright - Now with border line */}
         <div className="mt-8 pt-4 border-t border-gray-800 text-center text-sm text-gray-400">
-          Copyright © 2025 <span className="text-brand">The Gujarat Store</span>{" "}
-          all rights reserved.
+          Copyright © {new Date().getFullYear()}{" "}
+          <span className="text-brand">The Gujarat Store</span> All rights
+          reserved.
         </div>
       </div>
     </footer>
