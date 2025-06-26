@@ -19,6 +19,7 @@ import {
   Store,
   GiftIcon,
 } from "lucide-react";
+import { FaFacebook, FaInstagram, FaLinkedin, FaTwitter } from "react-icons/fa";
 export const NavLinks = [
   {
     route: "/clothing",
@@ -67,19 +68,19 @@ export const FooterLinks = [
 
 export const SocialLinks = [
   {
-    src: "/social-media/Twitter.svg",
+    Icon: FaTwitter,
     url: "/",
   },
   {
-    src: "/social-media/Facebook.svg",
+    Icon: FaFacebook,
     url: "/",
   },
   {
-    src: "/social-media/Instagram.svg",
+    Icon: FaInstagram,
     url: "/",
   },
   {
-    src: "/social-media/LinkedIn.svg",
+    Icon: FaLinkedin,
     url: "/",
   },
 ];
