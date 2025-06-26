@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { getPublicBlogs } from "@/lib/actions/blog.actions";
 import { features } from "@/constants";
 import { BlogImage } from "@/components/BlogImage";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ClientFeaturesAndBlogs = ({ initialBlog }: any) => {
@@ -109,6 +111,14 @@ const ClientFeaturesAndBlogs = ({ initialBlog }: any) => {
           </div>
         </div>
       </motion.section>
+
+      <div className="flex items-center justify-center">
+        <Button asChild variant="outline" size="lg">
+          <Link href="/blogs" className="flex gap-2">
+            See All Blogs <ArrowRight />
+          </Link>
+        </Button>
+      </div>
 
       {/* Features Section */}
       <motion.section

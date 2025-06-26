@@ -79,7 +79,7 @@ const ClientBlogPage = ({ initialBlog }: ClientBlogPageProps) => {
         {/* Back Button */}
         <Link
           prefetch
-          href="/"
+          href="/blogs"
           className="inline-flex items-center gap-2 text-brand hover:text-brand/80 mb-6 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
