@@ -33,7 +33,7 @@ const Footer = () => {
 
           <div className="w-full md:w-auto">
             <div className="mb-4">
-              <h3 className="text-white mb-2">Shopping Links</h3>
+              <h3 className="text-white mb-2">Shopping Links:</h3>
               <div className="flex flex-col gap-x-4 space-y-2">
                 {NavLinks.map((link, index) => (
                   <Link
@@ -105,7 +105,7 @@ const Footer = () => {
                     href={social.url}
                     className="text-white"
                   >
-                    <social.Icon className="w-5 h-5 hover:fill-brand" />
+                    <social.Icon className="w-5 h-5 hover:text-brand" />
                   </Link>
                 ))}
               </div>
