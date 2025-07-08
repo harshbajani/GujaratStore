@@ -189,7 +189,7 @@ const Header = () => {
   };
 
   return (
-    <nav className="fixed top-0 w-full z-50">
+    <nav className="sticky top-0 w-full z-50">
       <div className="bg-brand">
         {/* Desktop Header */}
         <div className="h-[72px] w-full max-w-6xl mx-auto hidden md:flex flex-row items-center justify-between px-4">
@@ -291,7 +291,7 @@ const Header = () => {
         <div className="h-[72px] w-full md:hidden flex items-center justify-between px-4">
           <Sheet open={isOpen} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white">
+              <Button variant="primary" size="icon" className="text-white">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
@@ -359,6 +359,9 @@ const Header = () => {
               <div className="px-4 py-3">{renderAuthButtons()}</div>
             </SheetContent>
           </Sheet>
+          <Link href="/">
+            <Image src="/logo.png" alt="logo" height={110} width={110} />
+          </Link>
           <div className="flex items-center space-x-4">
             <Button
               className="bg-transparent hover:bg-white/20 text-white relative"
