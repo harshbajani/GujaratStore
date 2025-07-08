@@ -24,9 +24,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <WishlistProvider>
                   <div className="smooth-scroll-container">
                     <Header />
-                    <main className="pt-[16px] md:pt-[52px] flex-grow">
-                      {children}
-                    </main>
+                    <main className=" flex-grow">{children}</main>
                     <Footer />
                   </div>
                   <Toaster />
