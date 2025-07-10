@@ -4,8 +4,14 @@ import SecondaryCategory from "@/lib/models/secondaryCategory.model";
 import ParentCategory from "@/lib/models/parentCategory.model";
 import PrimaryCategory from "@/lib/models/primaryCategory.model";
 import Attributes from "@/lib/models/attribute.model";
+import { CacheService } from "./cache.service";
 
 export class SecondaryCategoryService {
+  private static CACHE_TTL = 300; // 5 minutes
+
+  private static async getCacheKey(key: string): Promise<string> {
+    return `secondary_categories:${key}`;
+  }
   static async createSecondaryCategory(
     data: Omit<ISecondaryCategory, "id">
   ): Promise<ActionResponse<ISecondaryCategory>> {
@@ -33,6 +39,7 @@ export class SecondaryCategoryService {
 
       const secondaryCategory = await SecondaryCategory.create(data);
       const populated = await this.populateSecondaryCategory(secondaryCategory);
+      await this.invalidateCache();
 
       return {
         success: true,
@@ -53,6 +60,13 @@ export class SecondaryCategoryService {
 
   static async getAllSecondaryCategories(): Promise<ActionResponse<SecondaryCategoryWithPopulatedFields[]>> {
     try {
+      const cacheKey = await this.getCacheKey("all");
+      const cached = await CacheService.get<SecondaryCategoryWithPopulatedFields[]>(cacheKey);
+
+      if (cached) {
+        return { success: true, data: cached, message: "Secondary categories retrieved from cache" };
+      }
+
       await connectToDB();
 
       const categories = await SecondaryCategory.find()
@@ -62,10 +76,13 @@ export class SecondaryCategoryService {
         .sort({ name: 1 })
         .lean();
 
+      const serializedCategories = categories.map(this.transformSecondaryCategory);
+      await CacheService.set(cacheKey, serializedCategories, this.CACHE_TTL);
+
       return {
         success: true,
         message: "Secondary categories retrieved successfully",
-        data: categories.map(this.transformSecondaryCategory),
+        data: serializedCategories,
       };
     } catch (error) {
       console.error("Get secondary categories error:", error);
@@ -163,6 +180,7 @@ export class SecondaryCategoryService {
         return { success: false, message: "Secondary category not found" };
       }
 
+      await this.invalidateCache();
       return {
         success: true,
         message: "Secondary category updated successfully",
@@ -191,6 +209,7 @@ export class SecondaryCategoryService {
         return { success: false, message: "Secondary category not found" };
       }
 
+      await this.invalidateCache();
       return {
         success: true,
         message: "Secondary category deleted successfully",
@@ -238,5 +257,14 @@ export class SecondaryCategoryService {
       description: category.description || "",
       isActive: category.isActive,
     };
+  }
+
+  private static async invalidateCache(): Promise<void> {
+    try {
+      const cacheKey = await this.getCacheKey("all");
+      await CacheService.delete(cacheKey);
+    } catch (error) {
+      console.error("Cache invalidation error:", error);
+    }
   }
 }

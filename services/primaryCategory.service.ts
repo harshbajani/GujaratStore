@@ -2,8 +2,14 @@
 import { connectToDB } from "@/lib/mongodb";
 import PrimaryCategory from "@/lib/models/primaryCategory.model";
 import ParentCategory from "@/lib/models/parentCategory.model";
+import { CacheService } from "./cache.service";
 
 export class PrimaryCategoryService {
+  private static CACHE_TTL = 300; // 5 minutes
+
+  private static async getCacheKey(key: string): Promise<string> {
+    return `primary_categories:${key}`;
+  }
   static async createPrimaryCategory(
     data: Omit<IPrimaryCategory, "_id">
   ): Promise<ActionResponse<IPrimaryCategory>> {
@@ -22,6 +28,7 @@ export class PrimaryCategoryService {
 
       const primaryCategory = await PrimaryCategory.create(data);
       const populated = await this.populatePrimaryCategory(primaryCategory);
+      await this.invalidateCache();
 
       return {
         success: true,
@@ -44,16 +51,26 @@ export class PrimaryCategoryService {
     ActionResponse<IPrimaryCategory[]>
   > {
     try {
+      const cacheKey = await this.getCacheKey("all");
+      const cached = await CacheService.get<IPrimaryCategory[]>(cacheKey);
+
+      if (cached) {
+        return { success: true, data: cached, message: "Primary categories retrieved from cache" };
+      }
+
       await connectToDB();
       const categories = await PrimaryCategory.find()
         .populate("parentCategory")
         .sort({ name: 1 })
         .lean();
 
+      const serializedCategories = categories.map(this.transformPrimaryCategory);
+      await CacheService.set(cacheKey, serializedCategories, this.CACHE_TTL);
+
       return {
         success: true,
         message: "Primary categories retrieved successfully",
-        data: categories.map(this.transformPrimaryCategory),
+        data: serializedCategories,
       };
     } catch (error) {
       console.error("Get primary categories error:", error);
@@ -132,6 +149,7 @@ export class PrimaryCategoryService {
         };
       }
 
+      await this.invalidateCache();
       return {
         success: true,
         message: "Primary category updated successfully",
@@ -163,6 +181,7 @@ export class PrimaryCategoryService {
         };
       }
 
+      await this.invalidateCache();
       return {
         success: true,
         message: "Primary category deleted successfully",
@@ -201,5 +220,14 @@ export class PrimaryCategoryService {
       metaDescription: category.metaDescription || "",
       isActive: category.isActive,
     };
+  }
+
+  private static async invalidateCache(): Promise<void> {
+    try {
+      const cacheKey = await this.getCacheKey("all");
+      await CacheService.delete(cacheKey);
+    } catch (error) {
+      console.error("Cache invalidation error:", error);
+    }
   }
 }

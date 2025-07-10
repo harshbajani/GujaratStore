@@ -1,8 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { connectToDB } from "@/lib/mongodb";
 import ParentCategory from "@/lib/models/parentCategory.model";
+import { CacheService } from "./cache.service";
 
 export class ParentCategoryService {
+  private static CACHE_TTL = 300; // 5 minutes
+
+  private static async getCacheKey(key: string): Promise<string> {
+    return `parent_categories:${key}`;
+  }
   static async createParentCategory(
     data: Pick<IParentCategory, "name" | "isActive">
   ): Promise<ActionResponse<IParentCategory>> {
@@ -21,6 +27,7 @@ export class ParentCategoryService {
       }
 
       const category = await ParentCategory.create(data);
+      await this.invalidateCache();
       return {
         success: true,
         message: "Parent category created successfully",
@@ -38,17 +45,27 @@ export class ParentCategoryService {
     }
   }
 
-  static async getAllParentCategories(): Promise<
+static async getAllParentCategories(): Promise<
     ActionResponse<IParentCategory[]>
   > {
     try {
+      const cacheKey = await this.getCacheKey("all");
+      const cached = await CacheService.get<IParentCategory[]>(cacheKey);
+
+      if (cached) {
+        return { success: true, data: cached, message: "Parent categories retrieved from cache" };
+      }
+
       await connectToDB();
       const categories = await ParentCategory.find().sort({ name: 1 }).lean();
+
+      const serializedCategories = categories.map(this.transformParentCategory);
+      await CacheService.set(cacheKey, serializedCategories, this.CACHE_TTL);
 
       return {
         success: true,
         message: "Parent categories retrieved successfully",
-        data: categories.map(this.transformParentCategory),
+        data: serializedCategories,
       };
     } catch (error) {
       console.error("Get parent categories error:", error);
@@ -127,6 +144,7 @@ export class ParentCategoryService {
         };
       }
 
+      await this.invalidateCache();
       return {
         success: true,
         message: "Parent category updated successfully",
@@ -156,6 +174,7 @@ export class ParentCategoryService {
         };
       }
 
+      await this.invalidateCache();
       return {
         success: true,
         message: "Parent category deleted successfully",
@@ -179,5 +198,14 @@ export class ParentCategoryService {
       name: category.name,
       isActive: category.isActive,
     };
+  }
+
+  private static async invalidateCache(): Promise<void> {
+    try {
+      const cacheKey = await this.getCacheKey("all");
+      await CacheService.delete(cacheKey);
+    } catch (error) {
+      console.error("Cache invalidation error:", error);
+    }
   }
 }

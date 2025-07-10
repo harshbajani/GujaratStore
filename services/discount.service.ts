@@ -3,6 +3,7 @@ import { connectToDB } from "@/lib/mongodb";
 import Discount, { DiscountType } from "@/lib/models/discount.model";
 import UsedDiscount from "@/lib/models/usedDiscount.model";
 import Products from "@/lib/models/product.model";
+import { CacheService } from "./cache.service";
 
 export class DiscountService {
   static async createDiscount(
@@ -16,9 +17,15 @@ export class DiscountService {
         .populate("parentCategory", "name isActive")
         .populate("createdBy", "name email")
         .lean();
+
+      const transformedDiscount = this.transformDiscount(populated);
+
+      // Invalidate related caches
+      await this.invalidateDiscountCaches(data.vendorId);
+
       return {
         success: true,
-        data: this.transformDiscount(populated),
+        data: transformedDiscount,
         message: "Discount created successfully",
       };
     } catch (error) {
@@ -40,10 +47,17 @@ export class DiscountService {
         .populate("parentCategory", "name isActive")
         .populate("createdBy", "name email")
         .lean();
+
       if (!updated) return { success: false, message: "Discount not found" };
+
+      const transformedDiscount = this.transformDiscount(updated);
+
+      // Invalidate related caches
+      await this.invalidateDiscountCaches(data.vendorId, id);
+
       return {
         success: true,
-        data: this.transformDiscount(updated),
+        data: transformedDiscount,
         message: "Discount updated successfully",
       };
     } catch (error) {
@@ -57,15 +71,34 @@ export class DiscountService {
 
   static async getDiscountById(id: string): Promise<ActionResponse<IDiscount>> {
     try {
+      // Add cache check
+      const cacheKey = `discount:${id}`;
+      const cached = await CacheService.get<IDiscount>(cacheKey);
+
+      if (cached) {
+        return {
+          success: true,
+          data: cached,
+          message: "Discount fetched from cache",
+        };
+      }
+
       await connectToDB();
       const discount = await Discount.findById(id)
         .populate("parentCategory", "name isActive")
         .populate("createdBy", "name email")
         .lean();
+
       if (!discount) return { success: false, message: "Discount not found" };
+
+      const transformedDiscount = this.transformDiscount(discount);
+
+      // Cache the result
+      await CacheService.set(cacheKey, transformedDiscount, 300); // 5 minutes TTL
+
       return {
         success: true,
-        data: this.transformDiscount(discount),
+        data: transformedDiscount,
         message: "Discount fetched successfully",
       };
     } catch (error) {
@@ -81,15 +114,33 @@ export class DiscountService {
     vendorId: string
   ): Promise<ActionResponse<IDiscount[]>> {
     try {
+      // Add cache check
+      const cacheKey = `discounts:vendor:${vendorId}`;
+      const cached = await CacheService.get<IDiscount[]>(cacheKey);
+
+      if (cached) {
+        return {
+          success: true,
+          data: cached,
+          message: "Discounts fetched from cache",
+        };
+      }
+
       await connectToDB();
       const discounts = await Discount.find({ vendorId })
         .populate("parentCategory", "name isActive")
         .populate("createdBy", "name email")
         .sort({ createdAt: -1 })
         .lean();
+
+      const transformedDiscounts = discounts.map(this.transformDiscount);
+
+      // Cache the result
+      await CacheService.set(cacheKey, transformedDiscounts, 300); // 5 minutes TTL
+
       return {
         success: true,
-        data: discounts.map(this.transformDiscount),
+        data: transformedDiscounts,
         message: "Discounts fetched successfully",
       };
     } catch (error) {
@@ -103,6 +154,18 @@ export class DiscountService {
 
   static async getPublicDiscounts(): Promise<ActionResponse<IDiscount[]>> {
     try {
+      // Add cache check
+      const cacheKey = `discounts:public`;
+      const cached = await CacheService.get<IDiscount[]>(cacheKey);
+
+      if (cached) {
+        return {
+          success: true,
+          data: cached,
+          message: "Public discounts fetched from cache",
+        };
+      }
+
       await connectToDB();
       const currentDate = new Date();
 
@@ -116,9 +179,14 @@ export class DiscountService {
         .sort({ createdAt: -1 })
         .lean();
 
+      const transformedDiscounts = discounts.map(this.transformDiscount);
+
+      // Cache the result with shorter TTL since it's time-sensitive
+      await CacheService.set(cacheKey, transformedDiscounts, 180); // 3 minutes TTL
+
       return {
         success: true,
-        data: discounts.map(this.transformDiscount),
+        data: transformedDiscounts,
         message: "Public discounts fetched successfully",
       };
     } catch (error) {
@@ -211,6 +279,10 @@ export class DiscountService {
       await connectToDB();
       const result = await Discount.findByIdAndDelete(id);
       if (!result) return { success: false, message: "Discount not found" };
+
+      // Invalidate related caches
+      await this.invalidateDiscountCaches(result.vendorId, id);
+
       return { success: true, message: "Discount deleted successfully" };
     } catch (error) {
       return {
@@ -299,5 +371,32 @@ export class DiscountService {
       createdAt: discount.createdAt,
       updatedAt: discount.updatedAt,
     };
+  }
+
+  private static async invalidateDiscountCaches(
+    vendorId?: string,
+    discountId?: string
+  ): Promise<void> {
+    try {
+      const keysToDelete = [];
+
+      // Always invalidate public discounts cache
+      keysToDelete.push(`discounts:public`);
+
+      // Invalidate vendor-specific cache if vendorId provided
+      if (vendorId) {
+        keysToDelete.push(`discounts:vendor:${vendorId}`);
+      }
+
+      // Invalidate specific discount cache if discountId provided
+      if (discountId) {
+        keysToDelete.push(`discount:${discountId}`);
+      }
+
+      // Delete all keys
+      await Promise.all(keysToDelete.map((key) => CacheService.delete(key)));
+    } catch (error) {
+      console.error("Cache invalidation error:", error);
+    }
   }
 }

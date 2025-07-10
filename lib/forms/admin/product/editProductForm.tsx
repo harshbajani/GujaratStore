@@ -17,13 +17,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
-import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
-import { getAllSecondaryCategories } from "@/lib/actions/secondaryCategory.actions";
+import { getAllDropdownData } from "@/lib/actions/dropdown.actions";
 import React, { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { getAllAttributes } from "@/lib/actions/attribute.actions";
 import { useParams, useRouter } from "next/navigation";
 import { adminProductSchema } from "@/lib/validations";
 import dynamic from "next/dynamic";
@@ -60,7 +57,7 @@ const EditProductsForm = () => {
     []
   );
   const [secondaryCategory, setSecondaryCategory] = useState<
-    IProductSecondaryCategory[]
+    SecondaryCategoryWithPopulatedFields[]
   >([]);
   const [attributes, setAttributes] = useState<IAttribute[]>([]);
   const [brands, setBrands] = useState<IAdminBrand[]>([]);
@@ -130,7 +127,7 @@ const EditProductsForm = () => {
   useEffect(() => {
     if (selectedSecondaryCategoryId) {
       const selectedCategory = secondaryCategory.find(
-        (cat) => cat.id === selectedSecondaryCategoryId
+        (cat) => cat._id === selectedSecondaryCategoryId || cat.id === selectedSecondaryCategoryId
       );
       if (selectedCategory) {
         const currentAttributes = form.getValues("attributes");
@@ -334,43 +331,33 @@ const EditProductsForm = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const parentCategoryResponse = await getAllParentCategory();
-        const primaryCategoryResponse = await getAllPrimaryCategories();
-        const secondaryCategoryResponse = await getAllSecondaryCategories();
-        const attributeResponse = await getAllAttributes();
-        const brandResponse = await getAllBrands();
-        const sizesResponse = await getAllSizes();
+        const [dropdownResponse, brandResponse, sizesResponse] = await Promise.all([
+          getAllDropdownData(),
+          getAllBrands(),
+          getAllSizes(),
+        ]);
 
-        if (parentCategoryResponse.success) {
-          setParentCategories(parentCategoryResponse.data as IParentCategory[]);
+        if (dropdownResponse.success && dropdownResponse.data) {
+          const { parentCategories, primaryCategories, secondaryCategories, attributes } = dropdownResponse.data;
+          setParentCategories(parentCategories);
+          setPrimaryCategory(primaryCategories);
+          setSecondaryCategory(secondaryCategories);
+          setAttributes(attributes);
         }
 
-        if (primaryCategoryResponse.success && primaryCategoryResponse.data) {
-          setPrimaryCategory(
-            primaryCategoryResponse.data as IPrimaryCategory[]
-          );
-        }
-
-        if (
-          secondaryCategoryResponse.success &&
-          secondaryCategoryResponse.data
-        ) {
-          setSecondaryCategory(
-            secondaryCategoryResponse.data as IProductSecondaryCategory[]
-          );
-        }
-
-        if (attributeResponse.success) {
-          setAttributes(attributeResponse.data as IAttribute[]);
-        }
         if (brandResponse.success && brandResponse.data) {
           setBrands(brandResponse.data);
         }
         if (sizesResponse.success) {
           setSizes(sizesResponse.data as ISizes[]);
         }
-      } catch {
-        console.log("error");
+      } catch (error) {
+        console.error("Error fetching dropdown data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load form data",
+          variant: "destructive",
+        });
       }
     };
 

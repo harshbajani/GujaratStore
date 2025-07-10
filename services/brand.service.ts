@@ -193,10 +193,11 @@ export class BrandService {
     }
   }
 
+  // FIXED: Now invalidates ALL brand keys, not just "all"
   private static async invalidateCache(): Promise<void> {
     try {
-      const cacheKey = await this.getCacheKey("all");
-      await CacheService.delete(cacheKey);
+      const keys = await CacheService.keys("brands:*");
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
     } catch (error) {
       console.error("Cache invalidation error:", error);
     }

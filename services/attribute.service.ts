@@ -169,10 +169,11 @@ export class AttributeService {
     }
   }
 
+  // FIXED: Now invalidates ALL attribute keys, not just "all"
   private static async invalidateCache(): Promise<void> {
     try {
-      const cacheKey = await this.getCacheKey("all");
-      await CacheService.delete(cacheKey);
+      const keys = await CacheService.keys("attributes:*");
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
     } catch (error) {
       console.error("Cache invalidation error:", error);
     }

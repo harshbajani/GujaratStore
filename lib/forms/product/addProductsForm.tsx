@@ -17,13 +17,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
-import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
-import { getAllSecondaryCategories } from "@/lib/actions/secondaryCategory.actions";
+import { getAllDropdownData } from "@/lib/actions/dropdown.actions";
 import React, { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { getAllAttributes } from "@/lib/actions/attribute.actions";
 import { useRouter } from "next/navigation";
 import { productSchema } from "@/lib/validations";
 import dynamic from "next/dynamic";
@@ -40,6 +37,7 @@ import { Label } from "@/components/ui/label";
 import { getAllSizes } from "@/lib/actions/size.actions";
 import { MultiSelect } from "@/components/ui/multi-select";
 import slugify from "slugify";
+import Loader from "@/components/Loader";
 
 const AddProductsForm = () => {
   const generateSlug = (name: string) => {
@@ -58,9 +56,10 @@ const AddProductsForm = () => {
     []
   );
   const [secondaryCategory, setSecondaryCategory] = useState<
-    IProductSecondaryCategory[]
+    SecondaryCategoryWithPopulatedFields[]
   >([]);
   const [attributes, setAttributes] = useState<IAttribute[]>([]);
+  const [loading, setLoading] = useState(true);
   const [brands, setBrands] = useState<IBrand[]>([]);
   const [sizes, setSizes] = useState<ISizes[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -134,7 +133,9 @@ const AddProductsForm = () => {
   useEffect(() => {
     if (selectedSecondaryCategoryId) {
       const selectedCategory = secondaryCategory.find(
-        (cat) => cat.id === selectedSecondaryCategoryId
+        (cat) =>
+          cat._id === selectedSecondaryCategoryId ||
+          cat.id === selectedSecondaryCategoryId
       );
       if (selectedCategory) {
         const initialAttributes = selectedCategory.attributes.map((attr) => ({
@@ -296,43 +297,42 @@ const AddProductsForm = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const parentCategoryResponse = await getAllParentCategory();
-        const primaryCategoryResponse = await getAllPrimaryCategories();
-        const secondaryCategoryResponse = await getAllSecondaryCategories();
-        const attributeResponse = await getAllAttributes();
-        const brandResponse = await getAllBrands();
-        const sizesResponse = await getAllSizes();
+        setLoading(true);
+        const [dropdownResponse, brandResponse, sizesResponse] =
+          await Promise.all([
+            getAllDropdownData(),
+            getAllBrands(),
+            getAllSizes(),
+          ]);
 
-        if (parentCategoryResponse.success) {
-          setParentCategories(parentCategoryResponse.data as IParentCategory[]);
+        if (dropdownResponse.success && dropdownResponse.data) {
+          const {
+            parentCategories,
+            primaryCategories,
+            secondaryCategories,
+            attributes,
+          } = dropdownResponse.data;
+          setParentCategories(parentCategories);
+          setPrimaryCategory(primaryCategories);
+          setSecondaryCategory(secondaryCategories);
+          setAttributes(attributes);
         }
 
-        if (primaryCategoryResponse.success && primaryCategoryResponse.data) {
-          setPrimaryCategory(
-            primaryCategoryResponse.data as IPrimaryCategory[]
-          );
-        }
-
-        if (
-          secondaryCategoryResponse.success &&
-          secondaryCategoryResponse.data
-        ) {
-          setSecondaryCategory(
-            secondaryCategoryResponse.data as IProductSecondaryCategory[]
-          );
-        }
-
-        if (attributeResponse.success) {
-          setAttributes(attributeResponse.data as IAttribute[]);
-        }
         if (brandResponse.success && brandResponse.data) {
           setBrands(brandResponse.data);
         }
         if (sizesResponse.success) {
           setSizes(sizesResponse.data as ISizes[]);
         }
-      } catch {
-        console.log("error");
+      } catch (error) {
+        console.error("Error fetching dropdown data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load form data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -374,6 +374,10 @@ const AddProductsForm = () => {
 
     fetchVendor();
   }, [form]);
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <Form {...form}>
@@ -526,7 +530,10 @@ const AddProductsForm = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {secondaryCategory.map((category) => (
-                        <SelectItem key={category.id} value={category.id!}>
+                        <SelectItem
+                          key={category._id || category.id}
+                          value={category._id || category.id!}
+                        >
                           {category.name}
                         </SelectItem>
                       ))}

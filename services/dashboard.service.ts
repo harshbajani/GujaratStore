@@ -51,7 +51,8 @@ export class DashboardService {
       revenueChangePercent,
     };
 
-    await CacheService.set(cacheKey, summary);
+    // Set cache with 10 minutes TTL (600 seconds)
+    await CacheService.set(cacheKey, summary, 600);
     return summary;
   }
 
@@ -77,7 +78,8 @@ export class DashboardService {
 
     const breakdown = this.normalizeOrderBreakdown(statusBreakdown);
 
-    await CacheService.set(cacheKey, breakdown);
+    // Set cache with 5 minutes TTL (300 seconds) - order status changes more frequently
+    await CacheService.set(cacheKey, breakdown, 300);
     return breakdown;
   }
 
@@ -128,7 +130,8 @@ export class DashboardService {
       })),
     };
 
-    await CacheService.set(cacheKey, stats);
+    // Set cache with 15 minutes TTL (900 seconds) - inventory changes less frequently
+    await CacheService.set(cacheKey, stats, 900);
     return stats;
   }
 
@@ -270,5 +273,60 @@ export class DashboardService {
     });
 
     return breakdown;
+  }
+
+  async invalidateSalesCache(vendorId: string): Promise<void> {
+    try {
+      // Get all keys that match the sales pattern for this vendor
+      const keys = await CacheService.keys(`sales:${vendorId}:*`);
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
+    } catch (error) {
+      console.error("Sales cache invalidation error:", error);
+    }
+  }
+
+  async invalidateOrdersCache(vendorId: string): Promise<void> {
+    try {
+      // Get all keys that match the orders pattern for this vendor
+      const keys = await CacheService.keys(`orders:${vendorId}:*`);
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
+    } catch (error) {
+      console.error("Orders cache invalidation error:", error);
+    }
+  }
+
+  async invalidateInventoryCache(vendorId: string): Promise<void> {
+    try {
+      // Delete inventory cache for this vendor
+      await CacheService.delete(`inventory:${vendorId}`);
+    } catch (error) {
+      console.error("Inventory cache invalidation error:", error);
+    }
+  }
+
+  // Master method to invalidate all dashboard caches for a vendor
+  async invalidateAllDashboardCaches(vendorId: string): Promise<void> {
+    try {
+      await Promise.all([
+        this.invalidateSalesCache(vendorId),
+        this.invalidateOrdersCache(vendorId),
+        this.invalidateInventoryCache(vendorId),
+      ]);
+    } catch (error) {
+      console.error("Dashboard cache invalidation error:", error);
+    }
+  }
+
+  // Call this method when orders are created/updated/deleted
+  async onOrderChange(vendorId: string): Promise<void> {
+    await Promise.all([
+      this.invalidateSalesCache(vendorId),
+      this.invalidateOrdersCache(vendorId),
+    ]);
+  }
+
+  // Call this method when products are created/updated/deleted
+  async onProductChange(vendorId: string): Promise<void> {
+    await this.invalidateInventoryCache(vendorId);
   }
 }
