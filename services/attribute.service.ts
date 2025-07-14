@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Attributes from "@/lib/models/attribute.model";
 import mongoose from "mongoose";
 import { CacheService } from "./cache.service";
@@ -52,7 +53,85 @@ export class AttributeService {
     }
   }
 
-  static async getAllAttributes(): Promise<AttributeResponse> {
+  static async getAllAttributes(
+    params: PaginationParams = {}
+  ): Promise<PaginatedResponse<IAttribute>> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        sortBy = "name",
+        sortOrder = "asc",
+      } = params;
+
+      // Create cache key based on all parameters
+      const cacheKey = await this.getCacheKey(
+        `paginated:${page}:${limit}:${search}:${sortBy}:${sortOrder}`
+      );
+
+      const cached = await CacheService.get<PaginatedResponse<IAttribute>>(
+        cacheKey
+      );
+      if (cached) {
+        return cached;
+      }
+
+      // Build query for search
+      const query: any = {};
+      if (search) {
+        query.name = { $regex: search, $options: "i" };
+      }
+
+      // Build sort object
+      const sort: any = {};
+      sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+
+      // Execute queries in parallel
+      const [attributes, totalCount] = await Promise.all([
+        Attributes.find(query).sort(sort).skip(skip).limit(limit),
+        Attributes.countDocuments(query),
+      ]);
+
+      const serializedAttributes = attributes
+        .map(this.serializeDocument)
+        .filter((attr): attr is IAttribute => attr !== null);
+
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      const result: PaginatedResponse<IAttribute> = {
+        success: true,
+        data: serializedAttributes,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems: totalCount,
+          itemsPerPage: limit,
+          hasNext,
+          hasPrev,
+        },
+      };
+
+      // Cache the result
+      await CacheService.set(cacheKey, result, this.CACHE_TTL);
+
+      return result;
+    } catch (error) {
+      console.error("Get attributes error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to fetch attributes",
+      };
+    }
+  }
+
+  static async getAllAttributesLegacy(): Promise<AttributeResponse> {
     try {
       const cacheKey = await this.getCacheKey("all");
       const cached = await CacheService.get<IAttribute[]>(cacheKey);

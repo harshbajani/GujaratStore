@@ -745,3 +745,25 @@ declare interface OrderEmailData {
   vendorId?: string;
   cancellationReason?: string;
 }
+
+declare interface PaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+declare interface PaginatedResponse<T> {
+  success: boolean;
+  data?: T[];
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  error?: string;
+}

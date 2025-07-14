@@ -10,9 +10,14 @@ export async function createAttribute(name: string, isActive: boolean) {
   return result;
 }
 
-export async function getAllAttributes() {
+export async function getAllAttributes(params?: PaginationParams) {
   await connectToDB();
-  return await AttributeService.getAllAttributes();
+  return await AttributeService.getAllAttributes(params);
+}
+
+export async function getAllAttributesLegacy() {
+  await connectToDB();
+  return await AttributeService.getAllAttributesLegacy();
 }
 
 export async function getAttributeById(id: string) {
