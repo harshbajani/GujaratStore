@@ -1,5 +1,6 @@
 import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
+import { ProductService } from "@/services/product.service";
 import { NextRequest, NextResponse } from "next/server";
 
 // Commonly needed fields that we always want to retrieve
@@ -41,43 +42,37 @@ export async function GET(request: NextRequest) {
   try {
     await connectToDB();
     const searchParams = request.nextUrl.searchParams;
-    const id = searchParams.get("id");
 
-    if (id) {
-      // For single product fetch
-      const product = await Products.findById(id)
-        .select(commonFields)
-        .populate(populateConfig)
-        .lean()
-        .exec();
+    // Check if it's a legacy request (fetchAll or no pagination params)
+    const fetchAll = searchParams.get("all") === "true";
+    const page = searchParams.get("page");
+    const limit = searchParams.get("limit");
 
-      if (!product) {
-        return NextResponse.json(
-          { success: false, error: "Product not found" },
-          { status: 404 }
-        );
-      }
-      return NextResponse.json({ success: true, data: product });
+    // If pagination parameters are present, use server-side pagination
+    const usePagination =
+      page || limit || searchParams.get("search") || searchParams.get("sortBy");
+
+    if (usePagination && !fetchAll) {
+      // Use paginated response
+      const paginationParams: PaginationParams = {
+        page: page ? parseInt(page) : 1,
+        limit: limit ? parseInt(limit) : 10,
+        search: searchParams.get("search") || "",
+        sortBy: searchParams.get("sortBy") || "createdAt",
+        sortOrder: (searchParams.get("sortOrder") as "asc" | "desc") || "desc",
+      };
+
+      const result = await ProductService.getProducts(paginationParams);
+      return NextResponse.json(result);
+    } else {
+      // Legacy behavior - fetch all products for vendor or all products if fetchAll
+      const result = await ProductService.getProductsLegacy();
+      return NextResponse.json(result);
     }
-
-    // For product listing with pagination
-    const [products] = await Promise.all([
-      Products.find()
-        .select(commonFields)
-        .populate(populateConfig)
-        .lean()
-        .exec(),
-      Products.countDocuments(),
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      data: products,
-    });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Error in GET products:", error);
     return NextResponse.json(
-      { success: false, error: (error as Error).message },
+      { success: false, error: "Internal server error" },
       { status: 500 }
     );
   }

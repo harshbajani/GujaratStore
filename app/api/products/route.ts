@@ -51,23 +51,49 @@ export async function GET(request: NextRequest) {
   try {
     await connectToDB();
     const searchParams = request.nextUrl.searchParams;
+
+    // Check if it's a legacy request (fetchAll or no pagination params)
     const fetchAll = searchParams.get("all") === "true";
+    const page = searchParams.get("page");
+    const limit = searchParams.get("limit");
 
-    if (fetchAll) {
-      const result = await ProductService.getProducts();
-      return NextResponse.json(result);
-    }
+    // If pagination parameters are present, use server-side pagination
+    const usePagination =
+      page || limit || searchParams.get("search") || searchParams.get("sortBy");
 
+    // Get vendor information
     const vendorResponse = await getCurrentVendor();
-    if (!vendorResponse.success) {
+    let vendorId: string | undefined;
+
+    if (vendorResponse.success) {
+      vendorId = vendorResponse.data?._id;
+    } else if (!fetchAll) {
       return NextResponse.json(
         { success: false, error: "Not authenticated as vendor" },
         { status: 401 }
       );
     }
 
-    const result = await ProductService.getProducts(vendorResponse.data?._id);
-    return NextResponse.json(result);
+    if (usePagination && !fetchAll) {
+      // Use paginated response
+      const paginationParams: PaginationParams = {
+        page: page ? parseInt(page) : 1,
+        limit: limit ? parseInt(limit) : 10,
+        search: searchParams.get("search") || "",
+        sortBy: searchParams.get("sortBy") || "createdAt",
+        sortOrder: (searchParams.get("sortOrder") as "asc" | "desc") || "desc",
+      };
+
+      const result = await ProductService.getProducts(
+        paginationParams,
+        vendorId
+      );
+      return NextResponse.json(result);
+    } else {
+      // Legacy behavior - fetch all products for vendor or all products if fetchAll
+      const result = await ProductService.getProductsLegacy(vendorId!);
+      return NextResponse.json(result);
+    }
   } catch (error) {
     console.error("Error in GET products:", error);
     return NextResponse.json(
