@@ -231,7 +231,7 @@ const AttributePage = () => {
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand"></div>
               )}
             </div>
-            <Link prefetch href="/vendor/attribute/add">
+            <Link prefetch href="/admin/attribute/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Attribute
               </Button>
@@ -306,7 +306,7 @@ const AttributePage = () => {
                             className="hover:bg-gray-100"
                             onClick={() =>
                               router.push(
-                                `/vendor/attribute/edit/${attribute.id}`
+                                `/admin/attribute/edit/${attribute.id}`
                               )
                             }
                           >

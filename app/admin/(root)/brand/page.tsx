@@ -232,7 +232,7 @@ const BrandPage = () => {
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand"></div>
               )}
             </div>
-            <Link prefetch href="/vendor/brand/add">
+            <Link prefetch href="/admin/brand/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Brand
               </Button>
@@ -320,7 +320,7 @@ const BrandPage = () => {
                             size="icon"
                             className="hover:bg-gray-100"
                             onClick={() =>
-                              router.push(`/vendor/brand/edit/${brand._id}`)
+                              router.push(`/admin/brand/edit/${brand._id}`)
                             }
                           >
                             <Pencil className="h-4 w-4 text-gray-600" />

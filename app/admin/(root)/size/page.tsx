@@ -232,7 +232,7 @@ const SizePage = () => {
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand"></div>
               )}
             </div>
-            <Link prefetch href="/vendor/size/add">
+            <Link prefetch href="/admin/size/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Size
               </Button>
@@ -323,7 +323,7 @@ const SizePage = () => {
                             size="icon"
                             className="hover:bg-gray-100"
                             onClick={() =>
-                              router.push(`/vendor/size/edit/${size._id}`)
+                              router.push(`/admin/size/edit/${size._id}`)
                             }
                           >
                             <Pencil className="h-4 w-4 text-gray-600" />
