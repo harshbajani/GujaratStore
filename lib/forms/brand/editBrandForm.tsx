@@ -122,7 +122,7 @@ const EditBrandForm = () => {
         if (brand) {
           // Set the base64 image directly
           if (brand.imageId) {
-            setPostImage(`data:image/jpeg;base64,${brand.imageId}`);
+            setPostImage(`/api/files/${brand.imageId}`);
           }
 
           form.reset({
