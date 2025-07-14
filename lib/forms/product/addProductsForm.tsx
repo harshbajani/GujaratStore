@@ -28,13 +28,13 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
 import PriceCalculator from "@/components/PriceCalculator";
 import { Switch } from "@/components/ui/switch";
-import { getAllBrands } from "@/lib/actions/brand.actions";
+import { getAllBrandsLegacy } from "@/lib/actions/brand.actions";
 import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { getAllSizes } from "@/lib/actions/size.actions";
+import { getAllSizesLegacy } from "@/lib/actions/size.actions";
 import { MultiSelect } from "@/components/ui/multi-select";
 import slugify from "slugify";
 import Loader from "@/components/Loader";
@@ -301,8 +301,8 @@ const AddProductsForm = () => {
         const [dropdownResponse, brandResponse, sizesResponse] =
           await Promise.all([
             getAllDropdownData(),
-            getAllBrands(),
-            getAllSizes(),
+            getAllBrandsLegacy(),
+            getAllSizesLegacy(),
           ]);
 
         if (dropdownResponse.success && dropdownResponse.data) {
@@ -319,7 +319,11 @@ const AddProductsForm = () => {
         }
 
         if (brandResponse.success && brandResponse.data) {
-          setBrands(brandResponse.data);
+          setBrands(
+            Array.isArray(brandResponse.data)
+              ? brandResponse.data
+              : [brandResponse.data]
+          );
         }
         if (sizesResponse.success) {
           setSizes(sizesResponse.data as ISizes[]);

@@ -33,15 +33,6 @@ type Attribute = {
   isActive: boolean;
 };
 
-type PaginationInfo = {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
-  hasNext: boolean;
-  hasPrev: boolean;
-};
-
 const AttributePage = () => {
   // Basic state
   const [data, setData] = useState<Attribute[]>([]);

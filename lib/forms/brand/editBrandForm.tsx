@@ -112,7 +112,13 @@ const EditBrandForm = () => {
       }
 
       try {
-        const brand = await getBrandById(id as string);
+        const response = await getBrandById(id as string);
+        const brand =
+          response && response.data
+            ? Array.isArray(response.data)
+              ? response.data[0]
+              : response.data
+            : undefined;
         if (brand) {
           // Set the base64 image directly
           if (brand.imageId) {

@@ -36,8 +36,8 @@ import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
 import slugify from "slugify";
 import { getAllDropdownData } from "@/lib/actions/dropdown.actions";
-import { getAllBrands } from "@/lib/actions/brand.actions";
-import { getAllSizes } from "@/lib/actions/size.actions";
+import { getAllBrandsLegacy } from "@/lib/actions/brand.actions";
+import { getAllSizesLegacy } from "@/lib/actions/size.actions";
 
 const EditProductsForm = () => {
   const generateSlug = (name: string) => {
@@ -355,8 +355,8 @@ const EditProductsForm = () => {
         const [dropdownResponse, brandResponse, sizesResponse] =
           await Promise.all([
             getAllDropdownData(),
-            getAllBrands(),
-            getAllSizes(),
+            getAllBrandsLegacy(),
+            getAllSizesLegacy(),
           ]);
 
         if (dropdownResponse.success && dropdownResponse.data) {
@@ -373,7 +373,11 @@ const EditProductsForm = () => {
         }
 
         if (brandResponse.success && brandResponse.data) {
-          setBrands(brandResponse.data);
+          setBrands(
+            Array.isArray(brandResponse.data)
+              ? brandResponse.data
+              : [brandResponse.data]
+          );
         }
         if (sizesResponse.success) {
           setSizes(sizesResponse.data as ISizes[]);
