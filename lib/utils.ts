@@ -163,8 +163,7 @@ export const getUserDetails = async (userId: string) => {
   }
 };
 
-export // Function to get customer orders
-const getCustomerOrders = async (userId: string) => {
+export const getCustomerOrders = async (userId: string) => {
   try {
     // In a real implementation, you would have a dedicated endpoint for this
     const response = await fetch("/api/order", {

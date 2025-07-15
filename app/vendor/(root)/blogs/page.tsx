@@ -204,18 +204,17 @@ const BlogsPage = () => {
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <div className="relative max-w-sm">
+            <div className="flex items-center gap-4">
               <Input
                 placeholder="Search blogs..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="pr-10"
               />
-              {isSearching && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              {isSearching ||
+                (loading && (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand"></div>
-                </div>
-              )}
+                ))}
             </div>
             <Link prefetch href="/vendor/blogs/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
