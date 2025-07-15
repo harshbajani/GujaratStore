@@ -513,7 +513,7 @@ const OrdersPage = () => {
               variant="ghost"
               size="icon"
               className="hover:bg-gray-100"
-              onClick={() => router.push(`/vendor/orders/view/${order._id}`)}
+              onClick={() => router.push(`/admin/orders/view/${order._id}`)}
             >
               <Eye className="h-4 w-4 text-gray-600" />
             </Button>

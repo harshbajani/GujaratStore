@@ -1,10 +1,8 @@
 "use client";
 import { PencilLine } from "lucide-react";
-import Loader from "@/components/Loader";
-import { AdminTransformedBlog } from "@/types";
 import { deleteBlog, getAllBlogs } from "@/lib/actions/admin/blog.actions";
-import React, { useState, useEffect } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Pencil, Trash2, ArrowUpDown } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -13,18 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getPaginationRowModel,
-  SortingState,
-  getSortedRowModel,
-  ColumnFiltersState,
-  getFilteredRowModel,
-  PaginationState,
-} from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,39 +26,80 @@ import Link from "next/link";
 
 const BlogsPage = () => {
   // * useStates and hooks
-  const [data, setData] = useState<AdminTransformedBlog[]>([]);
+  const [data, setData] = useState<TransformedBlog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10,
+    hasNext: false,
+    hasPrev: false,
   });
+
+  // Server-side state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const router = useRouter();
   const { toast } = useToast();
 
-  // * fetching data
-  const fetchBlogPosts = async () => {
-    try {
-      const response = await getAllBlogs();
-      setData(response);
-    } catch (error) {
-      console.error("Failed to fetch blog posts:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch blog posts",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // * fetching data with server-side pagination
+  const fetchBlogPosts = useCallback(
+    async (showLoader = true) => {
+      if (showLoader) {
+        setLoading(true);
+      }
+      try {
+        const params: PaginationParams = {
+          page: currentPage,
+          limit: pageSize,
+          search: searchTerm,
+          sortBy,
+          sortOrder,
+        };
+
+        const response = await getAllBlogs(params);
+
+        if (response.success && response.data && response.pagination) {
+          setData(response.data);
+          setPagination(response.pagination);
+        } else {
+          throw new Error(response.error || "Failed to fetch blogs");
+        }
+      } catch (error) {
+        console.error("Failed to fetch blog posts:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch blog posts",
+          variant: "destructive",
+        });
+      } finally {
+        if (showLoader) {
+          setLoading(false);
+        }
+      }
+    },
+    [currentPage, pageSize, searchTerm, sortBy, sortOrder, toast]
+  );
+
   // * deleting data
   const handleDelete = async (id: string) => {
     try {
       await deleteBlog(id);
-      await fetchBlogPosts();
+      // Refresh current page or go to previous page if current page becomes empty
+      const newTotalItems = pagination.totalItems - 1;
+      const newTotalPages = Math.ceil(newTotalItems / pageSize);
+
+      if (currentPage > newTotalPages && newTotalPages > 0) {
+        setCurrentPage(newTotalPages);
+      } else {
+        await fetchBlogPosts();
+      }
+
       toast({
         title: "Success",
         description: "Blog post deleted successfully!",
@@ -88,100 +115,83 @@ const BlogsPage = () => {
     }
   };
 
+  // * Handle search with debounce
+  const [searchInput, setSearchInput] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchInput !== searchTerm) {
+        setIsSearching(true);
+        setSearchTerm(searchInput);
+        setCurrentPage(1); // Reset to first page when searching
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchInput, searchTerm]);
+
+  // Reset searching state when search completes
+  useEffect(() => {
+    if (isSearching && !loading) {
+      setIsSearching(false);
+    }
+  }, [isSearching, loading]);
+
+  // * Handle sort
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+    setCurrentPage(1);
+  };
+
+  // * Handle page size change
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+  };
+
+  // * Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // * Fetch data when dependencies change
   useEffect(() => {
     fetchBlogPosts();
-  }, []);
+  }, [fetchBlogPosts]); // Removed fetchBlogPosts from dependencies to prevent infinite loop
 
-  const columns: ColumnDef<AdminTransformedBlog>[] = [
-    {
-      accessorKey: "heading",
-      header: "Title",
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("heading")}</div>
-      ),
-    },
-    {
-      accessorKey: "user",
-      header: "Author",
-      cell: ({ row }) => <div>{row.getValue("user")}</div>,
-    },
-    {
-      accessorKey: "date",
-      header: "Date",
-      cell: ({ row }) => <div>{row.getValue("date")}</div>,
-    },
-    {
-      accessorKey: "category",
-      header: "Category",
-      cell: ({ row }) => <div>{row.getValue("category")}</div>,
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => {
-        const description = row.getValue("description") as string;
-        return (
-          <div className="max-w-md">
-            {description.length > 100
-              ? description.slice(0, 100) + "..."
-              : description}
-          </div>
-        );
-      },
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const post = row.original;
-        return (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-gray-100"
-              onClick={() => router.push(`/admin/blogs/edit/${post.id}`)}
-            >
-              <Pencil className="h-4 w-4 text-gray-600" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-red-100"
-              onClick={() => handleDelete(post.id)}
-            >
-              <Trash2 className="h-4 w-4 text-red-600" />
-            </Button>
-          </div>
-        );
-      },
-    },
-  ];
+  // Separate effect for search
+  useEffect(() => {
+    if (searchTerm !== searchInput) return; // Only fetch if search term has actually changed
+    fetchBlogPosts(false); // Don't show loader for search
+  }, [searchTerm, fetchBlogPosts, searchInput]);
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onPaginationChange: setPagination,
-    state: {
-      sorting,
-      columnFilters,
-      pagination,
-    },
-  });
+  // * Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const { currentPage, totalPages } = pagination;
+    const pages = [];
+    const maxVisible = 5;
 
-  const pageCount = table.getPageCount();
-  const currentPage = table.getState().pagination.pageIndex + 1;
-  const pageNumbers = Array.from({ length: pageCount }, (_, i) => i + 1);
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const start = Math.max(1, currentPage - 2);
+      const end = Math.min(totalPages, start + maxVisible - 1);
 
-  if (loading) {
-    return <Loader />;
-  }
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+
+    return pages;
+  };
 
   return (
     <div className="p-2 space-y-6">
@@ -193,16 +203,19 @@ const BlogsPage = () => {
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <Input
-              placeholder="Filter by title..."
-              value={
-                (table.getColumn("heading")?.getFilterValue() as string) ?? ""
-              }
-              onChange={(event) =>
-                table.getColumn("heading")?.setFilterValue(event.target.value)
-              }
-              className="max-w-sm"
-            />
+            <div className="relative max-w-sm">
+              <Input
+                placeholder="Search blogs..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pr-10"
+              />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand"></div>
+                </div>
+              )}
+            </div>
             <Link prefetch href="/admin/blogs/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Blog
@@ -210,45 +223,108 @@ const BlogsPage = () => {
             </Link>
           </div>
 
-          <div className="border rounded-lg">
+          <div className="border rounded-lg relative">
+            {isSearching && (
+              <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center">
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand"></div>
+                  <span className="text-sm text-gray-600">Searching...</span>
+                </div>
+              </div>
+            )}
             <Table>
               <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} className="bg-gray-50">
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
+                <TableRow>
+                  <TableHead className="bg-gray-50">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("heading")}
+                      className="font-medium"
+                    >
+                      Title
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="bg-gray-50">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("user")}
+                      className="font-medium"
+                    >
+                      Author
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="bg-gray-50">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("date")}
+                      className="font-medium"
+                    >
+                      Date
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="bg-gray-50">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("category")}
+                      className="font-medium"
+                    >
+                      Category
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="bg-gray-50">Description</TableHead>
+                  <TableHead className="bg-gray-50">Actions</TableHead>
+                </TableRow>
               </TableHeader>
               <TableBody>
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-gray-50">
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
+                {data.length ? (
+                  data.map((blog) => (
+                    <TableRow key={blog.id} className="hover:bg-gray-50">
+                      <TableCell className="font-medium">
+                        {blog.heading}
+                      </TableCell>
+                      <TableCell>{blog.user}</TableCell>
+                      <TableCell>{blog.date}</TableCell>
+                      <TableCell>{blog.category}</TableCell>
+                      <TableCell className="max-w-md">
+                        {blog.description.length > 100
+                          ? blog.description.slice(0, 100) + "..."
+                          : blog.description}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-gray-100"
+                            onClick={() =>
+                              router.push(`/admin/blogs/edit/${blog.id}`)
+                            }
+                          >
+                            <Pencil className="h-4 w-4 text-gray-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-red-100"
+                            onClick={() => handleDelete(blog.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={columns.length}
+                      colSpan={6}
                       className="h-24 text-center text-gray-500"
                     >
-                      No blogs found
+                      {isSearching ? "Searching..." : "No blogs found"}
                     </TableCell>
                   </TableRow>
                 )}
@@ -256,20 +332,16 @@ const BlogsPage = () => {
             </Table>
           </div>
 
+          {/* Pagination Controls */}
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Rows per page:</span>
               <Select
-                value={pagination.pageSize.toString()}
-                onValueChange={(value) => {
-                  setPagination({
-                    pageIndex: 0,
-                    pageSize: Number(value),
-                  });
-                }}
+                value={pageSize.toString()}
+                onValueChange={(value) => handlePageSizeChange(Number(value))}
               >
                 <SelectTrigger className="w-[70px]">
-                  <SelectValue placeholder={pagination.pageSize} />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {[10, 20, 50, 100].map((size) => (
@@ -282,24 +354,40 @@ const BlogsPage = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">
+                Showing{" "}
+                {(pagination.currentPage - 1) * pagination.itemsPerPage + 1} to{" "}
+                {Math.min(
+                  pagination.currentPage * pagination.itemsPerPage,
+                  pagination.totalItems
+                )}{" "}
+                of {pagination.totalItems} results
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                disabled={!pagination.hasPrev}
               >
                 Previous
               </Button>
 
               <div className="flex gap-1">
-                {pageNumbers.map((pageNumber) => (
+                {getPageNumbers().map((pageNumber) => (
                   <Button
                     key={pageNumber}
-                    variant={currentPage === pageNumber ? "default" : "outline"}
+                    variant={
+                      pagination.currentPage === pageNumber
+                        ? "default"
+                        : "outline"
+                    }
                     size="sm"
-                    onClick={() => table.setPageIndex(pageNumber - 1)}
+                    onClick={() => handlePageChange(pageNumber)}
                     className={
-                      currentPage === pageNumber
+                      pagination.currentPage === pageNumber
                         ? "bg-brand hover:bg-brand/90 text-white"
                         : ""
                     }
@@ -312,8 +400,8 @@ const BlogsPage = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={!pagination.hasNext}
               >
                 Next
               </Button>

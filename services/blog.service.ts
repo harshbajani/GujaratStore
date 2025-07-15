@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CacheService } from "./cache.service";
 import Blog from "@/lib/models/blog.model";
 import { connectToDB } from "@/lib/mongodb";
@@ -38,6 +39,79 @@ export class BlogService {
   }
 
   static async getBlogs(
+    params: PaginationParams = {},
+    vendorId?: string
+  ): Promise<PaginatedResponse<TransformedBlog>> {
+    try {
+      await connectToDB();
+
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        sortBy = "createdAt",
+        sortOrder = "desc",
+      } = params;
+
+      // Build query
+      const query: any = vendorId ? { vendorId } : {};
+
+      // Add search functionality
+      if (search) {
+        query.$or = [
+          { heading: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+          { category: { $regex: search, $options: "i" } },
+          { user: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      // Build sort object
+      const sortObject: any = {};
+      sortObject[sortBy] = sortOrder === "asc" ? 1 : -1;
+
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+
+      // Get total count for pagination info
+      const totalItems = await Blog.countDocuments(query);
+      const totalPages = Math.ceil(totalItems / limit);
+
+      // Fetch paginated data
+      const blogs = await Blog.find(query)
+        .sort(sortObject)
+        .skip(skip)
+        .limit(limit)
+        .lean<IBlog[]>()
+        .exec();
+
+      const transformedBlogs = blogs.map(this.transformBlog);
+
+      // Build pagination info
+      const pagination: PaginationInfo = {
+        currentPage: page,
+        totalPages,
+        totalItems,
+        itemsPerPage: limit,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      };
+
+      return {
+        success: true,
+        data: transformedBlogs,
+        pagination,
+      };
+    } catch (error) {
+      console.error("Get paginated blogs error:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch blogs",
+      };
+    }
+  }
+
+  static async getBlogsLegacy(
     vendorId?: string
   ): Promise<ActionResponse<TransformedBlog[]>> {
     try {
