@@ -159,7 +159,10 @@ export const useShippingAddress = (addressId?: string) => {
 };
 
 // Hook for fetching user details
-export const useUserDetails = (userId?: string) => {
+export const useUserDetails = (
+  userId?: string,
+  options: { admin?: boolean; vendor?: boolean } = {}
+) => {
   const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -171,7 +174,10 @@ export const useUserDetails = (userId?: string) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetchData(`/api/user/${userToFetch}`, {
+      const url = options.admin
+        ? `/api/admin/user/${userToFetch}`
+        : `/api/user/${userToFetch}`;
+      const response = await fetchData(url, {
         method: "GET",
       });
 

@@ -1,23 +1,10 @@
 "use server";
 
 import { connectToDB } from "@/lib/mongodb";
-import User from "@/lib/models/user.model";
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "../nextAuthConfig";
-
-// Helper function to convert MongoDB user to safe user response
-const sanitizeUser = (user: IUser): UserResponse => {
-  const { ...safeUser } = user;
-
-  return {
-    ...safeUser,
-    _id: safeUser._id.toString(),
-    wishlist: safeUser.wishlist?.map((id) => id.toString()),
-    cart: safeUser.cart?.map((id) => id.toString()),
-    order: safeUser.order?.map((id) => id.toString()),
-  };
-};
+import { UserService } from "@/services/user.service";
 
 // Get current user details
 export async function getCurrentUser(): Promise<ActionResponse<UserResponse>> {
@@ -33,20 +20,8 @@ export async function getCurrentUser(): Promise<ActionResponse<UserResponse>> {
 
     await connectToDB();
 
-    const user = await User.findOne({ email: session.user.email }).lean();
-
-    if (!user) {
-      return {
-        success: false,
-        message: "User not found",
-      };
-    }
-
-    return {
-      success: true,
-      message: "User details fetched successfully",
-      data: sanitizeUser(user as IUser),
-    };
+    const result = await UserService.getUserByEmail(session.user.email!);
+    return result;
   } catch (error) {
     console.error("Error fetching user details:", error);
     return {
@@ -72,25 +47,216 @@ export async function getUserById(
 
     await connectToDB();
 
-    const user = await User.findById(userId).lean();
-
-    if (!user) {
-      return {
-        success: false,
-        message: "User not found",
-      };
-    }
-
-    return {
-      success: true,
-      message: "User details fetched successfully",
-      data: sanitizeUser(user as IUser),
-    };
+    const result = await UserService.getUserById(userId);
+    return result;
   } catch (error) {
     console.error("Error fetching user:", error);
     return {
       success: false,
       message: "Failed to fetch user",
+    };
+  }
+}
+
+// Get user by ID (no authentication check, for admin/vendor API usage)
+export async function getUserByIdNoAuth(
+  userId: string
+): Promise<ActionResponse<UserResponse>> {
+  try {
+    await connectToDB();
+    const result = await UserService.getUserById(userId);
+    return result;
+  } catch (error) {
+    console.error("Error fetching user (no auth):", error);
+    return {
+      success: false,
+      message: "Failed to fetch user (no auth)",
+    };
+  }
+}
+
+// Get all users with pagination, search, and sorting (for admin)
+export async function getAllUsers(
+  params: PaginationParams = {}
+): Promise<PaginatedResponse<UserResponse>> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Check if user is admin/vendor (you might want to check for admin role)
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        error: "Not authenticated",
+      };
+    }
+
+    await connectToDB();
+
+    const result = await UserService.getAllUsers(params);
+    return result;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return {
+      success: false,
+      error: "Failed to fetch users",
+    };
+  }
+}
+
+// Get customers with orders for vendor (new method)
+export async function getCustomersWithOrders(
+  params: PaginationParams = {}
+): Promise<
+  PaginatedResponse<
+    UserResponse & {
+      orderCount: number;
+      totalSpent: number;
+      lastOrderDate: string;
+      firstOrderDate: string;
+    }
+  >
+> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        error: "Not authenticated",
+      };
+    }
+
+    await connectToDB();
+
+    const result = await UserService.getCustomersWithOrders(params);
+    return result;
+  } catch (error) {
+    console.error("Error fetching customers with orders:", error);
+    return {
+      success: false,
+      error: "Failed to fetch customers with orders",
+    };
+  }
+}
+
+export async function getCustomersWithOrdersPaginated(
+  params: PaginationParams = {}
+): Promise<
+  PaginatedResponse<
+    UserResponse & {
+      orderCount: number;
+      totalSpent: number;
+      lastOrderDate: string;
+      firstOrderDate: string;
+    }
+  >
+> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        error: "Not authenticated",
+      };
+    }
+
+    await connectToDB();
+
+    const result = await UserService.getCustomersWithOrdersPaginated(params);
+    return result;
+  } catch (error) {
+    console.error("Error fetching customers with orders:", error);
+    return {
+      success: false,
+      error: "Failed to fetch customers with orders",
+    };
+  }
+}
+
+export async function getCustomerStats(): Promise<
+  ActionResponse<{
+    totalCustomers: number;
+    activeCustomers: number;
+    newCustomers: number;
+    averageOrderValue: number;
+    yearlyNewCustomers: { [year: number]: number };
+  }>
+> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated",
+      };
+    }
+
+    await connectToDB();
+
+    const result = await UserService.getCustomerStats();
+    return result;
+  } catch (error) {
+    console.error("Error fetching customer stats:", error);
+    return {
+      success: false,
+      message: "Failed to fetch customer stats",
+    };
+  }
+}
+
+export async function getNewCustomersForMonth(
+  month: number,
+  year: number
+): Promise<ActionResponse<number>> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated",
+      };
+    }
+
+    await connectToDB();
+
+    const result = await UserService.getNewCustomersForMonth(month, year);
+    return result;
+  } catch (error) {
+    console.error("Error fetching new customers for month:", error);
+    return {
+      success: false,
+      message: "Failed to fetch new customers for month",
+    };
+  }
+}
+
+// Get all users (legacy method)
+export async function getAllUsersLegacy(): Promise<
+  ActionResponse<UserResponse[]>
+> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Check if user is admin (you might want to check for admin role)
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated",
+      };
+    }
+
+    await connectToDB();
+
+    const result = await UserService.getAllUsersLegacy();
+    return result;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return {
+      success: false,
+      message: "Failed to fetch users",
     };
   }
 }
@@ -111,59 +277,30 @@ export async function updateUserProfile(
 
     await connectToDB();
 
-    // If email is being updated, check if it's already in use
-    if (data.email && data.email !== session.user.email) {
-      const existingUser = await User.findOne({
-        email: data.email,
-        _id: { $ne: session.user.id },
-      });
-
-      if (existingUser) {
-        return {
-          success: false,
-          message: "Email already in use",
-        };
-      }
-    }
-
-    // If phone is being updated, check if it's already in use
-    if (data.phone) {
-      const existingUser = await User.findOne({
-        phone: data.phone,
-        _id: { $ne: session.user.id },
-      });
-
-      if (existingUser) {
-        return {
-          success: false,
-          message: "Phone number already in use",
-        };
-      }
-    }
-
-    const updatedUser = await User.findOneAndUpdate(
-      { email: session.user.email },
-      { $set: data },
-      { new: true }
-    ).lean();
-
-    if (!updatedUser) {
+    // Get current user to get their ID
+    const currentUserResult = await UserService.getUserByEmail(
+      session.user.email!
+    );
+    if (!currentUserResult.success || !currentUserResult.data) {
       return {
         success: false,
         message: "User not found",
       };
     }
 
-    // Revalidate relevant paths
-    revalidatePath("/profile");
-    revalidatePath("/account");
-    revalidatePath("/wishlist"); // Since user has wishlist field
+    const result = await UserService.updateUser(
+      currentUserResult.data._id,
+      data
+    );
 
-    return {
-      success: true,
-      message: "Profile updated successfully",
-      data: sanitizeUser(updatedUser as IUser),
-    };
+    if (result.success) {
+      // Revalidate relevant paths
+      revalidatePath("/profile");
+      revalidatePath("/account");
+      revalidatePath("/wishlist");
+    }
+
+    return result;
   } catch (error) {
     console.error("Error updating user profile:", error);
     return {
@@ -189,26 +326,27 @@ export async function addToWishlist(
 
     await connectToDB();
 
-    const updatedUser = await User.findOneAndUpdate(
-      { email: session.user.email },
-      { $addToSet: { wishlist: productId } }, // Use addToSet to prevent duplicates
-      { new: true }
-    ).lean();
-
-    if (!updatedUser) {
+    // Get current user to get their ID
+    const currentUserResult = await UserService.getUserByEmail(
+      session.user.email!
+    );
+    if (!currentUserResult.success || !currentUserResult.data) {
       return {
         success: false,
         message: "User not found",
       };
     }
 
-    revalidatePath("/wishlist");
+    const result = await UserService.addToWishlist(
+      currentUserResult.data._id,
+      productId
+    );
 
-    return {
-      success: true,
-      message: "Added to wishlist successfully",
-      data: sanitizeUser(updatedUser as IUser),
-    };
+    if (result.success) {
+      revalidatePath("/wishlist");
+    }
+
+    return result;
   } catch (error) {
     console.error("Error adding to wishlist:", error);
     return {
@@ -234,26 +372,27 @@ export async function removeFromWishlist(
 
     await connectToDB();
 
-    const updatedUser = await User.findOneAndUpdate(
-      { email: session.user.email },
-      { $pull: { wishlist: productId } },
-      { new: true }
-    ).lean();
-
-    if (!updatedUser) {
+    // Get current user to get their ID
+    const currentUserResult = await UserService.getUserByEmail(
+      session.user.email!
+    );
+    if (!currentUserResult.success || !currentUserResult.data) {
       return {
         success: false,
         message: "User not found",
       };
     }
 
-    revalidatePath("/wishlist");
+    const result = await UserService.removeFromWishlist(
+      currentUserResult.data._id,
+      productId
+    );
 
-    return {
-      success: true,
-      message: "Removed from wishlist successfully",
-      data: sanitizeUser(updatedUser as IUser),
-    };
+    if (result.success) {
+      revalidatePath("/wishlist");
+    }
+
+    return result;
   } catch (error) {
     console.error("Error removing from wishlist:", error);
     return {
@@ -263,35 +402,43 @@ export async function removeFromWishlist(
   }
 }
 
+// Add to cart
 export async function addToCart(
   productId: string
 ): Promise<ActionResponse<UserResponse>> {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.email) {
       return {
         success: false,
         message: "Not authenticated",
       };
     }
+
     await connectToDB();
-    const updatedUser = await User.findOneAndUpdate(
-      { email: session.user.email },
-      { $addToSet: { cart: productId } }, // Prevent duplicates
-      { new: true }
-    ).lean();
-    if (!updatedUser) {
+
+    // Get current user to get their ID
+    const currentUserResult = await UserService.getUserByEmail(
+      session.user.email
+    );
+    if (!currentUserResult.success || !currentUserResult.data) {
       return {
         success: false,
         message: "User not found",
       };
     }
-    revalidatePath("/cart");
-    return {
-      success: true,
-      message: "Added to cart successfully",
-      data: sanitizeUser(updatedUser as IUser),
-    };
+
+    const result = await UserService.addToCart(
+      currentUserResult.data._id,
+      productId
+    );
+
+    if (result.success) {
+      revalidatePath("/cart");
+    }
+
+    return result;
   } catch (error) {
     console.error("Error adding to cart:", error);
     return {
@@ -307,35 +454,127 @@ export async function removeFromCart(
 ): Promise<ActionResponse<UserResponse>> {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.email) {
       return {
         success: false,
         message: "Not authenticated",
       };
     }
+
     await connectToDB();
-    const updatedUser = await User.findOneAndUpdate(
-      { email: session.user.email },
-      { $pull: { cart: productId } },
-      { new: true }
-    ).lean();
-    if (!updatedUser) {
+
+    // Get current user to get their ID
+    const currentUserResult = await UserService.getUserByEmail(
+      session.user.email
+    );
+    if (!currentUserResult.success || !currentUserResult.data) {
       return {
         success: false,
         message: "User not found",
       };
     }
-    revalidatePath("/cart");
-    return {
-      success: true,
-      message: "Removed from cart successfully",
-      data: sanitizeUser(updatedUser as IUser),
-    };
+
+    const result = await UserService.removeFromCart(
+      currentUserResult.data._id,
+      productId
+    );
+
+    if (result.success) {
+      revalidatePath("/cart");
+    }
+
+    return result;
   } catch (error) {
     console.error("Error removing from cart:", error);
     return {
       success: false,
       message: "Failed to remove from cart",
+    };
+  }
+}
+
+// Admin function to create user
+export async function createUser(
+  data: Partial<IUser>
+): Promise<ActionResponse<UserResponse>> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Check if user is admin (you might want to check for admin role)
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated",
+      };
+    }
+
+    await connectToDB();
+
+    const result = await UserService.createUser(data);
+    return result;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    return {
+      success: false,
+      message: "Failed to create user",
+    };
+  }
+}
+
+// Admin function to update any user
+export async function updateUser(
+  userId: string,
+  data: Partial<IUser>
+): Promise<ActionResponse<UserResponse>> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Check if user is admin (you might want to check for admin role)
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated",
+      };
+    }
+
+    await connectToDB();
+
+    const result = await UserService.updateUser(userId, data);
+    return result;
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return {
+      success: false,
+      message: "Failed to update user",
+    };
+  }
+}
+
+// Admin function to delete user
+export async function deleteUser(
+  userId: string
+): Promise<ActionResponse<UserResponse>> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Check if user is admin (you might want to check for admin role)
+    if (!session?.user?.email) {
+      return {
+        success: false,
+        message: "Not authenticated",
+      };
+    }
+
+    await connectToDB();
+
+    const result = await UserService.deleteUser(userId);
+    return result;
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    return {
+      success: false,
+      message: "Failed to delete user",
     };
   }
 }

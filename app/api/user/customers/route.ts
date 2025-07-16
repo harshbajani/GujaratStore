@@ -1,4 +1,4 @@
-import { getAllUsers } from "@/lib/actions/admin/user.actions";
+import { getCustomersWithOrdersPaginated } from "@/lib/actions/user.actions";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       sortOrder,
     };
 
-    const result = await getAllUsers(paginationParams);
+    const result = await getCustomersWithOrdersPaginated(paginationParams);
 
     if (!result.success) {
       return NextResponse.json(result, { status: 400 });

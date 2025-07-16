@@ -1,4 +1,4 @@
-import { getAllUsers } from "@/lib/actions/admin/user.actions";
+import { getAllUsers } from "@/lib/actions/user.actions";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
