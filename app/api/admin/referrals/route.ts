@@ -1,8 +1,10 @@
+// /api/admin/referrals/route.ts
 import Referral from "@/lib/models/referral.model";
 import User from "@/lib/models/user.model";
 import { connectToDB } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
+import { ReferralService } from "@/services/referral.service";
 
 const populateConfig = [{ path: "createdBy", select: "name email" }];
 
@@ -13,57 +15,69 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get("id");
     const code = searchParams.get("code");
 
+    // Check for pagination parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+    const usePagination = searchParams.get("paginated") === "true";
+
     // Get referral by ID
     if (id) {
-      const referral = await Referral.findById(id)
-        .populate(populateConfig)
-        .lean()
-        .exec();
+      const result = await ReferralService.getReferralById(id);
 
-      if (!referral) {
+      if (!result.success) {
         return NextResponse.json(
-          { success: false, error: "Referral not found" },
+          { success: false, error: result.message },
           { status: 404 }
         );
       }
 
-      return NextResponse.json({ success: true, data: referral });
+      return NextResponse.json({ success: true, data: result.data });
     }
 
     // Get referral by code
     if (code) {
-      const now = new Date();
-      const referral = await Referral.findOne({
-        code,
-        isActive: true,
-        expiryDate: { $gt: now },
-        $expr: { $lt: ["$usedCount", "$maxUses"] },
-      })
-        .populate(populateConfig)
-        .lean()
-        .exec();
+      const result = await ReferralService.getReferralByCode(code);
 
-      if (!referral) {
+      if (!result.success) {
         return NextResponse.json(
-          { success: false, error: "Referral not found or expired" },
+          { success: false, error: result.message },
           { status: 404 }
         );
       }
 
-      return NextResponse.json({ success: true, data: referral });
+      return NextResponse.json({ success: true, data: result.data });
     }
 
-    // Get all referrals
-    const referrals = await Referral.find()
-      .populate(populateConfig)
-      .sort({ createdAt: -1 })
-      .lean()
-      .exec();
+    if (usePagination) {
+      // Use paginated version
+      const result = await ReferralService.getAllReferralsPaginated({
+        page,
+        limit,
+        search,
+        sortBy,
+        sortOrder: sortOrder as "asc" | "desc",
+      });
 
-    return NextResponse.json({
-      success: true,
-      data: referrals,
-    });
+      return NextResponse.json(result);
+    } else {
+      // Use legacy version for backward compatibility
+      const result = await ReferralService.getAllReferralsLegacy();
+
+      if (!result.success) {
+        return NextResponse.json(
+          { success: false, error: result.message },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: result.data,
+      });
+    }
   } catch (error: unknown) {
     console.error("Error in GET referrals:", error);
     return NextResponse.json(

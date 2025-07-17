@@ -9,6 +9,11 @@ import {
   Copy,
   ExternalLink,
   GiftIcon,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { withVendorProtection } from "../../HOC";
 import { Button } from "@/components/ui/button";
@@ -27,7 +32,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -55,6 +66,7 @@ import { toast } from "@/hooks/use-toast";
 import { IReferral } from "@/types";
 import Loader from "@/components/Loader";
 import ReferralForm from "@/lib/forms/referral/ReferralForm";
+import { useReferrals } from "@/hooks/useReferrals";
 
 // Updated schema for the new reward points system
 const referralFormSchema = z.object({
@@ -68,14 +80,31 @@ const referralFormSchema = z.object({
 });
 
 const ReferralsPage = () => {
-  const [referrals, setReferrals] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Use the custom hook
+  const {
+    referrals,
+    pagination,
+    isLoading,
+    searchTerm,
+    sortBy,
+    sortOrder,
+    onSearchChange,
+    onPageChange,
+    onLimitChange,
+    onSortChange,
+    refetch,
+  } = useReferrals({
+    initialPage: 1,
+    initialLimit: 10,
+    apiBasePath: "/api/referrals",
+  });
+
+  // Remaining component states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingReferral, setEditingReferral] = useState<IReferral | null>(
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingReferralId, setDeletingReferralId] = useState<string | null>(
@@ -89,7 +118,7 @@ const ReferralsPage = () => {
       name: "",
       description: "",
       vendorId: "",
-      rewardPoints: 100, // Default to 100 reward points
+      rewardPoints: 100,
       expiryDate: format(
         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         "yyyy-MM-dd"
@@ -99,33 +128,58 @@ const ReferralsPage = () => {
     },
   });
 
-  // Load referrals
+  // Initialize base URL and vendor ID on component mount
   useEffect(() => {
-    const fetchData = async () => {
+    const initialize = async () => {
       try {
         // Set base URL for referral links
         setBaseUrl(`${process.env.NEXT_PUBLIC_APP_BASE_URL}/`);
 
-        // Fetch referrals
-        const referralsResponse = await fetch("/api/referrals");
-        const referralsData = await referralsResponse.json();
-        if (referralsData.success) {
-          setReferrals(referralsData.data);
+        // Fetch vendor info and set vendorId
+        const userResponse = await fetch("/api/vendor/current");
+        const userData = await userResponse.json();
+        if (userData.success && userData.data && userData.data._id) {
+          form.setValue("vendorId", userData.data._id);
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error initializing:", error);
         toast({
           title: "Error",
-          description: "Failed to load data. Please try again.",
+          description: "Failed to initialize. Please try again.",
           variant: "destructive",
         });
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    fetchData();
-  }, []);
+    initialize();
+  }, [form]);
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onSearchChange(e.target.value);
+  };
+
+  // Handle items per page change
+  const handleItemsPerPageChange = (newLimit: string) => {
+    onLimitChange(parseInt(newLimit));
+  };
+
+  // Handle sort change
+  const handleSort = (field: keyof IReferral) => {
+    onSortChange(field);
+  };
+
+  // Get sort icon for table headers
+  const getSortIcon = (field: string) => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="h-4 w-4" />;
+    }
+    return sortOrder === "desc" ? (
+      <ArrowDown className="h-4 w-4" />
+    ) : (
+      <ArrowUp className="h-4 w-4" />
+    );
+  };
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof referralFormSchema>) => {
@@ -150,12 +204,8 @@ const ReferralsPage = () => {
       const result = await response.json();
 
       if (result.success) {
-        // Refresh referrals list
-        const referralsResponse = await fetch("/api/referrals");
-        const referralsData = await referralsResponse.json();
-        if (referralsData.success) {
-          setReferrals(referralsData.data);
-        }
+        // Refresh referrals list using the hook's refetch function
+        refetch();
 
         toast({
           title: "Success",
@@ -218,22 +268,15 @@ const ReferralsPage = () => {
     if (!deletingReferralId) return;
 
     try {
-      const response = await fetch(
-        `/api/admin/referrals?id=${deletingReferralId}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const response = await fetch(`/api/referrals?id=${deletingReferralId}`, {
+        method: "DELETE",
+      });
 
       const result = await response.json();
 
       if (result.success) {
-        // Remove from local state
-        setReferrals(
-          referrals.filter(
-            (referral: IReferral) => referral._id !== deletingReferralId
-          )
-        );
+        // Refresh referrals list using the hook's refetch function
+        refetch();
 
         toast({
           title: "Success",
@@ -255,33 +298,68 @@ const ReferralsPage = () => {
     }
   };
 
-  // Filter referrals based on search term
-  const filteredReferrals = referrals.filter((referral: IReferral) => {
-    return (
-      searchTerm === "" ||
-      referral.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      referral.code.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
+  // Pagination component
+  const PaginationComponent = () => (
+    <div className="flex items-center justify-between px-2 py-4">
+      <div className="flex items-center space-x-2">
+        <p className="text-sm text-muted-foreground">
+          Showing {(pagination.currentPage - 1) * pagination.itemsPerPage + 1}{" "}
+          to{" "}
+          {Math.min(
+            pagination.currentPage * pagination.itemsPerPage,
+            pagination.totalItems
+          )}{" "}
+          of {pagination.totalItems} results
+        </p>
+      </div>
 
-  useEffect(() => {
-    const fetchVendor = async () => {
-      try {
-        const userResponse = await fetch("/api/vendor/current");
-        const userData = await userResponse.json();
-        if (userData.success && userData.data && userData.data._id) {
-          // Set the vendorId in the form state
-          form.setValue("vendorId", userData.data._id);
-          console.log("Vendor ID set:", userData.data._id);
-        } else {
-          console.error("Failed to get vendor ID from response", userData);
-        }
-      } catch (error) {
-        console.error("Error fetching vendor data:", error);
-      }
-    };
-    fetchVendor();
-  }, [form]);
+      <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2">
+          <p className="text-sm text-muted-foreground">Rows per page:</p>
+          <Select
+            value={pagination.itemsPerPage.toString()}
+            onValueChange={handleItemsPerPageChange}
+          >
+            <SelectTrigger className="w-[70px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(pagination.currentPage - 1)}
+            disabled={!pagination.hasPrev}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <div className="flex items-center space-x-1">
+            <span className="text-sm text-muted-foreground">
+              Page {pagination.currentPage} of {pagination.totalPages}
+            </span>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(pagination.currentPage + 1)}
+            disabled={!pagination.hasNext}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-2">
@@ -345,7 +423,7 @@ const ReferralsPage = () => {
                 placeholder="Search referrals..."
                 className="pl-8 w-64"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
               />
             </div>
           </div>
@@ -358,116 +436,174 @@ const ReferralsPage = () => {
         <CardContent>
           {isLoading ? (
             <Loader />
-          ) : filteredReferrals.length === 0 ? (
+          ) : referrals.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No referrals found.</p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => setIsDialogOpen(true)}
-              >
-                <Plus className="mr-2" /> Create your first referral
-              </Button>
+              <p className="text-muted-foreground">
+                {searchTerm
+                  ? "No referrals found matching your search."
+                  : "No referrals found."}
+              </p>
+              {!searchTerm && (
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => setIsDialogOpen(true)}
+                >
+                  <Plus className="mr-2" /> Create your first referral
+                </Button>
+              )}
             </div>
           ) : (
-            <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">Name</TableHead>
-                    <TableHead>Referral Code</TableHead>
-                    <TableHead>Reward Points</TableHead>
-                    <TableHead>Uses</TableHead>
-                    <TableHead>Expires</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredReferrals.map((referral: IReferral) => (
-                    <TableRow key={referral._id}>
-                      <TableCell className="font-medium">
-                        {referral.name}
-                        {referral.description && (
-                          <p className="text-xs text-muted-foreground truncate max-w-xs">
-                            {referral.description}
-                          </p>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {referral.code}
-                      </TableCell>
-                      <TableCell>
-                        {referral.rewardPoints} points
-                        <p className="text-xs text-muted-foreground">
-                          (₹{Math.floor(referral.rewardPoints / 10)} value)
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        {referral.usedCount}/{referral.maxUses}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(referral.expiryDate).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            referral.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {referral.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              handleCopyReferralLink(referral.code)
-                            }
-                            title="Copy referral link"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              window.open(
-                                `${baseUrl}${referral.code}/sign-up`,
-                                "_blank"
-                              )
-                            }
-                            title="Open referral link"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditReferral(referral)}
-                            title="Edit referral"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteReferral(referral._id)}
-                            title="Delete referral"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+            <>
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead
+                        className="w-[200px] cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort("name")}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Name</span>
+                          {getSortIcon("name")}
                         </div>
-                      </TableCell>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort("code")}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Referral Code</span>
+                          {getSortIcon("code")}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort("rewardPoints")}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Reward Points</span>
+                          {getSortIcon("rewardPoints")}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort("usedCount")}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Uses</span>
+                          {getSortIcon("usedCount")}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort("expiryDate")}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Expires</span>
+                          {getSortIcon("expiryDate")}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort("isActive")}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Status</span>
+                          {getSortIcon("isActive")}
+                        </div>
+                      </TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {referrals.map((referral: IReferral) => (
+                      <TableRow key={referral._id}>
+                        <TableCell className="font-medium">
+                          {referral.name}
+                          {referral.description && (
+                            <p className="text-xs text-muted-foreground truncate max-w-xs">
+                              {referral.description}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {referral.code}
+                        </TableCell>
+                        <TableCell>
+                          {referral.rewardPoints} points
+                          <p className="text-xs text-muted-foreground">
+                            (₹{Math.floor(referral.rewardPoints / 10)} value)
+                          </p>
+                        </TableCell>
+                        <TableCell>
+                          {referral.usedCount}/{referral.maxUses}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(referral.expiryDate).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              referral.isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {referral.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                handleCopyReferralLink(referral.code)
+                              }
+                              title="Copy referral link"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                window.open(
+                                  `${baseUrl}${referral.code}/sign-up`,
+                                  "_blank"
+                                )
+                              }
+                              title="Open referral link"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditReferral(referral)}
+                              title="Edit referral"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteReferral(referral._id)}
+                              title="Delete referral"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <PaginationComponent />
+            </>
           )}
         </CardContent>
       </Card>
