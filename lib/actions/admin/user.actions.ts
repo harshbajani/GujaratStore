@@ -22,6 +22,7 @@ const sanitizeUser = (user: IUser): UserResponse => {
 
 // Get current user details
 export async function getCurrentUser(): Promise<ActionResponse<UserResponse>> {
+  await connectToDB();
   try {
     const session = await getServerSession(authOptions);
 
@@ -31,8 +32,6 @@ export async function getCurrentUser(): Promise<ActionResponse<UserResponse>> {
         message: "Not authenticated",
       };
     }
-
-    await connectToDB();
 
     const user = await User.findOne({ email: session.user.email }).lean();
 
@@ -61,6 +60,7 @@ export async function getCurrentUser(): Promise<ActionResponse<UserResponse>> {
 export async function getUserById(
   userId: string
 ): Promise<ActionResponse<UserResponse>> {
+  await connectToDB();
   try {
     const session = await getServerSession(authOptions);
 
@@ -70,8 +70,6 @@ export async function getUserById(
         message: "Not authenticated",
       };
     }
-
-    await connectToDB();
 
     const user = await User.findById(userId).lean();
 
@@ -100,6 +98,7 @@ export async function getUserById(
 export async function updateUserProfile(
   data: Partial<Pick<IUser, "name" | "email" | "phone">>
 ): Promise<ActionResponse<UserResponse>> {
+  await connectToDB();
   try {
     const session = await getServerSession(authOptions);
 
@@ -109,8 +108,6 @@ export async function updateUserProfile(
         message: "Not authenticated",
       };
     }
-
-    await connectToDB();
 
     // If email is being updated, check if it's already in use
     if (data.email && data.email !== session.user.email) {
@@ -178,6 +175,7 @@ export async function updateUserProfile(
 export async function addToWishlist(
   productId: string
 ): Promise<ActionResponse<UserResponse>> {
+  await connectToDB();
   try {
     const session = await getServerSession(authOptions);
 
@@ -187,8 +185,6 @@ export async function addToWishlist(
         message: "Not authenticated",
       };
     }
-
-    await connectToDB();
 
     const updatedUser = await User.findOneAndUpdate(
       { email: session.user.email },
@@ -223,6 +219,7 @@ export async function addToWishlist(
 export async function removeFromWishlist(
   productId: string
 ): Promise<ActionResponse<UserResponse>> {
+  await connectToDB();
   try {
     const session = await getServerSession(authOptions);
 
@@ -232,8 +229,6 @@ export async function removeFromWishlist(
         message: "Not authenticated",
       };
     }
-
-    await connectToDB();
 
     const updatedUser = await User.findOneAndUpdate(
       { email: session.user.email },
@@ -267,6 +262,7 @@ export async function removeFromWishlist(
 export async function addToCart(
   productId: string
 ): Promise<ActionResponse<UserResponse>> {
+  await connectToDB();
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -275,7 +271,6 @@ export async function addToCart(
         message: "Not authenticated",
       };
     }
-    await connectToDB();
     const updatedUser = await User.findOneAndUpdate(
       { email: session.user.email },
       { $addToSet: { cart: productId } }, // Prevent duplicates
@@ -306,6 +301,7 @@ export async function addToCart(
 export async function removeFromCart(
   productId: string
 ): Promise<ActionResponse<UserResponse>> {
+  await connectToDB();
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -314,7 +310,6 @@ export async function removeFromCart(
         message: "Not authenticated",
       };
     }
-    await connectToDB();
     const updatedUser = await User.findOneAndUpdate(
       { email: session.user.email },
       { $pull: { cart: productId } },
@@ -344,8 +339,8 @@ export async function removeFromCart(
 export async function getAllUsers(
   params: PaginationParams = {}
 ): Promise<PaginatedResponse<UserResponse>> {
+  await connectToDB();
   try {
-    await connectToDB();
     return await UserService.getAllUsers(params);
   } catch (error) {
     console.error("Admin getAllUsers error:", error);
@@ -372,8 +367,8 @@ export async function getCustomersWithOrdersPaginatedForAdmin(
     }
   >
 > {
+  await connectToDB();
   try {
-    await connectToDB();
     return await UserService.getCustomersWithOrdersForAdmin(params);
   } catch (error) {
     console.error(
@@ -403,8 +398,8 @@ export async function getCustomerStatsForAdmin(): Promise<
     yearlyNewCustomers: { [year: number]: number };
   }>
 > {
+  await connectToDB();
   try {
-    await connectToDB();
     return await UserService.getCustomerStatsForAdmin();
   } catch (error) {
     console.error("Admin getCustomerStatsForAdmin error:", error);
@@ -425,8 +420,8 @@ export async function getCustomerStatsForAdmin(): Promise<
 export async function getUserByIdForAdmin(
   userId: string
 ): Promise<ActionResponse<UserResponse>> {
+  await connectToDB();
   try {
-    await connectToDB();
     return await UserService.getUserById(userId);
   } catch (error) {
     console.error("Admin getUserByIdForAdmin error:", error);
@@ -445,8 +440,8 @@ export async function updateUserForAdmin(
   userId: string,
   data: Partial<IUser>
 ): Promise<ActionResponse<UserResponse>> {
+  await connectToDB();
   try {
-    await connectToDB();
     const result = await UserService.updateUser(userId, data);
 
     if (result.success) {
@@ -473,8 +468,8 @@ export async function updateUserForAdmin(
 export async function deleteUserForAdmin(
   userId: string
 ): Promise<ActionResponse<UserResponse>> {
+  await connectToDB();
   try {
-    await connectToDB();
     const result = await UserService.deleteUser(userId);
 
     if (result.success) {
@@ -502,8 +497,8 @@ export async function getNewCustomersForMonthForAdmin(
   month: number,
   year: number
 ): Promise<ActionResponse<number>> {
+  await connectToDB();
   try {
-    await connectToDB();
     return await UserService.getNewCustomersForMonthForAdmin(month, year);
   } catch (error) {
     console.error("Admin getNewCustomersForMonthForAdmin error:", error);
