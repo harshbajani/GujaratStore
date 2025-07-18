@@ -96,7 +96,7 @@ const DiscountsPage = () => {
   } = useDiscounts({
     initialPage: 1,
     initialLimit: 10,
-    apiBasePath: "/api/discounts",
+    apiBasePath: "/api/admin/discounts",
   });
 
   // Component-specific states
