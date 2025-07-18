@@ -1,6 +1,17 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Percent, Plus, Trash2, Edit, Search } from "lucide-react";
+import {
+  Percent,
+  Plus,
+  Trash2,
+  Edit,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -62,29 +73,49 @@ import { format } from "date-fns";
 import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { toast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
-import { adminDiscountFormSchema } from "@/lib/validations";
+import { discountFormSchema } from "@/lib/validations";
+import { useDiscounts } from "@/hooks/useDiscounts";
 
 const DiscountsPage = () => {
+  // Use the custom hook for server-side operations
+  const {
+    discounts,
+    pagination,
+    isLoading,
+    searchTerm,
+    sortBy,
+    sortOrder,
+    onSearchChange,
+    onPageChange,
+    onLimitChange,
+    onSortChange,
+    refetch,
+    createDiscount,
+    updateDiscount,
+    deleteDiscount,
+  } = useDiscounts({
+    initialPage: 1,
+    initialLimit: 10,
+    apiBasePath: "/api/discounts",
+  });
+
+  // Component-specific states
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
   );
-  const [discounts, setDiscounts] = useState<IAdminDiscount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingDiscount, setEditingDiscount] = useState<IAdminDiscount | null>(
+  const [editingDiscount, setEditingDiscount] = useState<IDiscount | null>(
     null
   );
-  // Add these with your other state declarations
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingDiscountId, setDeletingDiscountId] = useState<string | null>(
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
 
   // Initialize form
-  const form = useForm<z.infer<typeof adminDiscountFormSchema>>({
-    resolver: zodResolver(adminDiscountFormSchema),
+  const form = useForm<z.infer<typeof discountFormSchema>>({
+    resolver: zodResolver(discountFormSchema),
     defaultValues: {
       name: "",
       description: "",
@@ -100,7 +131,6 @@ const DiscountsPage = () => {
     },
   });
 
-  // Load parent categories and discounts
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -109,18 +139,6 @@ const DiscountsPage = () => {
         if (categoriesResponse.success && categoriesResponse.data) {
           setParentCategories(categoriesResponse.data as IParentCategory[]);
         }
-
-        // Fetch discounts
-        const discountsResponse = await fetch("/api/admin/discounts");
-        const discountsData = await discountsResponse.json();
-        if (discountsData.success) {
-          // Filter to only include category discounts
-          setDiscounts(
-            discountsData.data.filter(
-              (discount: IAdminDiscount) => discount.targetType === "category"
-            )
-          );
-        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
@@ -128,70 +146,74 @@ const DiscountsPage = () => {
           description: "Failed to load data. Please try again.",
           variant: "destructive",
         });
-      } finally {
-        setIsLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [form]);
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onSearchChange(e.target.value);
+  };
+
+  // Handle items per page change
+  const handleItemsPerPageChange = (newLimit: string) => {
+    onLimitChange(parseInt(newLimit));
+  };
+
+  // Handle sort change
+  const handleSort = (field: keyof IDiscount) => {
+    onSortChange(field);
+  };
+
+  // Get sort icon for table headers
+  const getSortIcon = (field: string) => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="h-4 w-4" />;
+    }
+    return sortOrder === "desc" ? (
+      <ArrowDown className="h-4 w-4" />
+    ) : (
+      <ArrowUp className="h-4 w-4" />
+    );
+  };
 
   // Handle form submission
-  const onSubmit = async (values: z.infer<typeof adminDiscountFormSchema>) => {
+  const onSubmit = async (values: z.infer<typeof discountFormSchema>) => {
     setIsSubmitting(true);
     try {
-      const endpoint = "/api/admin/discounts";
-      const method = editingDiscount ? "PUT" : "POST";
-
-      const payload = {
-        ...values,
+      // Create the payload with the correct structure
+      const payload: Partial<IDiscount> = {
+        name: values.name,
+        description: values.description,
+        startDate: new Date(values.startDate),
+        endDate: new Date(values.endDate),
+        isActive: values.isActive,
+        discountType: values.discountType as DiscountType,
         discountValue: Number(values.discountValue),
         targetType: "category",
-        parentCategory: values.parentCategoryId,
-        parentCategoryId: undefined,
-        ...(editingDiscount && { _id: editingDiscount._id }),
+        // Send parentCategoryId for the API to handle
+        parentCategoryId: values.parentCategoryId,
       };
 
-      const response = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Refresh discounts list
-        const discountsResponse = await fetch("/api/admin/discounts");
-        const discountsData = await discountsResponse.json();
-        if (discountsData.success) {
-          // Filter to only include category discounts
-          setDiscounts(
-            discountsData.data.filter(
-              (discount: IAdminDiscount) => discount.targetType === "category"
-            )
-          );
-        }
-
-        toast({
-          title: "Success",
-          description: editingDiscount
-            ? "Discount updated successfully"
-            : "Discount created successfully",
-        });
-
-        // Close dialog and reset form
-        setIsDialogOpen(false);
-        setEditingDiscount(null);
-        form.reset();
+      if (editingDiscount) {
+        await updateDiscount(editingDiscount._id, payload);
+        refetch();
       } else {
-        throw new Error(result.error || "Operation failed");
+        await createDiscount(payload);
+        refetch();
       }
+
+      // Close dialog and reset form
+      setIsDialogOpen(false);
+      setEditingDiscount(null);
+      form.reset();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
         title: "Error",
-        description: (error as Error).message || "Something went wrong",
+        description: "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -199,15 +221,19 @@ const DiscountsPage = () => {
     }
   };
 
-  // Handle edit discount
-  const handleEditDiscount = (discount: IAdminDiscount) => {
+  // Also fix the handleEditDiscount function to handle the parentCategory properly
+  const handleEditDiscount = (discount: IDiscount) => {
     setEditingDiscount(discount);
     form.reset({
       name: discount.name,
       description: discount.description || "",
       discountType: discount.discountType,
       discountValue: discount.discountValue,
-      parentCategoryId: discount.parentCategory._id,
+      // Handle both string and object parentCategory
+      parentCategoryId:
+        typeof discount.parentCategory === "string"
+          ? discount.parentCategory
+          : discount.parentCategory._id,
       startDate: new Date(discount.startDate).toISOString().split("T")[0],
       endDate: new Date(discount.endDate).toISOString().split("T")[0],
       isActive: discount.isActive,
@@ -216,62 +242,88 @@ const DiscountsPage = () => {
   };
 
   // Handle delete discount
-  // Replace the existing handleDeleteDiscount function
   const handleDeleteDiscount = (id: string) => {
     setDeletingDiscountId(id);
     setIsDeleteDialogOpen(true);
   };
 
-  // Add this new function
+  // Handle delete confirmation
   const handleDeleteConfirm = async () => {
     if (!deletingDiscountId) return;
 
     try {
-      const response = await fetch(
-        `/api/admin/discounts?id=${deletingDiscountId}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Remove from local state
-        setDiscounts(
-          discounts.filter((discount) => discount._id !== deletingDiscountId)
-        );
-
-        toast({
-          title: "Success",
-          description: "Discount deleted successfully",
-        });
-      } else {
-        throw new Error(result.error || "Delete operation failed");
-      }
+      await deleteDiscount(deletingDiscountId);
+      refetch();
     } catch (error) {
       console.error("Error deleting discount:", error);
-      toast({
-        title: "Error",
-        description: (error as Error).message || "Failed to delete discount",
-        variant: "destructive",
-      });
     } finally {
       setIsDeleteDialogOpen(false);
       setDeletingDiscountId(null);
     }
   };
 
-  // Filter discounts based on search term
-  const filteredDiscounts = discounts.filter((discount) => {
-    return (
-      searchTerm === "" ||
-      discount.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      discount.parentCategory.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-    );
-  });
+  // Pagination component
+  const PaginationComponent = () => (
+    <div className="flex items-center justify-between px-2 py-4">
+      <div className="flex items-center space-x-2">
+        <p className="text-sm text-muted-foreground">
+          Showing {(pagination.currentPage - 1) * pagination.itemsPerPage + 1}{" "}
+          to{" "}
+          {Math.min(
+            pagination.currentPage * pagination.itemsPerPage,
+            pagination.totalItems
+          )}{" "}
+          of {pagination.totalItems} results
+        </p>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2">
+          <p className="text-sm text-muted-foreground">Rows per page:</p>
+          <Select
+            value={pagination.itemsPerPage.toString()}
+            onValueChange={handleItemsPerPageChange}
+          >
+            <SelectTrigger className="w-[70px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(pagination.currentPage - 1)}
+            disabled={!pagination.hasPrev}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <div className="flex items-center space-x-1">
+            <span className="text-sm text-muted-foreground">
+              Page {pagination.currentPage} of {pagination.totalPages}
+            </span>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(pagination.currentPage + 1)}
+            disabled={!pagination.hasNext}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-2">
@@ -317,14 +369,7 @@ const DiscountsPage = () => {
             </DialogHeader>
             <Form {...form}>
               <form
-                onSubmit={form.handleSubmit(onSubmit, (errors) => {
-                  console.log("Form validation errors:", errors); // Add this line
-                  toast({
-                    title: "Error",
-                    description: "Please check all required fields",
-                    variant: "destructive",
-                  });
-                })}
+                onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-4"
               >
                 <FormField
@@ -400,7 +445,6 @@ const DiscountsPage = () => {
                                 : "50"
                             }
                             {...field}
-                            // Add this onChange handler to convert string to number
                             onChange={(e) =>
                               field.onChange(Number(e.target.value))
                             }
@@ -529,7 +573,7 @@ const DiscountsPage = () => {
                 placeholder="Search discounts..."
                 className="pl-8 w-64"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
               />
             </div>
           </div>
@@ -540,93 +584,145 @@ const DiscountsPage = () => {
         <CardContent>
           {isLoading ? (
             <Loader />
-          ) : filteredDiscounts.length === 0 ? (
+          ) : discounts.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No discounts found.</p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => setIsDialogOpen(true)}
-              >
-                <Plus className="mr-2" /> Create your first discount
-              </Button>
+              <p className="text-muted-foreground">
+                {searchTerm
+                  ? "No discounts found matching your search."
+                  : "No discounts found."}
+              </p>
+              {!searchTerm && (
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => setIsDialogOpen(true)}
+                >
+                  <Plus className="mr-2" /> Create your first discount
+                </Button>
+              )}
             </div>
           ) : (
-            <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[250px]">Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Valid Until</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredDiscounts.map((discount) => (
-                    <TableRow key={discount._id}>
-                      <TableCell className="font-medium">
-                        {discount.name}
-                        {discount.description && (
-                          <p className="text-xs text-muted-foreground truncate max-w-xs">
-                            {discount.description}
-                          </p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {discount.discountType === "percentage"
-                          ? "Percentage"
-                          : "Fixed Amount"}
-                      </TableCell>
-                      <TableCell>
-                        {discount.discountValue}
-                        {discount.discountType === "percentage" ? "%" : ""}
-                      </TableCell>
-                      <TableCell>{discount.parentCategory.name}</TableCell>
-                      <TableCell>
-                        {new Date(discount.endDate).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            discount.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {discount.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditDiscount(discount)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteDiscount(discount._id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+            <>
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead
+                        className="w-[250px] cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort("name")}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Name</span>
+                          {getSortIcon("name")}
                         </div>
-                      </TableCell>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort("discountType")}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Type</span>
+                          {getSortIcon("discountType")}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort("discountValue")}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Value</span>
+                          {getSortIcon("discountValue")}
+                        </div>
+                      </TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort("endDate")}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Valid Until</span>
+                          {getSortIcon("endDate")}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleSort("isActive")}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>Status</span>
+                          {getSortIcon("isActive")}
+                        </div>
+                      </TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {discounts.map((discount) => (
+                      <TableRow key={discount._id}>
+                        <TableCell className="font-medium">
+                          {discount.name}
+                          {discount.description && (
+                            <p className="text-xs text-muted-foreground truncate max-w-xs">
+                              {discount.description}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {discount.discountType === "percentage"
+                            ? "Percentage"
+                            : "Fixed Amount"}
+                        </TableCell>
+                        <TableCell>
+                          {discount.discountValue}
+                          {discount.discountType === "percentage" ? "%" : ""}
+                        </TableCell>
+                        <TableCell>{discount.parentCategory.name}</TableCell>
+                        <TableCell>
+                          {new Date(discount.endDate).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              discount.isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {discount.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditDiscount(discount)}
+                              title="Edit discount"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteDiscount(discount._id)}
+                              title="Delete discount"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <PaginationComponent />
+            </>
           )}
         </CardContent>
       </Card>
-      {/* Add this before the final closing div */}
+
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}

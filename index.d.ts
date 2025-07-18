@@ -639,7 +639,7 @@ declare interface IReferralResponse extends Omit<IReferral, "createdBy"> {
   };
 }
 
-enum DiscountType {
+declare enum DiscountType {
   PERCENTAGE = "percentage",
   AMOUNT = "amount",
 }
@@ -648,11 +648,12 @@ declare interface IDiscount {
   id: string;
   _id: string;
   name: string;
-  vendorId: Schema.Types.ObjectId;
+  vendorId?: Schema.Types.ObjectId;
   description?: string;
   discountType: DiscountType;
   discountValue: number;
   targetType: "category";
+  parentCategoryId?: string;
   parentCategory: {
     _id: string;
     name: string;
