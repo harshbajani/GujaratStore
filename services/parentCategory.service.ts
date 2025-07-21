@@ -100,24 +100,31 @@ export class ParentCategoryService {
         sortOrder = "asc",
       } = params;
 
-      // Build search query
+      const cacheKey = await this.getCacheKey(
+        `paginated:${page}:${limit}:${search}:${sortBy}:${sortOrder}`
+      );
+
+      const cached = await CacheService.get<PaginatedResponse<IParentCategory>>(
+        cacheKey
+      );
+      if (cached) {
+        return cached;
+      }
+
       const searchQuery: any = {};
       if (search && search.trim()) {
         searchQuery.$or = [{ name: { $regex: search.trim(), $options: "i" } }];
       }
 
-      // Build sort object
       const sortObj: any = {};
       if (sortBy) {
         sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
       } else {
-        sortObj.name = 1; // Default sort by name ascending
+        sortObj.name = 1;
       }
 
-      // Calculate pagination values
       const skip = (page - 1) * limit;
 
-      // Execute queries
       const [categories, totalCount] = await Promise.all([
         ParentCategory.find(searchQuery)
           .sort(sortObj)
@@ -127,12 +134,10 @@ export class ParentCategoryService {
         ParentCategory.countDocuments(searchQuery),
       ]);
 
-      // Transform categories
       const transformedCategories = categories.map(
         this.transformParentCategory
       );
 
-      // Calculate pagination info
       const totalPages = Math.ceil(totalCount / limit);
       const hasNext = page < totalPages;
       const hasPrev = page > 1;
@@ -146,11 +151,14 @@ export class ParentCategoryService {
         hasPrev,
       };
 
-      return {
+      const response: PaginatedResponse<IParentCategory> = {
         success: true,
         data: transformedCategories,
         pagination,
       };
+
+      await CacheService.set(cacheKey, response, this.CACHE_TTL);
+      return response;
     } catch (error) {
       console.error("Get paginated parent categories error:", error);
       return {
@@ -286,8 +294,8 @@ export class ParentCategoryService {
 
   private static async invalidateCache(): Promise<void> {
     try {
-      const cacheKey = await this.getCacheKey("all");
-      await CacheService.delete(cacheKey);
+      const keys = await CacheService.keys("parent_categories:*");
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
     } catch (error) {
       console.error("Cache invalidation error:", error);
     }

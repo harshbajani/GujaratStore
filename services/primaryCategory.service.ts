@@ -108,15 +108,26 @@ export class PrimaryCategoryService {
         parentCategoryId,
       } = params;
 
-      // Build search query
-      const searchQuery: any = {};
+      // Generate cache key based on parameters
+      const cacheKey = await this.getCacheKey(
+        `paginated:${
+          parentCategoryId || "all"
+        }:${page}:${limit}:${search}:${sortBy}:${sortOrder}`
+      );
 
-      // Filter by parent category if specified
+      // Check cache first
+      const cached = await CacheService.get<
+        PaginatedResponse<IPrimaryCategory>
+      >(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      // Existing query logic...
+      const searchQuery: any = {};
       if (parentCategoryId) {
         searchQuery.parentCategory = parentCategoryId;
       }
-
-      // Add search conditions
       if (search && search.trim()) {
         const searchRegex = { $regex: search.trim(), $options: "i" };
         searchQuery.$or = [
@@ -127,41 +138,25 @@ export class PrimaryCategoryService {
         ];
       }
 
-      // Build sort object
       const sortObj: any = {};
-      if (sortBy) {
-        // Handle nested sorting for parent category
-        if (sortBy === "parentCategory.name") {
-          sortObj["parentCategory.name"] = sortOrder === "desc" ? -1 : 1;
-        } else {
-          sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
-        }
+      if (sortBy === "parentCategory.name") {
+        sortObj["parentCategory.name"] = sortOrder === "desc" ? -1 : 1;
       } else {
-        sortObj.name = 1; // Default sort by name ascending
+        sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
       }
 
-      // Calculate pagination values
       const skip = (page - 1) * limit;
-
-      // Create aggregation pipeline for complex queries with population
       const pipeline = [
-        // Match stage
         { $match: searchQuery },
-
-        // Lookup/populate parent category
         {
           $lookup: {
-            from: "parentcategories", // Make sure this matches your collection name
+            from: "parentcategories",
             localField: "parentCategory",
             foreignField: "_id",
             as: "parentCategory",
           },
         },
-
-        // Unwind parent category
         { $unwind: "$parentCategory" },
-
-        // Add search on parent category name if searching
         ...(search && search.trim()
           ? [
               {
@@ -184,11 +179,7 @@ export class PrimaryCategoryService {
               },
             ]
           : []),
-
-        // Sort stage
         { $sort: sortObj },
-
-        // Facet stage for pagination
         {
           $facet: {
             data: [{ $skip: skip }, { $limit: limit }],
@@ -201,30 +192,29 @@ export class PrimaryCategoryService {
       const categories = result.data || [];
       const totalCount = result.count[0]?.total || 0;
 
-      // Transform categories
       const transformedCategories = categories.map(
         this.transformPrimaryCategory
       );
-
-      // Calculate pagination info
       const totalPages = Math.ceil(totalCount / limit);
       const hasNext = page < totalPages;
       const hasPrev = page > 1;
 
-      const pagination: PaginationInfo = {
-        currentPage: page,
-        totalPages,
-        totalItems: totalCount,
-        itemsPerPage: limit,
-        hasNext,
-        hasPrev,
-      };
-
-      return {
+      const response: PaginatedResponse<IPrimaryCategory> = {
         success: true,
         data: transformedCategories,
-        pagination,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems: totalCount,
+          itemsPerPage: limit,
+          hasNext,
+          hasPrev,
+        },
       };
+
+      // Set cache
+      await CacheService.set(cacheKey, response, this.CACHE_TTL);
+      return response;
     } catch (error) {
       console.error("Get paginated primary categories error:", error);
       return {
@@ -377,8 +367,8 @@ export class PrimaryCategoryService {
 
   private static async invalidateCache(): Promise<void> {
     try {
-      const cacheKey = await this.getCacheKey("all");
-      await CacheService.delete(cacheKey);
+      const keys = await CacheService.keys("primary_categories:*");
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
     } catch (error) {
       console.error("Cache invalidation error:", error);
     }
