@@ -127,7 +127,9 @@ const EditProductsForm = () => {
   useEffect(() => {
     if (selectedSecondaryCategoryId) {
       const selectedCategory = secondaryCategory.find(
-        (cat) => cat._id === selectedSecondaryCategoryId || cat.id === selectedSecondaryCategoryId
+        (cat) =>
+          cat._id === selectedSecondaryCategoryId ||
+          cat.id === selectedSecondaryCategoryId
       );
       if (selectedCategory) {
         const currentAttributes = form.getValues("attributes");
@@ -331,14 +333,20 @@ const EditProductsForm = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [dropdownResponse, brandResponse, sizesResponse] = await Promise.all([
-          getAllDropdownData(),
-          getAllBrands(),
-          getAllSizes(),
-        ]);
+        const [dropdownResponse, brandResponse, sizesResponse] =
+          await Promise.all([
+            getAllDropdownData(),
+            getAllBrands(),
+            getAllSizes(),
+          ]);
 
         if (dropdownResponse.success && dropdownResponse.data) {
-          const { parentCategories, primaryCategories, secondaryCategories, attributes } = dropdownResponse.data;
+          const {
+            parentCategories,
+            primaryCategories,
+            secondaryCategories,
+            attributes,
+          } = dropdownResponse.data;
           setParentCategories(parentCategories);
           setPrimaryCategory(primaryCategories);
           setSecondaryCategory(secondaryCategories);
@@ -408,7 +416,6 @@ const EditProductsForm = () => {
         })}
         className="space-y-8"
       >
-        <Input type="hidden" {...form.register("vendorId")} />
         <div className="grid grid-cols-3 gap-6">
           <FormField
             control={form.control}
@@ -895,7 +902,7 @@ const EditProductsForm = () => {
           <Button
             variant="outline"
             type="button"
-            onClick={() => router.push("/vendor/products")}
+            onClick={() => router.push("/admin/products")}
           >
             Cancel
           </Button>

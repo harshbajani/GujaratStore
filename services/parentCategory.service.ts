@@ -9,6 +9,7 @@ export class ParentCategoryService {
   private static async getCacheKey(key: string): Promise<string> {
     return `parent_categories:${key}`;
   }
+
   static async createParentCategory(
     data: Pick<IParentCategory, "name" | "isActive">
   ): Promise<ActionResponse<IParentCategory>> {
@@ -45,7 +46,8 @@ export class ParentCategoryService {
     }
   }
 
-static async getAllParentCategories(): Promise<
+  // Keep the original method for backward compatibility
+  static async getAllParentCategories(): Promise<
     ActionResponse<IParentCategory[]>
   > {
     try {
@@ -53,7 +55,11 @@ static async getAllParentCategories(): Promise<
       const cached = await CacheService.get<IParentCategory[]>(cacheKey);
 
       if (cached) {
-        return { success: true, data: cached, message: "Parent categories retrieved from cache" };
+        return {
+          success: true,
+          data: cached,
+          message: "Parent categories retrieved from cache",
+        };
       }
 
       await connectToDB();
@@ -72,6 +78,84 @@ static async getAllParentCategories(): Promise<
       return {
         success: false,
         message:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch parent categories",
+      };
+    }
+  }
+
+  // New method with server-side pagination, filtering, and sorting
+  static async getParentCategoriesPaginated(
+    params: PaginationParams = {}
+  ): Promise<PaginatedResponse<IParentCategory>> {
+    try {
+      await connectToDB();
+
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        sortBy = "name",
+        sortOrder = "asc",
+      } = params;
+
+      // Build search query
+      const searchQuery: any = {};
+      if (search && search.trim()) {
+        searchQuery.$or = [{ name: { $regex: search.trim(), $options: "i" } }];
+      }
+
+      // Build sort object
+      const sortObj: any = {};
+      if (sortBy) {
+        sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
+      } else {
+        sortObj.name = 1; // Default sort by name ascending
+      }
+
+      // Calculate pagination values
+      const skip = (page - 1) * limit;
+
+      // Execute queries
+      const [categories, totalCount] = await Promise.all([
+        ParentCategory.find(searchQuery)
+          .sort(sortObj)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        ParentCategory.countDocuments(searchQuery),
+      ]);
+
+      // Transform categories
+      const transformedCategories = categories.map(
+        this.transformParentCategory
+      );
+
+      // Calculate pagination info
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      const pagination: PaginationInfo = {
+        currentPage: page,
+        totalPages,
+        totalItems: totalCount,
+        itemsPerPage: limit,
+        hasNext,
+        hasPrev,
+      };
+
+      return {
+        success: true,
+        data: transformedCategories,
+        pagination,
+      };
+    } catch (error) {
+      console.error("Get paginated parent categories error:", error);
+      return {
+        success: false,
+        error:
           error instanceof Error
             ? error.message
             : "Failed to fetch parent categories",

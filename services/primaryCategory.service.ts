@@ -10,6 +10,7 @@ export class PrimaryCategoryService {
   private static async getCacheKey(key: string): Promise<string> {
     return `primary_categories:${key}`;
   }
+
   static async createPrimaryCategory(
     data: Omit<IPrimaryCategory, "_id">
   ): Promise<ActionResponse<IPrimaryCategory>> {
@@ -47,6 +48,7 @@ export class PrimaryCategoryService {
     }
   }
 
+  // Keep the original method for backward compatibility
   static async getAllPrimaryCategories(): Promise<
     ActionResponse<IPrimaryCategory[]>
   > {
@@ -55,7 +57,11 @@ export class PrimaryCategoryService {
       const cached = await CacheService.get<IPrimaryCategory[]>(cacheKey);
 
       if (cached) {
-        return { success: true, data: cached, message: "Primary categories retrieved from cache" };
+        return {
+          success: true,
+          data: cached,
+          message: "Primary categories retrieved from cache",
+        };
       }
 
       await connectToDB();
@@ -64,7 +70,9 @@ export class PrimaryCategoryService {
         .sort({ name: 1 })
         .lean();
 
-      const serializedCategories = categories.map(this.transformPrimaryCategory);
+      const serializedCategories = categories.map(
+        this.transformPrimaryCategory
+      );
       await CacheService.set(cacheKey, serializedCategories, this.CACHE_TTL);
 
       return {
@@ -77,6 +85,151 @@ export class PrimaryCategoryService {
       return {
         success: false,
         message:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch primary categories",
+      };
+    }
+  }
+
+  // New method with server-side pagination, filtering, and sorting
+  static async getPrimaryCategoriesPaginated(
+    params: PaginationParams & { parentCategoryId?: string } = {}
+  ): Promise<PaginatedResponse<IPrimaryCategory>> {
+    try {
+      await connectToDB();
+
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        sortBy = "name",
+        sortOrder = "asc",
+        parentCategoryId,
+      } = params;
+
+      // Build search query
+      const searchQuery: any = {};
+
+      // Filter by parent category if specified
+      if (parentCategoryId) {
+        searchQuery.parentCategory = parentCategoryId;
+      }
+
+      // Add search conditions
+      if (search && search.trim()) {
+        const searchRegex = { $regex: search.trim(), $options: "i" };
+        searchQuery.$or = [
+          { name: searchRegex },
+          { description: searchRegex },
+          { metaTitle: searchRegex },
+          { metaDescription: searchRegex },
+        ];
+      }
+
+      // Build sort object
+      const sortObj: any = {};
+      if (sortBy) {
+        // Handle nested sorting for parent category
+        if (sortBy === "parentCategory.name") {
+          sortObj["parentCategory.name"] = sortOrder === "desc" ? -1 : 1;
+        } else {
+          sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
+        }
+      } else {
+        sortObj.name = 1; // Default sort by name ascending
+      }
+
+      // Calculate pagination values
+      const skip = (page - 1) * limit;
+
+      // Create aggregation pipeline for complex queries with population
+      const pipeline = [
+        // Match stage
+        { $match: searchQuery },
+
+        // Lookup/populate parent category
+        {
+          $lookup: {
+            from: "parentcategories", // Make sure this matches your collection name
+            localField: "parentCategory",
+            foreignField: "_id",
+            as: "parentCategory",
+          },
+        },
+
+        // Unwind parent category
+        { $unwind: "$parentCategory" },
+
+        // Add search on parent category name if searching
+        ...(search && search.trim()
+          ? [
+              {
+                $match: {
+                  $or: [
+                    { name: { $regex: search.trim(), $options: "i" } },
+                    { description: { $regex: search.trim(), $options: "i" } },
+                    { metaTitle: { $regex: search.trim(), $options: "i" } },
+                    {
+                      metaDescription: { $regex: search.trim(), $options: "i" },
+                    },
+                    {
+                      "parentCategory.name": {
+                        $regex: search.trim(),
+                        $options: "i",
+                      },
+                    },
+                  ],
+                },
+              },
+            ]
+          : []),
+
+        // Sort stage
+        { $sort: sortObj },
+
+        // Facet stage for pagination
+        {
+          $facet: {
+            data: [{ $skip: skip }, { $limit: limit }],
+            count: [{ $count: "total" }],
+          },
+        },
+      ];
+
+      const [result] = await PrimaryCategory.aggregate(pipeline);
+      const categories = result.data || [];
+      const totalCount = result.count[0]?.total || 0;
+
+      // Transform categories
+      const transformedCategories = categories.map(
+        this.transformPrimaryCategory
+      );
+
+      // Calculate pagination info
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      const pagination: PaginationInfo = {
+        currentPage: page,
+        totalPages,
+        totalItems: totalCount,
+        itemsPerPage: limit,
+        hasNext,
+        hasPrev,
+      };
+
+      return {
+        success: true,
+        data: transformedCategories,
+        pagination,
+      };
+    } catch (error) {
+      console.error("Get paginated primary categories error:", error);
+      return {
+        success: false,
+        error:
           error instanceof Error
             ? error.message
             : "Failed to fetch primary categories",
