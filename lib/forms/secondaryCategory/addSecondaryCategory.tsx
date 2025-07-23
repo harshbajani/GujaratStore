@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { secondaryCategorySchema } from "@/lib/validations";
-import { getAllAttributes } from "@/lib/actions/attribute.actions";
+import { getAllAttributesLegacy } from "@/lib/actions/attribute.actions";
 import { toast } from "@/hooks/use-toast";
 import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import { useRouter } from "next/navigation";
@@ -75,7 +75,7 @@ const AddSecondaryCategoryForm = () => {
         ] = await Promise.all([
           getAllParentCategory(),
           getAllPrimaryCategories(),
-          getAllAttributes(),
+          getAllAttributesLegacy(),
         ]);
 
         if (parentCategoryResponse.success && parentCategoryResponse.data) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   User,
@@ -25,15 +25,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import Loader from "@/components/Loader";
 import { useUserDetails } from "@/hooks/useOrderHooks"; // Import the hook
-import { getCustomerOrders } from "@/lib/utils";
 import {
   ColumnDef,
   getCoreRowModel,
   useReactTable,
   getPaginationRowModel,
-  SortingState,
-  getSortedRowModel,
-  PaginationState,
   flexRender,
 } from "@tanstack/react-table";
 import {
@@ -46,26 +42,51 @@ import {
 
 const CustomerDetailPage = () => {
   const [orders, setOrders] = useState<IOrder[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState<boolean>(false);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+  const [paginationInfo, setPaginationInfo] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10,
+    hasNext: false,
+    hasPrev: false,
   });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
   const customerId = params.id as string;
 
   // Use the hook instead of the direct fetch function
-  const { user: customer, loading, error } = useUserDetails(customerId);
+  const {
+    user: customer,
+    loading,
+    error,
+  } = useUserDetails(customerId, { vendor: true });
 
-  const fetchCustomerOrders = async () => {
+  const fetchCustomerOrders = useCallback(async () => {
+    setOrdersLoading(true);
     try {
-      setOrdersLoading(true);
-      const ordersResponse = await getCustomerOrders(customerId);
-      if (ordersResponse.success) {
-        setOrders(ordersResponse.data);
+      const queryParams = new URLSearchParams({
+        page: (pagination.pageIndex + 1).toString(),
+        limit: pagination.pageSize.toString(),
+        search: searchQuery,
+        sortBy,
+        sortOrder,
+      });
+      const response = await fetch(
+        `/api/user/order/${customerId}?${queryParams}`
+      );
+      const data = await response.json();
+      if (data.success) {
+        setOrders(data.data);
+        setPaginationInfo(data.pagination);
       }
     } catch (error) {
       console.error("Failed to fetch customer orders:", error);
@@ -80,13 +101,19 @@ const CustomerDetailPage = () => {
     } finally {
       setOrdersLoading(false);
     }
-  };
+  }, [
+    customerId,
+    pagination.pageIndex,
+    pagination.pageSize,
+    searchQuery,
+    sortBy,
+    sortOrder,
+    toast,
+  ]);
 
   useEffect(() => {
-    if (customerId) {
-      fetchCustomerOrders();
-    }
-  }, [customerId]);
+    if (customerId) fetchCustomerOrders();
+  }, [fetchCustomerOrders, customerId]);
 
   useEffect(() => {
     if (error) {
@@ -97,6 +124,35 @@ const CustomerDetailPage = () => {
       });
     }
   }, [error, toast]);
+
+  // Debounced search handler
+  const handleSearch = useCallback(
+    (value: string) => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+      const timeout = setTimeout(() => {
+        setSearchQuery(value);
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      }, 500);
+      setSearchTimeout(timeout);
+    },
+    [searchTimeout]
+  );
+
+  // Sorting handler
+  const handleSort = useCallback(
+    (column: string) => {
+      if (sortBy === column) {
+        setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+      } else {
+        setSortBy(column);
+        setSortOrder("asc");
+      }
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    },
+    [sortBy]
+  );
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -133,17 +189,15 @@ const CustomerDetailPage = () => {
 
   // Calculate customer stats
   const calculateCustomerStats = () => {
-    const totalOrders = orders.length;
+    const totalOrders = paginationInfo.totalItems;
     const totalSpent = orders.reduce((sum, order) => sum + order.total, 0);
     const averageOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0;
-
-    // Count orders by status
+    // Count orders by status (for current page)
     const ordersByStatus = orders.reduce((acc, order) => {
       const status = order.status.toLowerCase();
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
     return {
       totalOrders,
       totalSpent,
@@ -154,23 +208,56 @@ const CustomerDetailPage = () => {
 
   const stats = calculateCustomerStats();
 
-  // Add the columns definition
+  // Table columns with sortable headers
   const columns: ColumnDef<IOrder>[] = [
     {
       accessorKey: "orderId",
-      header: "Order ID",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("orderId")}
+          className="h-auto p-0 font-semibold"
+        >
+          Order ID
+          {sortBy === "orderId" && (
+            <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+          )}
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("orderId")}</div>
       ),
     },
     {
       accessorKey: "createdAt",
-      header: "Date",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("createdAt")}
+          className="h-auto p-0 font-semibold"
+        >
+          Date
+          {sortBy === "createdAt" && (
+            <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+          )}
+        </Button>
+      ),
       cell: ({ row }) => formatDate(row.getValue("createdAt")),
     },
     {
       accessorKey: "status",
-      header: "Status",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("status")}
+          className="h-auto p-0 font-semibold"
+        >
+          Status
+          {sortBy === "status" && (
+            <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+          )}
+        </Button>
+      ),
       cell: ({ row }) => (
         <Badge
           variant="outline"
@@ -191,7 +278,18 @@ const CustomerDetailPage = () => {
     },
     {
       accessorKey: "total",
-      header: "Total",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("total")}
+          className="h-auto p-0 font-semibold"
+        >
+          Total
+          {sortBy === "total" && (
+            <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+          )}
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="text-right">
           ₹{row.getValue<number>("total").toFixed(2)}
@@ -214,19 +312,19 @@ const CustomerDetailPage = () => {
     },
   ];
 
-  // Initialize the table
   const table = useReactTable({
     data: orders,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onPaginationChange: setPagination,
+    pageCount: paginationInfo.totalPages,
     state: {
-      sorting,
       pagination,
     },
+    onPaginationChange: setPagination,
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
   if (loading || ordersLoading) {
@@ -370,6 +468,41 @@ const CustomerDetailPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
+            {/* Search and page size controls */}
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  placeholder="Search orders..."
+                  className="border rounded px-2 py-1"
+                  onChange={(e) => handleSearch(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={pagination.pageSize.toString()}
+                  onValueChange={(value) => {
+                    setPagination((prev) => ({
+                      ...prev,
+                      pageSize: Number(value),
+                      pageIndex: 0,
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="w-[70px]">
+                    <SelectValue placeholder={pagination.pageSize} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[10, 20, 50, 100].map((size) => (
+                      <SelectItem key={size} value={size.toString()}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-gray-500">per page</span>
+              </div>
+            </div>
             <div className="border rounded-lg overflow-auto">
               <Table>
                 <TableHeader>
@@ -389,7 +522,16 @@ const CustomerDetailPage = () => {
                   ))}
                 </TableHeader>
                 <TableBody>
-                  {table.getRowModel().rows?.length ? (
+                  {ordersLoading ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length}
+                        className="text-center"
+                      >
+                        <Loader />
+                      </TableCell>
+                    </TableRow>
+                  ) : table.getRowModel().rows?.length ? (
                     table.getRowModel().rows.map((row) => (
                       <TableRow key={row.id} className="hover:bg-gray-50">
                         {row.getVisibleCells().map((cell) => (
@@ -415,70 +557,50 @@ const CustomerDetailPage = () => {
                 </TableBody>
               </Table>
             </div>
-
+            {/* Pagination controls */}
             <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Rows per page:</span>
-                <Select
-                  value={pagination.pageSize.toString()}
-                  onValueChange={(value) => {
-                    setPagination({
-                      pageIndex: 0,
-                      pageSize: Number(value),
-                    });
-                  }}
-                >
-                  <SelectTrigger className="w-[70px]">
-                    <SelectValue placeholder={pagination.pageSize} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[10, 20, 50, 100].map((size) => (
-                      <SelectItem key={size} value={size.toString()}>
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex-1 text-sm text-gray-500">
+                Showing{" "}
+                {paginationInfo.itemsPerPage *
+                  (paginationInfo.currentPage - 1) +
+                  1}{" "}
+                to{" "}
+                {Math.min(
+                  paginationInfo.itemsPerPage * paginationInfo.currentPage,
+                  paginationInfo.totalItems
+                )}{" "}
+                of {paginationInfo.totalItems} orders
               </div>
-
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
+                  onClick={() =>
+                    setPagination((prev) => ({
+                      ...prev,
+                      pageIndex: prev.pageIndex - 1,
+                    }))
+                  }
+                  disabled={!paginationInfo.hasPrev || ordersLoading}
                 >
                   Previous
                 </Button>
-                <div className="flex gap-1">
-                  {Array.from(
-                    { length: table.getPageCount() },
-                    (_, index) => index + 1
-                  ).map((pageNumber) => (
-                    <Button
-                      key={pageNumber}
-                      variant={
-                        table.getState().pagination.pageIndex + 1 === pageNumber
-                          ? "default"
-                          : "outline"
-                      }
-                      size="sm"
-                      onClick={() => table.setPageIndex(pageNumber - 1)}
-                      className={
-                        table.getState().pagination.pageIndex + 1 === pageNumber
-                          ? "bg-brand hover:bg-brand/90 text-white"
-                          : ""
-                      }
-                    >
-                      {pageNumber}
-                    </Button>
-                  ))}
+                <div className="flex items-center space-x-1">
+                  <span className="text-sm text-gray-500">
+                    Page {paginationInfo.currentPage} of{" "}
+                    {paginationInfo.totalPages}
+                  </span>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
+                  onClick={() =>
+                    setPagination((prev) => ({
+                      ...prev,
+                      pageIndex: prev.pageIndex + 1,
+                    }))
+                  }
+                  disabled={!paginationInfo.hasNext || ordersLoading}
                 >
                   Next
                 </Button>

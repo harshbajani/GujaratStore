@@ -38,7 +38,11 @@ export class DashboardService {
 
     const monthlyRevenue = await this.calculateMonthlyRevenue(orders);
     const yearlyRevenue = await this.calculateYearlyRevenue(vendorId);
-    const revenueChangePercent = this.calculateRevenueChange(monthlyRevenue);
+    const revenueChangePercent = await this.calculateRevenueChange(
+      vendorId,
+      month,
+      year
+    );
     const topSellingProducts = await this.calculateTopSellingProducts(query);
 
     const summary = {
@@ -51,7 +55,8 @@ export class DashboardService {
       revenueChangePercent,
     };
 
-    await CacheService.set(cacheKey, summary);
+    // Set cache with 10 minutes TTL (600 seconds)
+    await CacheService.set(cacheKey, summary, 600);
     return summary;
   }
 
@@ -77,7 +82,8 @@ export class DashboardService {
 
     const breakdown = this.normalizeOrderBreakdown(statusBreakdown);
 
-    await CacheService.set(cacheKey, breakdown);
+    // Set cache with 5 minutes TTL (300 seconds) - order status changes more frequently
+    await CacheService.set(cacheKey, breakdown, 300);
     return breakdown;
   }
 
@@ -128,7 +134,8 @@ export class DashboardService {
       })),
     };
 
-    await CacheService.set(cacheKey, stats);
+    // Set cache with 15 minutes TTL (900 seconds) - inventory changes less frequently
+    await CacheService.set(cacheKey, stats, 900);
     return stats;
   }
 
@@ -210,22 +217,61 @@ export class DashboardService {
     );
   }
 
-  private calculateRevenueChange(monthlyRevenue: {
-    [month: string]: number;
-  }): number {
-    const currentDate = new Date();
-    const currentMonth = currentDate.toLocaleString("default", {
-      month: "short",
+  // Change signature to accept month/year
+  private async calculateRevenueChange(
+    vendorId: string,
+    month?: number,
+    year?: number
+  ): Promise<number> {
+    const vendorObjectId = new Types.ObjectId(vendorId);
+
+    // Use provided month/year or default to current
+    let selectedYear, selectedMonth;
+    if (month !== undefined && year !== undefined) {
+      selectedYear = year;
+      selectedMonth = month;
+    } else {
+      const currentDate = new Date();
+      selectedYear = currentDate.getFullYear();
+      selectedMonth = currentDate.getMonth();
+    }
+
+    // Get previous month and year
+    const previousMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+    const previousYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+
+    // Calculate selected month revenue
+    const selectedMonthStartDate = new Date(selectedYear, selectedMonth, 1);
+    const selectedMonthEndDate = new Date(selectedYear, selectedMonth + 1, 0);
+
+    const selectedMonthOrders = await Order.find({
+      createdAt: { $gte: selectedMonthStartDate, $lte: selectedMonthEndDate },
+      "items.vendorId": vendorObjectId,
     });
-    const lastMonth = new Date(
-      currentDate.setMonth(currentDate.getMonth() - 1)
-    ).toLocaleString("default", { month: "short" });
+    const selectedMonthRevenue = selectedMonthOrders.reduce(
+      (sum, order) => sum + order.total,
+      0
+    );
 
-    const currentRevenue = monthlyRevenue[currentMonth] || 0;
-    const lastRevenue = monthlyRevenue[lastMonth] || 0;
+    // Calculate previous month revenue
+    const previousMonthStartDate = new Date(previousYear, previousMonth, 1);
+    const previousMonthEndDate = new Date(previousYear, previousMonth + 1, 0);
 
-    return lastRevenue !== 0
-      ? ((currentRevenue - lastRevenue) / lastRevenue) * 100
+    const previousMonthOrders = await Order.find({
+      createdAt: { $gte: previousMonthStartDate, $lte: previousMonthEndDate },
+      "items.vendorId": vendorObjectId,
+    });
+    const previousMonthRevenue = previousMonthOrders.reduce(
+      (sum, order) => sum + order.total,
+      0
+    );
+
+    // Calculate percentage change
+    return previousMonthRevenue !== 0
+      ? ((selectedMonthRevenue - previousMonthRevenue) / previousMonthRevenue) *
+          100
+      : selectedMonthRevenue > 0
+      ? 100
       : 0;
   }
 
@@ -270,5 +316,60 @@ export class DashboardService {
     });
 
     return breakdown;
+  }
+
+  async invalidateSalesCache(vendorId: string): Promise<void> {
+    try {
+      // Get all keys that match the sales pattern for this vendor
+      const keys = await CacheService.keys(`sales:${vendorId}:*`);
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
+    } catch (error) {
+      console.error("Sales cache invalidation error:", error);
+    }
+  }
+
+  async invalidateOrdersCache(vendorId: string): Promise<void> {
+    try {
+      // Get all keys that match the orders pattern for this vendor
+      const keys = await CacheService.keys(`orders:${vendorId}:*`);
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
+    } catch (error) {
+      console.error("Orders cache invalidation error:", error);
+    }
+  }
+
+  async invalidateInventoryCache(vendorId: string): Promise<void> {
+    try {
+      // Delete inventory cache for this vendor
+      await CacheService.delete(`inventory:${vendorId}`);
+    } catch (error) {
+      console.error("Inventory cache invalidation error:", error);
+    }
+  }
+
+  // Master method to invalidate all dashboard caches for a vendor
+  async invalidateAllDashboardCaches(vendorId: string): Promise<void> {
+    try {
+      await Promise.all([
+        this.invalidateSalesCache(vendorId),
+        this.invalidateOrdersCache(vendorId),
+        this.invalidateInventoryCache(vendorId),
+      ]);
+    } catch (error) {
+      console.error("Dashboard cache invalidation error:", error);
+    }
+  }
+
+  // Call this method when orders are created/updated/deleted
+  async onOrderChange(vendorId: string): Promise<void> {
+    await Promise.all([
+      this.invalidateSalesCache(vendorId),
+      this.invalidateOrdersCache(vendorId),
+    ]);
+  }
+
+  // Call this method when products are created/updated/deleted
+  async onProductChange(vendorId: string): Promise<void> {
+    await this.invalidateInventoryCache(vendorId);
   }
 }

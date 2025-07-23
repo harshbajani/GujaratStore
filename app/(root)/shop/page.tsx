@@ -6,6 +6,7 @@ import { clothing, flavoursOfGujarat, furnishings, organic } from "@/constants";
 import { getAllPrimaryCategories } from "@/lib/actions/primaryCategory.actions";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 
 interface CategorySectionProps {
   title: string;
@@ -201,43 +202,7 @@ const CategorySection = ({ title, items }: CategorySectionProps) => {
 const ShopPage = () => {
   return (
     <div className="min-h-screen">
-      <motion.div
-        className="relative min-h-[180px] w-full sm:min-h-[220px] md:min-h-[240px]"
-        initial={{ opacity: 0, scale: 1.1 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-      >
-        <div className="absolute inset-0 bg-[url('/bg/bg1.png')] bg-cover bg-center sm:bg-contain md:bg-[top_50%_right_200px] h-[273px]" />
-        <div className="absolute inset-0 bg-brand-200/30 h-[273px]" />
-        <motion.div
-          className="relative z-10 flex h-full flex-col items-center justify-center p-4 text-center sm:p-6 md:p-8 mt-14"
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{
-            delay: 0.3,
-            duration: 0.8,
-            type: "spring",
-            stiffness: 100,
-          }}
-        >
-          <motion.h1
-            className="h1 mb-2 text-2xl sm:text-3xl md:text-4xl sm:mt-14 mt-20"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-          >
-            નમસ્તે જી
-          </motion.h1>
-          <motion.p
-            className="subtitle-1 text-sm sm:text-base md:text-lg"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.7, duration: 0.5 }}
-          >
-            Let&apos;s Discover The World Of Gujarat Art & Crafts
-          </motion.p>
-        </motion.div>
-      </motion.div>
+      <BreadcrumbHeader subtitle="Shop" title="Home" titleHref="/" />
 
       <div className="pt-8">
         <div className="py-16 flex-center flex-col">

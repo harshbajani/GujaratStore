@@ -1,33 +1,40 @@
-// /app/api/admin/user/route.ts
-import User from "@/lib/models/user.model";
-import { connectToDB } from "@/lib/mongodb";
-import { NextRequest, NextResponse } from "next/server";
+import { getAllUsers } from "@/lib/actions/admin/user.actions";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  // Parse the query string to see if an ID is provided
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-
+export async function GET(request: Request) {
   try {
-    // Connect to the database
-    await connectToDB();
+    const { searchParams } = new URL(request.url);
 
-    if (id) {
-      // If an id is provided, fetch a single user by id
-      const user = await User.findById(id);
-      if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
-      }
-      return NextResponse.json(user, { status: 200 });
-    } else {
-      // Otherwise, fetch all users
-      const users = await User.find({});
-      return NextResponse.json(users, { status: 200 });
+    // Extract pagination parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const sortBy = searchParams.get("sortBy") || "name";
+    const sortOrder = (searchParams.get("sortOrder") || "asc") as
+      | "asc"
+      | "desc";
+
+    const paginationParams: PaginationParams = {
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder,
+    };
+
+    const result = await getAllUsers(paginationParams);
+
+    if (!result.success) {
+      return NextResponse.json(result, { status: 400 });
     }
+
+    return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    console.error("API Error:", error);
     return NextResponse.json(
-      { error: "Something went wrong" },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "An error occurred",
+      },
       { status: 500 }
     );
   }

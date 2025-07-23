@@ -1,7 +1,14 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Users, Eye, Search } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Users,
+  Eye,
+  Search,
+  Calendar,
+  TrendingUp,
+  ShoppingCart,
+} from "lucide-react";
 import { withVendorProtection } from "../../HOC";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -18,11 +25,6 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getPaginationRowModel,
-  SortingState,
-  getSortedRowModel,
-  ColumnFiltersState,
-  getFilteredRowModel,
   PaginationState,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
@@ -48,7 +50,7 @@ interface IUser {
   orderCount: number;
   totalSpent: number;
   lastOrderDate: string;
-  firstOrderDate: string; // Added to track the date of the first order
+  firstOrderDate: string;
 }
 
 interface ICustomerStats {
@@ -59,37 +61,30 @@ interface ICustomerStats {
   yearlyNewCustomers: { [year: number]: number };
 }
 
-// Function to get customer details by ID
-const getCustomerById = async (id: string) => {
-  try {
-    const response = await fetch(`/api/user/${id}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch customer details");
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching customer details:", error);
-    throw error;
-  }
-};
-
 const CustomersPage = () => {
   const [customers, setCustomers] = useState<IUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [statsLoading, setStatsLoading] = useState<boolean>(true);
+  const [paginationInfo, setPaginationInfo] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10,
+    hasNext: false,
+    hasPrev: false,
+  });
+
+  // Server-side pagination state
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
+
+  // Server-side filtering and sorting state
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
   const [customerStats, setCustomerStats] = useState<ICustomerStats>({
     totalCustomers: 0,
     activeCustomers: 0,
@@ -101,19 +96,34 @@ const CustomersPage = () => {
   // State for month/year selection for historical stats
   const [selectedMonth, setSelectedMonth] = useState<number>(
     new Date().getMonth()
-  ); // 0-indexed month
+  );
   const [selectedYear, setSelectedYear] = useState<number>(
     new Date().getFullYear()
   );
+  const [newCustomersForSelectedMonth, setNewCustomersForSelectedMonth] =
+    useState<number>(0);
 
   const router = useRouter();
   const { toast } = useToast();
 
-  // Fetch all unique customers and compute stats
-  const fetchAllCustomers = async () => {
+  // Debounced search function
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
+
+  // Fetch customers with server-side pagination
+  const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/order", {
+      const queryParams = new URLSearchParams({
+        page: (pagination.pageIndex + 1).toString(),
+        limit: pagination.pageSize.toString(),
+        search: searchQuery,
+        sortBy,
+        sortOrder,
+      });
+
+      const response = await fetch(`/api/user/customers?${queryParams}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -121,114 +131,26 @@ const CustomersPage = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch orders");
+        throw new Error("Failed to fetch customers");
       }
 
-      const ordersData = await response.json();
+      const data = await response.json();
 
-      if (!ordersData.success) {
-        throw new Error(ordersData.error || "Failed to fetch orders");
+      if (!data.success) {
+        throw new Error(data.error || "Failed to fetch customers");
       }
 
-      const orders = Array.isArray(ordersData.data) ? ordersData.data : [];
-
-      // Process orders to extract unique customers
-      const uniqueCustomers = new Map();
-
-      for (const order of orders) {
-        if (!uniqueCustomers.has(order.userId)) {
-          // Fetch user details
-          try {
-            const userResponse = await getCustomerById(order.userId);
-            if (userResponse && userResponse.success) {
-              // Get all orders for this customer
-              const customerOrders = orders.filter(
-                (o: IOrder) => o.userId === order.userId
-              );
-
-              // Calculate total spent
-              const totalSpent = customerOrders.reduce(
-                (sum: number, o: IOrder) => sum + (o.total || 0),
-                0
-              );
-
-              // Sort orders to determine first and last order dates
-              const sortedOrders = [...customerOrders].sort(
-                (a: IOrder, b: IOrder) =>
-                  new Date(a.createdAt).getTime() -
-                  new Date(b.createdAt).getTime()
-              );
-              const firstOrderDate = sortedOrders[0].createdAt;
-              const lastOrderDate =
-                sortedOrders[sortedOrders.length - 1].createdAt;
-
-              uniqueCustomers.set(order.userId, {
-                _id: order.userId,
-                name: userResponse.data.name,
-                email: userResponse.data.email,
-                phone: userResponse.data.phone,
-                orderCount: customerOrders.length,
-                totalSpent: totalSpent,
-                lastOrderDate: lastOrderDate,
-                firstOrderDate: firstOrderDate,
-              });
-            }
-          } catch (error) {
-            console.error(
-              `Error fetching details for customer ${order.userId}:`,
-              error
-            );
-          }
+      setCustomers(data.data || []);
+      setPaginationInfo(
+        data.pagination || {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+          itemsPerPage: 10,
+          hasNext: false,
+          hasPrev: false,
         }
-      }
-
-      const customersArray = Array.from(uniqueCustomers.values());
-      setCustomers(customersArray);
-
-      // Calculate overall stats
-
-      // Active customers: those who placed an order in the last 30 days
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const activeCustomers = customersArray.filter(
-        (customer) => new Date(customer.lastOrderDate) > thirtyDaysAgo
-      ).length;
-
-      // New customers for the current month: those whose first order is within the current month
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const newCustomers = customersArray.filter((customer) => {
-        const firstOrder = new Date(customer.firstOrderDate);
-        return firstOrder >= startOfMonth && firstOrder < endOfMonth;
-      }).length;
-
-      // Calculate year-wise new customers (all time)
-      const yearlyNewCustomers = customersArray.reduce((acc, customer) => {
-        const year = new Date(customer.firstOrderDate).getFullYear();
-        acc[year] = (acc[year] || 0) + 1;
-        return acc;
-      }, {} as { [year: number]: number });
-
-      // Average order value calculation
-      const totalOrders = customersArray.reduce(
-        (sum, customer) => sum + customer.orderCount,
-        0
       );
-      const grandTotalSpent = customersArray.reduce(
-        (sum, customer) => sum + customer.totalSpent,
-        0
-      );
-      const averageOrderValue =
-        totalOrders > 0 ? grandTotalSpent / totalOrders : 0;
-
-      setCustomerStats({
-        totalCustomers: customersArray.length,
-        activeCustomers,
-        newCustomers,
-        averageOrderValue,
-        yearlyNewCustomers,
-      });
     } catch (error) {
       console.error("Failed to fetch customers:", error);
       toast({
@@ -239,36 +161,181 @@ const CustomersPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    pagination.pageIndex,
+    pagination.pageSize,
+    searchQuery,
+    sortBy,
+    sortOrder,
+    toast,
+  ]);
 
-  useEffect(() => {
-    fetchAllCustomers();
-  }, []);
+  // Fetch customer statistics
+  const fetchCustomerStats = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      const response = await fetch("/api/user/customers/stats", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-  // Compute new customers count for the selected month/year using all historical orders
-  const newCustomersForSelectedMonth = useMemo(() => {
-    if (!customers.length) return 0;
-    const startOfSelectedMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfSelectedMonth = new Date(selectedYear, selectedMonth + 1, 1);
-    return customers.filter((customer) => {
-      const firstOrder = new Date(customer.firstOrderDate);
-      return (
-        firstOrder >= startOfSelectedMonth && firstOrder < endOfSelectedMonth
+      if (!response.ok) {
+        throw new Error("Failed to fetch customer stats");
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to fetch customer stats");
+      }
+
+      setCustomerStats(
+        data.data || {
+          totalCustomers: 0,
+          activeCustomers: 0,
+          newCustomers: 0,
+          averageOrderValue: 0,
+          yearlyNewCustomers: {},
+        }
       );
-    }).length;
-  }, [customers, selectedMonth, selectedYear]);
+    } catch (error) {
+      console.error("Failed to fetch customer stats:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch customer statistics",
+        variant: "destructive",
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [toast]);
+
+  // Fetch new customers for selected month
+  const fetchNewCustomersForMonth = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `/api/user/customers/new-monthly?month=${selectedMonth}&year=${selectedYear}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch new customers for month");
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(
+          data.error || "Failed to fetch new customers for month"
+        );
+      }
+
+      setNewCustomersForSelectedMonth(data.data || 0);
+    } catch (error) {
+      console.error("Failed to fetch new customers for month:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch new customers for selected month",
+        variant: "destructive",
+      });
+    }
+  }, [selectedMonth, selectedYear, toast]);
+
+  // Handle search with debouncing
+  const handleSearch = useCallback(
+    (value: string) => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+
+      const timeout = setTimeout(() => {
+        setSearchQuery(value);
+        setPagination((prev) => ({ ...prev, pageIndex: 0 })); // Reset to first page
+      }, 500);
+
+      setSearchTimeout(timeout);
+    },
+    [searchTimeout]
+  );
+
+  // Handle sorting
+  const handleSort = useCallback(
+    (column: string) => {
+      if (sortBy === column) {
+        setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+      } else {
+        setSortBy(column);
+        setSortOrder("asc");
+      }
+      setPagination((prev) => ({ ...prev, pageIndex: 0 })); // Reset to first page
+    },
+    [sortBy]
+  );
+
+  // Effect to fetch customers when dependencies change
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
+
+  // Effect to fetch stats on component mount
+  useEffect(() => {
+    fetchCustomerStats();
+  }, [fetchCustomerStats]);
+
+  // Effect to fetch new customers for selected month
+  useEffect(() => {
+    fetchNewCustomersForMonth();
+  }, [fetchNewCustomersForMonth]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
 
   const columns: ColumnDef<IUser>[] = [
     {
       accessorKey: "name",
-      header: "Customer Name",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("name")}
+          className="h-auto p-0 font-semibold"
+        >
+          Customer Name
+          {sortBy === "name" && (
+            <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+          )}
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("name")}</div>
       ),
     },
     {
       accessorKey: "email",
-      header: "Email",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("email")}
+          className="h-auto p-0 font-semibold"
+        >
+          Email
+          {sortBy === "email" && (
+            <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+          )}
+        </Button>
+      ),
       cell: ({ row }) => {
         const email = row.getValue("email");
         return (
@@ -293,7 +360,7 @@ const CustomersPage = () => {
           <div>
             <Link
               prefetch
-              href={`callto:${phone}`}
+              href={`tel:${phone}`}
               className="text-blue-600 hover:underline"
             >
               {row.getValue("phone")}
@@ -304,26 +371,92 @@ const CustomersPage = () => {
     },
     {
       accessorKey: "orderCount",
-      header: "Orders",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("orderCount")}
+          className="h-auto p-0 font-semibold"
+        >
+          Orders
+          {sortBy === "orderCount" && (
+            <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+          )}
+        </Button>
+      ),
       cell: ({ row }) => (
-        <Badge variant="outline" className="bg-blue-50 text-blue-700">
+        <Badge variant="secondary" className="font-medium">
           {row.getValue("orderCount")}
         </Badge>
       ),
     },
     {
       accessorKey: "totalSpent",
-      header: "Total Spent",
-      cell: ({ row }) => (
-        <div className="font-medium">
-          ₹{Number(row.getValue("totalSpent")).toFixed(2)}
-        </div>
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("totalSpent")}
+          className="h-auto p-0 font-semibold"
+        >
+          Total Spent
+          {sortBy === "totalSpent" && (
+            <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+          )}
+        </Button>
       ),
+      cell: ({ row }) => {
+        const amount = parseFloat(row.getValue("totalSpent"));
+        const formatted = new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "INR",
+        }).format(amount);
+        return <div className="font-medium text-green-600">{formatted}</div>;
+      },
+    },
+    {
+      accessorKey: "firstOrderDate",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("firstOrderDate")}
+          className="h-auto p-0 font-semibold"
+        >
+          First Order
+          {sortBy === "firstOrderDate" && (
+            <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+          )}
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const date = row.getValue("firstOrderDate");
+        return (
+          <div className="text-sm text-gray-600">
+            {date ? formatDate(date as string) : "N/A"}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "lastOrderDate",
-      header: "Last Order",
-      cell: ({ row }) => <div>{formatDate(row.getValue("lastOrderDate"))}</div>,
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("lastOrderDate")}
+          className="h-auto p-0 font-semibold"
+        >
+          Last Order
+          {sortBy === "lastOrderDate" && (
+            <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+          )}
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const date = row.getValue("lastOrderDate");
+        return (
+          <div className="text-sm text-gray-600">
+            {date ? formatDate(date as string) : "N/A"}
+          </div>
+        );
+      },
     },
     {
       id: "actions",
@@ -333,12 +466,11 @@ const CustomersPage = () => {
         return (
           <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-gray-100"
+              variant="outline"
+              size="sm"
               onClick={() => router.push(`/vendor/customers/${customer._id}`)}
             >
-              <Eye className="h-4 w-4 text-gray-600" />
+              <Eye className="h-4 w-4" />
             </Button>
           </div>
         );
@@ -349,224 +481,227 @@ const CustomersPage = () => {
   const table = useReactTable({
     data: customers,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onPaginationChange: setPagination,
+    pageCount: paginationInfo.totalPages,
     state: {
-      sorting,
-      columnFilters,
       pagination,
     },
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
   });
 
-  const pageCount = table.getPageCount();
-  const currentPage = table.getState().pagination.pageIndex + 1;
-  const pageNumbers = Array.from({ length: pageCount }, (_, i) => i + 1);
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
 
-  if (loading) {
-    return <Loader />;
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
+  if (loading && customers.length === 0) {
+    return (
+      <div className="flex justify-center items-center">
+        <Loader />
+      </div>
+    );
   }
 
   return (
-    <div className="p-2 space-y-4">
-      <div className="flex items-center gap-3">
-        <Users className="text-brand h-8 w-8" />
-        <h1 className="h1">Customers</h1>
-      </div>
-
-      {/* Date Filter Section for Historical Stats */}
-      <div className="flex gap-4 items-center">
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
         <div>
-          <label className="block text-sm font-medium text-gray-500 mb-1">
-            Month
-          </label>
-          <Select
-            value={selectedMonth.toString()}
-            onValueChange={(value) => setSelectedMonth(Number(value))}
-          >
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Month" />
-            </SelectTrigger>
-            <SelectContent>
-              {[
-                "January",
-                "February",
-                "March",
-                "April",
-                "May",
-                "June",
-                "July",
-                "August",
-                "September",
-                "October",
-                "November",
-                "December",
-              ].map((month, index) => (
-                <SelectItem key={index} value={index.toString()}>
-                  {month}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-500 mb-1">
-            Year
-          </label>
-          <Select
-            value={selectedYear.toString()}
-            onValueChange={(value) => setSelectedYear(Number(value))}
-          >
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Year" />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from(
-                { length: 10 },
-                (_, i) => new Date().getFullYear() - i
-              ).map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
+          <p className="text-muted-foreground">
+            Manage and view all your customers
+          </p>
         </div>
       </div>
 
-      {/* Dashboard Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
               Total Customers
             </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {customerStats.totalCustomers}
+              {statsLoading ? (
+                <Loader />
+              ) : (
+                customerStats.totalCustomers.toLocaleString()
+              )}
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
               Active Customers
             </CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {customerStats.activeCustomers}
+              {statsLoading ? (
+                <Loader />
+              ) : (
+                customerStats.activeCustomers.toLocaleString()
+              )}
             </div>
-            <p className="text-xs text-gray-500">Last 30 days</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
-              New Customers (Current Month)
-            </CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">New Customers</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {customerStats.newCustomers}
+              {statsLoading ? (
+                <Loader />
+              ) : (
+                customerStats.newCustomers.toLocaleString()
+              )}
             </div>
-            <p className="text-xs text-gray-500">Current Month</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
               Average Order Value
             </CardTitle>
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ₹{customerStats.averageOrderValue.toFixed(2)}
+              {statsLoading ? (
+                <Loader />
+              ) : (
+                new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: "INR",
+                }).format(customerStats.averageOrderValue)
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Card for Historical New Customers */}
-      <div className="mb-6 grid grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
-              New Customers (Selected Month)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {newCustomersForSelectedMonth}
-            </div>
-            <p className="text-xs text-gray-500">
-              {new Date(selectedYear, selectedMonth).toLocaleString("default", {
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
-          </CardContent>
-        </Card>
+      {/* Monthly Stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Monthly Customer Stats
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-4 mb-4">
+            <Select
+              value={selectedMonth.toString()}
+              onValueChange={(value) => setSelectedMonth(parseInt(value))}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select month" />
+              </SelectTrigger>
+              <SelectContent>
+                {monthNames.map((month, index) => (
+                  <SelectItem key={index} value={index.toString()}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        {/* Yearly New Customers Section */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
-              New Customers by Year {new Date().getFullYear()}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {Object.keys(customerStats.yearlyNewCustomers).length ? (
-              Object.entries(customerStats.yearlyNewCustomers)
-                .sort(([yearA], [yearB]) => Number(yearA) - Number(yearB))
-                .map(([year, count]) => (
-                  <div key={year} className="flex flex-col">
-                    <span className="text-2xl font-bold">{count}</span>
-                    <span className="text-xs text-gray-500">{year}</span>
-                  </div>
-                ))
-            ) : (
-              <div className="text-gray-500">No yearly data available</div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Customers Table with Scrollable Container */}
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="relative max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Search customers..."
-                value={
-                  (table.getColumn("name")?.getFilterValue() as string) ?? ""
-                }
-                onChange={(event) =>
-                  table.getColumn("name")?.setFilterValue(event.target.value)
-                }
-                className="pl-10"
-              />
-            </div>
+            <Select
+              value={selectedYear.toString()}
+              onValueChange={(value) => setSelectedYear(parseInt(value))}
+            >
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Wrap the Table with a container that has overflow-auto and a fixed max height */}
-          <div className="border rounded-lg overflow-auto max-h-[500px]">
+          <div className="text-2xl font-bold">
+            {newCustomersForSelectedMonth.toLocaleString()} new customers in{" "}
+            {monthNames[selectedMonth]} {selectedYear}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Filters and Search */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search customers..."
+            className="max-w-sm"
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Select
+            value={pagination.pageSize.toString()}
+            onValueChange={(value) => {
+              setPagination((prev) => ({
+                ...prev,
+                pageSize: parseInt(value),
+                pageIndex: 0,
+              }));
+            }}
+          >
+            <SelectTrigger className="w-[70px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground">per page</span>
+        </div>
+      </div>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} className="bg-gray-50">
+                      <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
                           : flexRender(
@@ -579,9 +714,18 @@ const CustomersPage = () => {
                 ))}
               </TableHeader>
               <TableBody>
-                {table.getRowModel().rows?.length ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="text-center">
+                      <Loader />
+                    </TableCell>
+                  </TableRow>
+                ) : table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-gray-50">
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
                           {flexRender(
@@ -596,79 +740,66 @@ const CustomersPage = () => {
                   <TableRow>
                     <TableCell
                       colSpan={columns.length}
-                      className="h-24 text-center text-gray-500"
+                      className="h-24 text-center"
                     >
-                      No customers found
+                      No customers found.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Rows per page:</span>
-              <Select
-                value={pagination.pageSize.toString()}
-                onValueChange={(value) => {
-                  setPagination({
-                    pageIndex: 0,
-                    pageSize: Number(value),
-                  });
-                }}
-              >
-                <SelectTrigger className="w-[70px]">
-                  <SelectValue placeholder={pagination.pageSize} />
-                </SelectTrigger>
-                <SelectContent>
-                  {[10, 20, 50, 100].map((size) => (
-                    <SelectItem key={size} value={size.toString()}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                Previous
-              </Button>
-
-              <div className="flex gap-1">
-                {pageNumbers.map((pageNumber) => (
-                  <Button
-                    key={pageNumber}
-                    variant={currentPage === pageNumber ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => table.setPageIndex(pageNumber - 1)}
-                    className={
-                      currentPage === pageNumber
-                        ? "bg-brand hover:bg-brand/90 text-white"
-                        : ""
-                    }
-                  >
-                    {pageNumber}
-                  </Button>
-                ))}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                Next
-              </Button>
-            </div>
+      {/* Pagination */}
+      <div className="flex items-center justify-between">
+        <div className="flex-1 text-sm text-muted-foreground">
+          Showing{" "}
+          <strong>
+            {paginationInfo.itemsPerPage * (paginationInfo.currentPage - 1) + 1}
+          </strong>{" "}
+          to{" "}
+          <strong>
+            {Math.min(
+              paginationInfo.itemsPerPage * paginationInfo.currentPage,
+              paginationInfo.totalItems
+            )}
+          </strong>{" "}
+          of <strong>{paginationInfo.totalItems}</strong> customers
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setPagination((prev) => ({
+                ...prev,
+                pageIndex: prev.pageIndex - 1,
+              }))
+            }
+            disabled={!paginationInfo.hasPrev || loading}
+          >
+            Previous
+          </Button>
+          <div className="flex items-center space-x-1">
+            <span className="text-sm text-muted-foreground">
+              Page {paginationInfo.currentPage} of {paginationInfo.totalPages}
+            </span>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setPagination((prev) => ({
+                ...prev,
+                pageIndex: prev.pageIndex + 1,
+              }))
+            }
+            disabled={!paginationInfo.hasNext || loading}
+          >
+            Next
+          </Button>
         </div>
       </div>
     </div>

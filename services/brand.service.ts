@@ -49,7 +49,101 @@ export class BrandService {
     }
   }
 
-  static async getAllBrands(): Promise<BrandResponse> {
+  static async getAllBrands(
+    params: PaginationParams = {}
+  ): Promise<PaginatedResponse<TransformedBrand>> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        sortBy = "name",
+        sortOrder = "asc",
+      } = params;
+
+      // Create cache key based on all parameters
+      const cacheKey = await this.getCacheKey(
+        `paginated:${page}:${limit}:${search}:${sortBy}:${sortOrder}`
+      );
+
+      const cached = await CacheService.get<
+        PaginatedResponse<TransformedBrand>
+      >(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      // Build query for search
+      const query: any = {};
+      if (search) {
+        query.name = { $regex: search, $options: "i" };
+      }
+
+      // Build sort object
+      const sort: any = {};
+      sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+
+      // Execute queries in parallel
+      const [brands, totalCount] = await Promise.all([
+        Brand.find(query).sort(sort).skip(skip).limit(limit).lean(),
+        Brand.countDocuments(query),
+      ]);
+
+      // Transform brands with image data
+      const transformedBrands: TransformedBrand[] = await Promise.all(
+        brands.map(async (brand) => {
+          const transformedBrand = this.transformBrand(brand);
+          try {
+            const image = await getFileById(brand.imageId);
+            return {
+              ...transformedBrand,
+              image: image.buffer.toString("base64"),
+            };
+          } catch (error) {
+            console.warn(
+              `Failed to fetch image for brand ${brand._id}:`,
+              error
+            );
+            return transformedBrand;
+          }
+        })
+      );
+
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      const result: PaginatedResponse<TransformedBrand> = {
+        success: true,
+        data: transformedBrands,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems: totalCount,
+          itemsPerPage: limit,
+          hasNext,
+          hasPrev,
+        },
+      };
+
+      // Cache the result
+      await CacheService.set(cacheKey, result, this.CACHE_TTL);
+
+      return result;
+    } catch (error) {
+      console.error("Get brands error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to fetch brands",
+      };
+    }
+  }
+
+  static async getAllBrandsLegacy(): Promise<BrandResponse> {
     try {
       const cacheKey = await this.getCacheKey("all");
       const cached = await CacheService.get<TransformedBrand[]>(cacheKey);
@@ -193,10 +287,11 @@ export class BrandService {
     }
   }
 
+  // FIXED: Now invalidates ALL brand keys, not just "all"
   private static async invalidateCache(): Promise<void> {
     try {
-      const cacheKey = await this.getCacheKey("all");
-      await CacheService.delete(cacheKey);
+      const keys = await CacheService.keys("brands:*");
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
     } catch (error) {
       console.error("Cache invalidation error:", error);
     }

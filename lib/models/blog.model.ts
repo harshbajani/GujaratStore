@@ -6,7 +6,6 @@ const blogSchema = new mongoose.Schema(
     vendorId: {
       type: Schema.Types.ObjectId,
       ref: "Vendor",
-      required: true,
     },
     imageId: { type: String, required: true },
     user: { type: String, required: true },

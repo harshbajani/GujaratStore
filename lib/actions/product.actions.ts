@@ -9,8 +9,11 @@ export async function createProduct(data: IProduct) {
   return result;
 }
 
-export async function getProducts(vendorId?: string) {
-  return await ProductService.getProducts(vendorId);
+export async function getProducts(
+  params: PaginationParams = {},
+  vendorId?: string
+) {
+  return await ProductService.getProducts(params, vendorId);
 }
 
 export async function getProductById(id: string) {

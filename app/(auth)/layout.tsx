@@ -15,7 +15,7 @@ const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => {
           <CartProvider>
             <Header />
             <script src="https://accounts.google.com/gsi/client" async defer />
-            <div className="flex-1 py-14">{children}</div>
+            <div className="flex-1">{children}</div>
             <Toaster />
             <Footer />
           </CartProvider>

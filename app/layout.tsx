@@ -2,16 +2,21 @@ import type { Metadata } from "next";
 import { Playfair_Display, Poppins } from "next/font/google";
 import "./globals.css";
 
+// Optimize font loading with preload and display swap
 const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  weight: ["300", "400", "500", "600", "700"], // Reduced weights for better performance
   variable: "--font-poppins",
+  display: "swap", // Use font-display: swap for better performance
+  preload: true,
 });
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700"], // Reduced weights
   variable: "--font-playfair-display",
+  display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {

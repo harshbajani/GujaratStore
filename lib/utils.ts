@@ -163,36 +163,6 @@ export const getUserDetails = async (userId: string) => {
   }
 };
 
-export // Function to get customer orders
-const getCustomerOrders = async (userId: string) => {
-  try {
-    // In a real implementation, you would have a dedicated endpoint for this
-    const response = await fetch("/api/order", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch orders");
-    }
-
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(data.error || "Failed to fetch orders");
-    }
-
-    // Filter orders by userId
-    const allOrders = Array.isArray(data.data) ? data.data : [];
-    const customerOrders = allOrders.filter(
-      (order: IOrder) => order.userId === userId
-    );
-
-    return { success: true, data: customerOrders };
-  } catch (error) {
-    console.error("Error fetching customer orders:", error);
-    throw error;
-  }
-};
-
 // Format price in Indian Rupees
 export function formatPrice(amount: number): string {
   return new Intl.NumberFormat("en-IN", {

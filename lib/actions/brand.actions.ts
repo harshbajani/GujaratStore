@@ -2,103 +2,202 @@
 
 import { connectToDB } from "../mongodb";
 import { brandSchema } from "../validations";
-import Brand from "../models/brand.model";
-import { Types } from "mongoose";
+import { BrandService } from "@/services/brand.service";
 import { z } from "zod";
-import { getFileById } from "./files.actions";
 
 type BrandFormData = z.infer<typeof brandSchema>;
 
 export interface BrandResponse {
   success: boolean;
-  data?: IBrand[];
+  data?: TransformedBrand | TransformedBrand[];
   error?: string;
 }
 
-export async function createBrand(data: BrandFormData) {
+export async function createBrand(data: BrandFormData): Promise<BrandResponse> {
   try {
     await connectToDB();
     const validatedData = brandSchema.parse(data);
-    const brand = await Brand.create({ ...validatedData });
-    return { success: true, brand };
-  } catch (error) {
-    console.log("Brand creation failed", error);
-    throw new Error("Brand creation failed");
-  }
-}
 
-export async function getAllBrands(): Promise<BrandResponse> {
-  try {
-    await connectToDB();
-    const brands = await Brand.find({}).sort({ createdAt: -1 }).lean().exec();
+    const result = await BrandService.createBrand(validatedData);
 
-    const transformedBrands = await Promise.all(
-      brands.map(async (brand) => {
-        const image = await getFileById(brand.imageId);
-        return {
-          ...brand,
-          _id: (brand._id as Types.ObjectId).toString(),
-          name: brand.name,
-          imageId: image.buffer.toString("base64"),
-          metaTitle: brand.metaTitle,
-          metaKeywords: brand.metaKeywords,
-          metaDescription: brand.metaDescription,
-        };
-      })
-    );
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error || "Brand creation failed",
+      };
+    }
 
     return {
       success: true,
-      data: transformedBrands,
+      data: result.data!,
+    };
+  } catch (error) {
+    console.error("Brand creation failed", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Brand creation failed",
+    };
+  }
+}
+
+export async function getAllBrands(
+  params: PaginationParams = {}
+): Promise<PaginatedResponse<TransformedBrand>> {
+  try {
+    await connectToDB();
+
+    const result = await BrandService.getAllBrands(params);
+
+    return result;
+  } catch (error) {
+    console.error("Error fetching brands", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error fetching brands",
+    };
+  }
+}
+
+export async function getAllBrandsLegacy(): Promise<BrandResponse> {
+  try {
+    await connectToDB();
+
+    const result = await BrandService.getAllBrandsLegacy();
+
+    return {
+      ...result,
+      data: result.data === null ? undefined : result.data,
     };
   } catch (error) {
     console.error("Error fetching brands", error);
     return {
       success: false,
-      error: "Error fetching brands",
+      error: error instanceof Error ? error.message : "Error fetching brands",
       data: [],
     };
   }
 }
 
-export async function getBrandById(id: string): Promise<IBrand | null> {
+export async function getBrandById(id: string): Promise<BrandResponse> {
   try {
     await connectToDB();
 
-    if (!Types.ObjectId.isValid(id)) {
-      return null;
+    if (!id || typeof id !== "string") {
+      return {
+        success: false,
+        error: "Invalid brand ID",
+      };
     }
 
-    const brand = (await Brand.findById(id)) as IBrand | null;
+    const result = await BrandService.getBrandById(id);
 
-    if (!brand) {
-      return null;
-    }
-    const image = await getFileById(brand.imageId);
-    const transformedBrand = {
-      name: brand.name,
-      imageId: image.buffer.toString("base64"),
-      metaTitle: brand.metaTitle,
-      metaKeywords: brand.metaKeywords,
-      metaDescription: brand.metaDescription,
+    return {
+      ...result,
+      data: result.data === null ? undefined : result.data,
     };
-    return transformedBrand;
   } catch (error) {
-    console.log("Error fetching brand by id", error);
-    throw new Error("Error fetching brand by id");
+    console.error("Error fetching brand by id", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Error fetching brand by id",
+    };
   }
 }
 
-export async function deleteBrand(id: string) {
+export async function updateBrand(
+  id: string,
+  data: Partial<BrandFormData>
+): Promise<BrandResponse> {
   try {
     await connectToDB();
-    const deletedBrand = await Brand.findByIdAndDelete(id).lean();
-    if (!deletedBrand) {
-      throw new Error("Brand not found");
+
+    if (!id || typeof id !== "string") {
+      return {
+        success: false,
+        error: "Invalid brand ID",
+      };
     }
-    return deleteBrand;
+
+    // Validate the data if it contains fields that need validation
+    if (Object.keys(data).length > 0) {
+      const partialSchema = brandSchema.partial();
+      const validatedData = partialSchema.parse(data);
+
+      const result = await BrandService.updateBrand(id, validatedData);
+
+      return {
+        ...result,
+        data: result.data === null ? undefined : result.data,
+      };
+    }
+
+    return {
+      success: false,
+      error: "No data provided for update",
+    };
   } catch (error) {
-    console.log("Error deleting brand", error);
-    throw new Error("Error deleting brand");
+    console.error("Error updating brand", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error updating brand",
+    };
   }
+}
+
+export async function deleteBrand(id: string): Promise<BrandResponse> {
+  try {
+    await connectToDB();
+
+    if (!id || typeof id !== "string") {
+      return {
+        success: false,
+        error: "Invalid brand ID",
+      };
+    }
+
+    const result = await BrandService.deleteBrand(id);
+
+    return {
+      ...result,
+      data: result.data === null ? undefined : result.data,
+    };
+  } catch (error) {
+    console.error("Error deleting brand", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error deleting brand",
+    };
+  }
+}
+
+// Additional helper functions for pagination
+export async function getBrandsWithPagination(
+  page: number = 1,
+  limit: number = 10,
+  search: string = "",
+  sortBy: string = "name",
+  sortOrder: "asc" | "desc" = "asc"
+): Promise<PaginatedResponse<TransformedBrand>> {
+  return getAllBrands({
+    page,
+    limit,
+    search,
+    sortBy,
+    sortOrder,
+  });
+}
+
+export async function searchBrands(
+  searchTerm: string,
+  page: number = 1,
+  limit: number = 10
+): Promise<PaginatedResponse<TransformedBrand>> {
+  return getAllBrands({
+    page,
+    limit,
+    search: searchTerm,
+    sortBy: "name",
+    sortOrder: "asc",
+  });
 }

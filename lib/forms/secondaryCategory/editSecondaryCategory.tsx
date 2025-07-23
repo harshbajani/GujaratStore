@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { secondaryCategorySchema } from "@/lib/validations";
-import { getAllAttributes } from "@/lib/actions/attribute.actions";
+import { getAllAttributesLegacy } from "@/lib/actions/attribute.actions";
 import { toast } from "@/hooks/use-toast";
 import { getAllParentCategory } from "@/lib/actions/parentCategory.actions";
 import {
@@ -81,7 +81,7 @@ const EditSecondaryCategoryForm = () => {
         ] = await Promise.all([
           getAllParentCategory(),
           getAllPrimaryCategories(),
-          getAllAttributes(),
+          getAllAttributesLegacy(),
           getSecondaryCategoryById(id as string),
         ]);
 
@@ -92,7 +92,9 @@ const EditSecondaryCategoryForm = () => {
 
         // Handle primary categories
         if (primaryCategoryResponse.success && primaryCategoryResponse.data) {
-          setPrimaryCategories(primaryCategoryResponse.data as IPrimaryCategory[]);
+          setPrimaryCategories(
+            primaryCategoryResponse.data as IPrimaryCategory[]
+          );
         }
 
         // Handle attributes
@@ -102,19 +104,22 @@ const EditSecondaryCategoryForm = () => {
 
         // Handle category data
         if (categoryResponse.success && categoryResponse.data) {
-          const category = categoryResponse.data as SecondaryCategoryWithPopulatedFields;
-          
+          const category =
+            categoryResponse.data as SecondaryCategoryWithPopulatedFields;
+
           // Convert populated fields to IDs
-          const parentCategoryId = typeof category.parentCategory === 'string' 
-            ? category.parentCategory 
-            : category.parentCategory._id;
+          const parentCategoryId =
+            typeof category.parentCategory === "string"
+              ? category.parentCategory
+              : category.parentCategory._id;
 
-          const primaryCategoryId = typeof category.primaryCategory === 'string'
-            ? category.primaryCategory
-            : category.primaryCategory._id;
+          const primaryCategoryId =
+            typeof category.primaryCategory === "string"
+              ? category.primaryCategory
+              : category.primaryCategory._id;
 
-          const attributeIds = category.attributes.map(attr => 
-            typeof attr === 'string' ? attr : attr._id
+          const attributeIds = category.attributes.map((attr) =>
+            typeof attr === "string" ? attr : attr._id
           );
 
           form.reset({
@@ -145,11 +150,11 @@ const EditSecondaryCategoryForm = () => {
     try {
       const result = await updateSecondaryCategoryById(id as string, {
         ...data,
-        attributes: data.attributes
+        attributes: data.attributes,
       });
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to update category');
+        throw new Error(result.error || "Failed to update category");
       }
 
       toast({
@@ -161,7 +166,10 @@ const EditSecondaryCategoryForm = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update secondary category",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to update secondary category",
         variant: "destructive",
       });
     }
