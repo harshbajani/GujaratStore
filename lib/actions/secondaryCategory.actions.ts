@@ -10,6 +10,13 @@ export type SecondaryCategoryResponse = {
   error?: string;
 };
 
+export type PaginatedSecondaryCategoryResponse = {
+  success: boolean;
+  data?: SecondaryCategoryWithPopulatedFields[];
+  pagination?: PaginationInfo;
+  error?: string;
+};
+
 export async function createSecondaryCategory(
   data: ISecondaryCategory
 ): Promise<SecondaryCategoryResponse> {
@@ -37,6 +44,7 @@ export async function createSecondaryCategory(
   }
 }
 
+// Keep the original method for backward compatibility
 export async function getAllSecondaryCategories(): Promise<SecondaryCategoryResponse> {
   try {
     const result = await SecondaryCategoryService.getAllSecondaryCategories();
@@ -47,6 +55,31 @@ export async function getAllSecondaryCategories(): Promise<SecondaryCategoryResp
     };
   } catch (error) {
     console.error("Get secondary categories error:", error);
+    return {
+      success: false,
+      error: "Failed to fetch secondary categories",
+    };
+  }
+}
+
+// New paginated method
+export async function getSecondaryCategoriesPaginated(
+  params: PaginationParams & {
+    parentCategoryId?: string;
+    primaryCategoryId?: string;
+  } = {}
+): Promise<PaginatedSecondaryCategoryResponse> {
+  try {
+    const result =
+      await SecondaryCategoryService.getSecondaryCategoriesPaginated(params);
+    return {
+      success: result.success,
+      data: result.data,
+      pagination: result.pagination,
+      error: result.error,
+    };
+  } catch (error) {
+    console.error("Get paginated secondary categories error:", error);
     return {
       success: false,
       error: "Failed to fetch secondary categories",

@@ -12,6 +12,7 @@ export class SecondaryCategoryService {
   private static async getCacheKey(key: string): Promise<string> {
     return `secondary_categories:${key}`;
   }
+
   static async createSecondaryCategory(
     data: Omit<ISecondaryCategory, "id">
   ): Promise<ActionResponse<ISecondaryCategory>> {
@@ -58,13 +59,22 @@ export class SecondaryCategoryService {
     }
   }
 
-  static async getAllSecondaryCategories(): Promise<ActionResponse<SecondaryCategoryWithPopulatedFields[]>> {
+  // Keep the original method for backward compatibility
+  static async getAllSecondaryCategories(): Promise<
+    ActionResponse<SecondaryCategoryWithPopulatedFields[]>
+  > {
     try {
       const cacheKey = await this.getCacheKey("all");
-      const cached = await CacheService.get<SecondaryCategoryWithPopulatedFields[]>(cacheKey);
+      const cached = await CacheService.get<
+        SecondaryCategoryWithPopulatedFields[]
+      >(cacheKey);
 
       if (cached) {
-        return { success: true, data: cached, message: "Secondary categories retrieved from cache" };
+        return {
+          success: true,
+          data: cached,
+          message: "Secondary categories retrieved from cache",
+        };
       }
 
       await connectToDB();
@@ -76,7 +86,9 @@ export class SecondaryCategoryService {
         .sort({ name: 1 })
         .lean();
 
-      const serializedCategories = categories.map(this.transformSecondaryCategory);
+      const serializedCategories = categories.map(
+        this.transformSecondaryCategory
+      );
       await CacheService.set(cacheKey, serializedCategories, this.CACHE_TTL);
 
       return {
@@ -89,6 +101,169 @@ export class SecondaryCategoryService {
       return {
         success: false,
         message:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch secondary categories",
+      };
+    }
+  }
+
+  // New method with server-side pagination, filtering, and sorting
+  static async getSecondaryCategoriesPaginated(
+    params: PaginationParams & {
+      parentCategoryId?: string;
+      primaryCategoryId?: string;
+    } = {}
+  ): Promise<PaginatedResponse<SecondaryCategoryWithPopulatedFields>> {
+    try {
+      await connectToDB();
+
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        sortBy = "name",
+        sortOrder = "asc",
+        parentCategoryId,
+        primaryCategoryId,
+      } = params;
+
+      // Generate cache key based on parameters
+      const cacheKey = await this.getCacheKey(
+        `paginated:${parentCategoryId || "all"}:${
+          primaryCategoryId || "all"
+        }:${page}:${limit}:${search}:${sortBy}:${sortOrder}`
+      );
+
+      // Check cache first
+      const cached = await CacheService.get<
+        PaginatedResponse<SecondaryCategoryWithPopulatedFields>
+      >(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      // Build search query
+      const searchQuery: any = {};
+      if (parentCategoryId) {
+        searchQuery.parentCategory = parentCategoryId;
+      }
+      if (primaryCategoryId) {
+        searchQuery.primaryCategory = primaryCategoryId;
+      }
+
+      // Build sort object
+      const sortObj: any = {};
+      if (sortBy === "parentCategory.name") {
+        sortObj["parentCategory.name"] = sortOrder === "desc" ? -1 : 1;
+      } else if (sortBy === "primaryCategory.name") {
+        sortObj["primaryCategory.name"] = sortOrder === "desc" ? -1 : 1;
+      } else {
+        sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
+      }
+
+      const skip = (page - 1) * limit;
+      const pipeline = [
+        { $match: searchQuery },
+        {
+          $lookup: {
+            from: "parentcategories",
+            localField: "parentCategory",
+            foreignField: "_id",
+            as: "parentCategory",
+          },
+        },
+        { $unwind: "$parentCategory" },
+        {
+          $lookup: {
+            from: "primarycategories",
+            localField: "primaryCategory",
+            foreignField: "_id",
+            as: "primaryCategory",
+          },
+        },
+        { $unwind: "$primaryCategory" },
+        {
+          $lookup: {
+            from: "attributes",
+            localField: "attributes",
+            foreignField: "_id",
+            as: "attributes",
+          },
+        },
+        // Apply search filter after population
+        ...(search && search.trim()
+          ? [
+              {
+                $match: {
+                  $or: [
+                    { name: { $regex: search.trim(), $options: "i" } },
+                    { description: { $regex: search.trim(), $options: "i" } },
+                    {
+                      "parentCategory.name": {
+                        $regex: search.trim(),
+                        $options: "i",
+                      },
+                    },
+                    {
+                      "primaryCategory.name": {
+                        $regex: search.trim(),
+                        $options: "i",
+                      },
+                    },
+                    {
+                      "attributes.name": {
+                        $regex: search.trim(),
+                        $options: "i",
+                      },
+                    },
+                  ],
+                },
+              },
+            ]
+          : []),
+        { $sort: sortObj },
+        {
+          $facet: {
+            data: [{ $skip: skip }, { $limit: limit }],
+            count: [{ $count: "total" }],
+          },
+        },
+      ];
+
+      const [result] = await SecondaryCategory.aggregate(pipeline);
+      const categories = result.data || [];
+      const totalCount = result.count[0]?.total || 0;
+
+      const transformedCategories = categories.map(
+        this.transformSecondaryCategory
+      );
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      const response: PaginatedResponse<SecondaryCategoryWithPopulatedFields> =
+        {
+          success: true,
+          data: transformedCategories,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalItems: totalCount,
+            itemsPerPage: limit,
+            hasNext,
+            hasPrev,
+          },
+        };
+
+      // Set cache
+      await CacheService.set(cacheKey, response, this.CACHE_TTL);
+      return response;
+    } catch (error) {
+      console.error("Get paginated secondary categories error:", error);
+      return {
+        success: false,
+        error:
           error instanceof Error
             ? error.message
             : "Failed to fetch secondary categories",
@@ -234,7 +409,9 @@ export class SecondaryCategoryService {
     ]);
   }
 
-  private static transformSecondaryCategory(category: any): SecondaryCategoryWithPopulatedFields {
+  private static transformSecondaryCategory(
+    category: any
+  ): SecondaryCategoryWithPopulatedFields {
     return {
       id: category._id.toString(),
       _id: category._id.toString(),
@@ -261,8 +438,8 @@ export class SecondaryCategoryService {
 
   private static async invalidateCache(): Promise<void> {
     try {
-      const cacheKey = await this.getCacheKey("all");
-      await CacheService.delete(cacheKey);
+      const keys = await CacheService.keys("secondary_categories:*");
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
     } catch (error) {
       console.error("Cache invalidation error:", error);
     }
