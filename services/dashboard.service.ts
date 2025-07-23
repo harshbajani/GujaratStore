@@ -38,7 +38,11 @@ export class DashboardService {
 
     const monthlyRevenue = await this.calculateMonthlyRevenue(orders);
     const yearlyRevenue = await this.calculateYearlyRevenue(vendorId);
-    const revenueChangePercent = this.calculateRevenueChange(monthlyRevenue);
+    const revenueChangePercent = await this.calculateRevenueChange(
+      vendorId,
+      month,
+      year
+    );
     const topSellingProducts = await this.calculateTopSellingProducts(query);
 
     const summary = {
@@ -213,22 +217,61 @@ export class DashboardService {
     );
   }
 
-  private calculateRevenueChange(monthlyRevenue: {
-    [month: string]: number;
-  }): number {
-    const currentDate = new Date();
-    const currentMonth = currentDate.toLocaleString("default", {
-      month: "short",
+  // Change signature to accept month/year
+  private async calculateRevenueChange(
+    vendorId: string,
+    month?: number,
+    year?: number
+  ): Promise<number> {
+    const vendorObjectId = new Types.ObjectId(vendorId);
+
+    // Use provided month/year or default to current
+    let selectedYear, selectedMonth;
+    if (month !== undefined && year !== undefined) {
+      selectedYear = year;
+      selectedMonth = month;
+    } else {
+      const currentDate = new Date();
+      selectedYear = currentDate.getFullYear();
+      selectedMonth = currentDate.getMonth();
+    }
+
+    // Get previous month and year
+    const previousMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+    const previousYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+
+    // Calculate selected month revenue
+    const selectedMonthStartDate = new Date(selectedYear, selectedMonth, 1);
+    const selectedMonthEndDate = new Date(selectedYear, selectedMonth + 1, 0);
+
+    const selectedMonthOrders = await Order.find({
+      createdAt: { $gte: selectedMonthStartDate, $lte: selectedMonthEndDate },
+      "items.vendorId": vendorObjectId,
     });
-    const lastMonth = new Date(
-      currentDate.setMonth(currentDate.getMonth() - 1)
-    ).toLocaleString("default", { month: "short" });
+    const selectedMonthRevenue = selectedMonthOrders.reduce(
+      (sum, order) => sum + order.total,
+      0
+    );
 
-    const currentRevenue = monthlyRevenue[currentMonth] || 0;
-    const lastRevenue = monthlyRevenue[lastMonth] || 0;
+    // Calculate previous month revenue
+    const previousMonthStartDate = new Date(previousYear, previousMonth, 1);
+    const previousMonthEndDate = new Date(previousYear, previousMonth + 1, 0);
 
-    return lastRevenue !== 0
-      ? ((currentRevenue - lastRevenue) / lastRevenue) * 100
+    const previousMonthOrders = await Order.find({
+      createdAt: { $gte: previousMonthStartDate, $lte: previousMonthEndDate },
+      "items.vendorId": vendorObjectId,
+    });
+    const previousMonthRevenue = previousMonthOrders.reduce(
+      (sum, order) => sum + order.total,
+      0
+    );
+
+    // Calculate percentage change
+    return previousMonthRevenue !== 0
+      ? ((selectedMonthRevenue - previousMonthRevenue) / previousMonthRevenue) *
+          100
+      : selectedMonthRevenue > 0
+      ? 100
       : 0;
   }
 

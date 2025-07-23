@@ -103,21 +103,52 @@ async function calculateSalesSummary(
     monthlyRevenue[month] = (monthlyRevenue[month] || 0) + order.total;
   });
 
-  const currentDate = new Date();
-  const currentMonthStr = currentDate.toLocaleString("default", {
-    month: "short",
-  });
-  const lastMonthDate = new Date(currentDate);
-  lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
-  const lastMonthStr = lastMonthDate.toLocaleString("default", {
-    month: "short",
-  });
+  // Use provided month/year or default to current
+  let selectedYear, selectedMonth;
+  if (month !== undefined && year !== undefined) {
+    selectedYear = year;
+    selectedMonth = month;
+  } else {
+    const currentDate = new Date();
+    selectedYear = currentDate.getFullYear();
+    selectedMonth = currentDate.getMonth();
+  }
 
-  const currentRevenue = monthlyRevenue[currentMonthStr] || 0;
-  const lastRevenue = monthlyRevenue[lastMonthStr] || 0;
+  // Get previous month and year
+  const previousMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+  const previousYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+
+  // Calculate selected month revenue
+  const selectedMonthStartDate = new Date(selectedYear, selectedMonth, 1);
+  const selectedMonthEndDate = new Date(selectedYear, selectedMonth + 1, 0);
+
+  const selectedMonthOrders = await Order.find({
+    createdAt: { $gte: selectedMonthStartDate, $lte: selectedMonthEndDate },
+  });
+  const selectedMonthRevenue = selectedMonthOrders.reduce(
+    (sum, order) => sum + order.total,
+    0
+  );
+
+  // Calculate previous month revenue
+  const previousMonthStartDate = new Date(previousYear, previousMonth, 1);
+  const previousMonthEndDate = new Date(previousYear, previousMonth + 1, 0);
+
+  const previousMonthOrders = await Order.find({
+    createdAt: { $gte: previousMonthStartDate, $lte: previousMonthEndDate },
+  });
+  const previousMonthRevenue = previousMonthOrders.reduce(
+    (sum, order) => sum + order.total,
+    0
+  );
+
+  // Calculate percentage change
   const revenueChangePercent =
-    lastRevenue !== 0
-      ? ((currentRevenue - lastRevenue) / lastRevenue) * 100
+    previousMonthRevenue !== 0
+      ? ((selectedMonthRevenue - previousMonthRevenue) / previousMonthRevenue) *
+        100
+      : selectedMonthRevenue > 0
+      ? 100
       : 0;
 
   // Yearly revenue calculation
