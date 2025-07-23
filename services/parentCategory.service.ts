@@ -1,8 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { connectToDB } from "@/lib/mongodb";
 import ParentCategory from "@/lib/models/parentCategory.model";
+import { CacheService } from "./cache.service";
 
 export class ParentCategoryService {
+  private static CACHE_TTL = 300; // 5 minutes
+
+  private static async getCacheKey(key: string): Promise<string> {
+    return `parent_categories:${key}`;
+  }
+
   static async createParentCategory(
     data: Pick<IParentCategory, "name" | "isActive">
   ): Promise<ActionResponse<IParentCategory>> {
@@ -21,6 +28,7 @@ export class ParentCategoryService {
       }
 
       const category = await ParentCategory.create(data);
+      await this.invalidateCache();
       return {
         success: true,
         message: "Parent category created successfully",
@@ -38,23 +46,124 @@ export class ParentCategoryService {
     }
   }
 
+  // Keep the original method for backward compatibility
   static async getAllParentCategories(): Promise<
     ActionResponse<IParentCategory[]>
   > {
     try {
+      const cacheKey = await this.getCacheKey("all");
+      const cached = await CacheService.get<IParentCategory[]>(cacheKey);
+
+      if (cached) {
+        return {
+          success: true,
+          data: cached,
+          message: "Parent categories retrieved from cache",
+        };
+      }
+
       await connectToDB();
       const categories = await ParentCategory.find().sort({ name: 1 }).lean();
+
+      const serializedCategories = categories.map(this.transformParentCategory);
+      await CacheService.set(cacheKey, serializedCategories, this.CACHE_TTL);
 
       return {
         success: true,
         message: "Parent categories retrieved successfully",
-        data: categories.map(this.transformParentCategory),
+        data: serializedCategories,
       };
     } catch (error) {
       console.error("Get parent categories error:", error);
       return {
         success: false,
         message:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch parent categories",
+      };
+    }
+  }
+
+  // New method with server-side pagination, filtering, and sorting
+  static async getParentCategoriesPaginated(
+    params: PaginationParams = {}
+  ): Promise<PaginatedResponse<IParentCategory>> {
+    try {
+      await connectToDB();
+
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        sortBy = "name",
+        sortOrder = "asc",
+      } = params;
+
+      const cacheKey = await this.getCacheKey(
+        `paginated:${page}:${limit}:${search}:${sortBy}:${sortOrder}`
+      );
+
+      const cached = await CacheService.get<PaginatedResponse<IParentCategory>>(
+        cacheKey
+      );
+      if (cached) {
+        return cached;
+      }
+
+      const searchQuery: any = {};
+      if (search && search.trim()) {
+        searchQuery.$or = [{ name: { $regex: search.trim(), $options: "i" } }];
+      }
+
+      const sortObj: any = {};
+      if (sortBy) {
+        sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
+      } else {
+        sortObj.name = 1;
+      }
+
+      const skip = (page - 1) * limit;
+
+      const [categories, totalCount] = await Promise.all([
+        ParentCategory.find(searchQuery)
+          .sort(sortObj)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        ParentCategory.countDocuments(searchQuery),
+      ]);
+
+      const transformedCategories = categories.map(
+        this.transformParentCategory
+      );
+
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      const pagination: PaginationInfo = {
+        currentPage: page,
+        totalPages,
+        totalItems: totalCount,
+        itemsPerPage: limit,
+        hasNext,
+        hasPrev,
+      };
+
+      const response: PaginatedResponse<IParentCategory> = {
+        success: true,
+        data: transformedCategories,
+        pagination,
+      };
+
+      await CacheService.set(cacheKey, response, this.CACHE_TTL);
+      return response;
+    } catch (error) {
+      console.error("Get paginated parent categories error:", error);
+      return {
+        success: false,
+        error:
           error instanceof Error
             ? error.message
             : "Failed to fetch parent categories",
@@ -127,6 +236,7 @@ export class ParentCategoryService {
         };
       }
 
+      await this.invalidateCache();
       return {
         success: true,
         message: "Parent category updated successfully",
@@ -156,6 +266,7 @@ export class ParentCategoryService {
         };
       }
 
+      await this.invalidateCache();
       return {
         success: true,
         message: "Parent category deleted successfully",
@@ -179,5 +290,14 @@ export class ParentCategoryService {
       name: category.name,
       isActive: category.isActive,
     };
+  }
+
+  private static async invalidateCache(): Promise<void> {
+    try {
+      const keys = await CacheService.keys("parent_categories:*");
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
+    } catch (error) {
+      console.error("Cache invalidation error:", error);
+    }
   }
 }

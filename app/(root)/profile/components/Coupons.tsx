@@ -34,7 +34,7 @@ const Coupons = () => {
     const fetchDiscounts = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/discounts?public=true");
+        const response = await fetch("/api/admin/discounts?public=true");
         const data = await response.json();
 
         if (data.success) {
@@ -42,7 +42,7 @@ const Coupons = () => {
             data.data.filter((discount: IDiscount) => discount.isActive)
           );
         } else {
-          setError(data.error || "Failed to fetch discounts");
+          setError(data.message || "Failed to fetch discounts");
         }
       } catch (err) {
         setError("An error occurred while fetching discounts");

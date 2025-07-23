@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { connectToDB } from "@/lib/mongodb";
@@ -31,7 +32,96 @@ export async function createBlog(formData: FormData) {
   }
 }
 
-export async function getAllBlogs() {
+export async function getAllBlogs(
+  params: PaginationParams = {}
+): Promise<PaginatedResponse<TransformedBlog>> {
+  try {
+    await connectToDB();
+
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = params;
+
+    // Build query
+    const query: any = {};
+
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { heading: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { category: { $regex: search, $options: "i" } },
+        { user: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Build sort object
+    const sortObject: any = {};
+    sortObject[sortBy] = sortOrder === "asc" ? 1 : -1;
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination info
+    const totalItems = await Blog.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limit);
+
+    // Fetch paginated data
+    const blogs = await Blog.find(query)
+      .sort(sortObject)
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .exec();
+
+    const transformedBlogs = await Promise.all(
+      blogs.map(async (blog) => {
+        const image = await getFileById(blog.imageId);
+        return {
+          id: (blog._id as Types.ObjectId).toString(),
+          vendorId: blog.vendorId,
+          heading: blog.heading,
+          user: blog.user,
+          date: blog.date,
+          description: blog.description,
+          category: blog.category,
+          imageId: image.buffer.toString("base64"),
+          metaTitle: blog.metaTitle,
+          metaDescription: blog.metaDescription,
+          metaKeywords: blog.metaKeywords,
+        };
+      })
+    );
+
+    // Build pagination info
+    const pagination: PaginationInfo = {
+      currentPage: page,
+      totalPages,
+      totalItems,
+      itemsPerPage: limit,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    };
+
+    return {
+      success: true,
+      data: transformedBlogs,
+      pagination,
+    };
+  } catch (error) {
+    console.error("Error fetching blogs:", error);
+    return {
+      success: false,
+      error: "Failed to fetch blogs",
+    };
+  }
+}
+
+export async function getAllBlogsLegacy() {
   try {
     await connectToDB();
 

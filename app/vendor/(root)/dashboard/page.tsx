@@ -51,7 +51,7 @@ const DashboardCard: React.FC<IDashboardCardProps> = ({
           }`}
         >
           {trendDirection === "up" ? "+" : "-"}
-          {trend}% from last month
+          {trend.toFixed(2)}% from last month
         </p>
       )}
     </CardContent>
@@ -98,31 +98,32 @@ const DashboardPage: React.FC = () => {
 
   if (loading) return <Loader />;
 
-  const monthlyRevenueData = salesSummary
-    ? Object.entries(salesSummary.monthlyRevenue)
-        .map(([month, revenue]) => ({
-          month,
-          revenue,
-        }))
-        // Sort months in chronological order
-        .sort((a, b) => {
-          const months = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-          ];
-          return months.indexOf(a.month) - months.indexOf(b.month);
-        })
-    : [];
+  const monthlyRevenueData =
+    salesSummary && salesSummary.monthlyRevenue
+      ? Object.entries(salesSummary.monthlyRevenue)
+          .map(([month, revenue]) => ({
+            month,
+            revenue,
+          }))
+          // Sort months in chronological order
+          .sort((a, b) => {
+            const months = [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "May",
+              "Jun",
+              "Jul",
+              "Aug",
+              "Sep",
+              "Oct",
+              "Nov",
+              "Dec",
+            ];
+            return months.indexOf(a.month) - months.indexOf(b.month);
+          })
+      : [];
 
   const yearlyRevenueData = salesSummary
     ? Object.entries(salesSummary.yearlyRevenue)
@@ -217,7 +218,7 @@ const DashboardPage: React.FC = () => {
           title="Total Revenue"
           value={`₹${salesSummary?.totalRevenue.toFixed(2) || "0.00"}`}
           icon={<Wallet className="h-4 w-4 text-muted-foreground" />}
-          trend={salesSummary?.revenueChangePercent}
+          trend={Math.abs(salesSummary?.revenueChangePercent || 0)}
           trendDirection={
             salesSummary && salesSummary.revenueChangePercent >= 0
               ? "up"

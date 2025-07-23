@@ -1,68 +1,58 @@
-import Discount from "@/lib/models/discount.model";
-import { connectToDB } from "@/lib/mongodb";
+// app/api/admin/discounts/route.ts (Admin API)
+import { DiscountService } from "@/services/discount.service";
 import { NextRequest, NextResponse } from "next/server";
-
-const populateConfig = [
-  { path: "parentCategory", select: "name isActive" },
-  { path: "createdBy", select: "name email" },
-];
 
 export async function GET(request: NextRequest) {
   try {
-    await connectToDB();
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get("id");
     const categoryId = searchParams.get("categoryId");
 
     // Get discount by ID
     if (id) {
-      const discount = await Discount.findById(id)
-        .populate(populateConfig)
-        .lean()
-        .exec();
-
-      if (!discount) {
-        return NextResponse.json(
-          { success: false, error: "Discount not found" },
-          { status: 404 }
-        );
-      }
-
-      return NextResponse.json({ success: true, data: discount });
+      const result = await DiscountService.getDiscountById(id, true);
+      return NextResponse.json(result);
     }
 
     // Get discounts by category ID
     if (categoryId) {
-      const now = new Date();
-      const discounts = await Discount.find({
-        parentCategory: categoryId,
-        isActive: true,
-        startDate: { $lte: now },
-        endDate: { $gt: now },
-      })
-        .populate(populateConfig)
-        .sort({ discountValue: -1 })
-        .lean()
-        .exec();
-
-      return NextResponse.json({ success: true, data: discounts });
+      const result = await DiscountService.getCategoryDiscounts(categoryId);
+      return NextResponse.json(result);
     }
 
-    // Get all discounts
-    const discounts = await Discount.find()
-      .populate(populateConfig)
-      .sort({ createdAt: -1 })
-      .lean()
-      .exec();
+    // Extract pagination parameters
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const search = searchParams.get("search") || "";
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = (searchParams.get("sortOrder") || "desc") as
+      | "asc"
+      | "desc";
 
-    return NextResponse.json({
-      success: true,
-      data: discounts,
-    });
-  } catch (error: unknown) {
-    console.error("Error in GET discounts:", error);
+    // Additional filters
+    const isActive = searchParams.get("isActive");
+    const discountType = searchParams.get("discountType");
+    const vendorId = searchParams.get("vendorId");
+
+    const paginationParams: PaginationParams = {
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder,
+      // Add filters to params if needed
+      ...(isActive !== null && { isActive: isActive === "true" }),
+      ...(discountType && { discountType }),
+      ...(vendorId && { vendorId }),
+    };
+
+    // Get all discounts with pagination (admin view)
+    const result = await DiscountService.getAllDiscounts(paginationParams);
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Error in GET admin discounts:", error);
     return NextResponse.json(
-      { success: false, error: (error as Error).message },
+      { success: false, message: "Internal server error" },
       { status: 500 }
     );
   }
@@ -70,97 +60,57 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: Request) {
   try {
-    await connectToDB();
     const body = await request.json();
-
-    const newDiscount = new Discount(body);
-    await newDiscount.save();
-
-    const populatedDiscount = await Discount.findById(newDiscount._id)
-      .populate(populateConfig)
-      .lean()
-      .exec();
-
+    const result = await DiscountService.createDiscount(body, true);
+    return NextResponse.json(result, { status: result.success ? 201 : 400 });
+  } catch (error) {
+    console.error("Error in POST admin discounts:", error);
     return NextResponse.json(
-      { success: true, data: populatedDiscount },
-      { status: 201 }
-    );
-  } catch (error: unknown) {
-    return NextResponse.json(
-      { success: false, error: (error as Error).message },
-      { status: 400 }
+      { success: false, message: "Internal server error" },
+      { status: 500 }
     );
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    await connectToDB();
     const body = await request.json();
 
     if (!body._id) {
       return NextResponse.json(
-        { success: false, error: "Discount ID is required" },
+        { success: false, message: "Discount ID is required" },
         { status: 400 }
       );
     }
 
-    const updatedDiscount = await Discount.findByIdAndUpdate(
-      body._id,
-      { ...body, updatedAt: new Date() },
-      { new: true }
-    )
-      .populate(populateConfig)
-      .lean()
-      .exec();
-
-    if (!updatedDiscount) {
-      return NextResponse.json(
-        { success: false, error: "Discount not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ success: true, data: updatedDiscount });
-  } catch (error: unknown) {
-    console.error("Error in PUT discounts:", error);
+    const result = await DiscountService.updateDiscount(body._id, body, true);
+    return NextResponse.json(result, { status: result.success ? 200 : 400 });
+  } catch (error) {
+    console.error("Error in PUT admin discounts:", error);
     return NextResponse.json(
-      { success: false, error: (error as Error).message },
-      { status: 400 }
+      { success: false, message: "Internal server error" },
+      { status: 500 }
     );
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    await connectToDB();
-    const searchParams = request.nextUrl.searchParams;
-    const id = searchParams.get("id");
+    const id = request.nextUrl.searchParams.get("id");
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: "Discount ID is required" },
+        { success: false, message: "Discount ID is required" },
         { status: 400 }
       );
     }
 
-    const deletedDiscount = await Discount.findByIdAndDelete(id).lean().exec();
-
-    if (!deletedDiscount) {
-      return NextResponse.json(
-        { success: false, error: "Discount not found" },
-        { status: 404 }
-      );
-    }
-
+    const result = await DiscountService.deleteDiscount(id, true);
+    return NextResponse.json(result, { status: result.success ? 200 : 400 });
+  } catch (error) {
+    console.error("Error in DELETE admin discounts:", error);
     return NextResponse.json(
-      { success: true, data: "Discount deleted successfully" },
-      { status: 200 }
-    );
-  } catch (error: unknown) {
-    console.error("Error in DELETE discounts:", error);
-    return NextResponse.json(
-      { success: false, error: (error as Error).message },
+      { success: false, message: "Internal server error" },
       { status: 500 }
     );
   }

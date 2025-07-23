@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Order from "@/lib/models/order.model";
 import Products from "@/lib/models/product.model";
 import User from "@/lib/models/user.model";
 import { connectToDB } from "@/lib/mongodb";
+import { OrdersService } from "@/services/orders.service";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -120,23 +122,69 @@ export async function GET(request: Request) {
     // Establish database connection
     await connectToDB();
 
-    // Get query parameters (for potential filtering)
+    // Get query parameters
     const { searchParams } = new URL(request.url);
+
+    // Extract pagination parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = (searchParams.get("sortOrder") || "desc") as
+      | "asc"
+      | "desc";
+
+    // Check if pagination is requested
+    const usePagination = searchParams.get("paginate") === "true";
+
+    // Extract filter parameters
     const userId = searchParams.get("userId");
     const status = searchParams.get("status");
+    const vendorId = searchParams.get("vendorId");
+    const dateFrom = searchParams.get("dateFrom");
+    const dateTo = searchParams.get("dateTo");
 
-    // Build query object
-    const query: { userId?: string; status?: string } = {};
+    if (usePagination) {
+      // Use paginated response - create a special admin service method
+      const result = await OrdersService.getAdminOrdersPaginated({
+        page,
+        limit,
+        search,
+        sortBy,
+        sortOrder,
+        userId: userId || undefined,
+        status: status || undefined,
+        vendorId: vendorId || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      });
 
-    // Apply filters if provided
-    if (userId) query.userId = userId;
-    if (status) query.status = status;
+      if (!result.success) {
+        return NextResponse.json(
+          { success: false, error: result.error },
+          { status: 400 }
+        );
+      }
 
-    // Find orders with optional filters
-    const orders = await Order.find(query).sort({ createdAt: -1 });
+      return NextResponse.json(result, { status: 200 });
+    } else {
+      // Use legacy non-paginated response
+      const query: Record<string, any> = {};
 
-    // Return the orders data
-    return NextResponse.json({ success: true, data: orders }, { status: 200 });
+      // Apply filters if provided
+      if (userId) query.userId = userId;
+      if (status) query.status = status;
+      if (vendorId) query["items.vendorId"] = vendorId;
+
+      // Find orders with optional filters
+      const orders = await Order.find(query).sort({ createdAt: -1 });
+
+      // Return the orders data
+      return NextResponse.json(
+        { success: true, data: orders },
+        { status: 200 }
+      );
+    }
   } catch (error: unknown) {
     return NextResponse.json(
       {

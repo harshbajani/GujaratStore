@@ -639,7 +639,7 @@ declare interface IReferralResponse extends Omit<IReferral, "createdBy"> {
   };
 }
 
-enum DiscountType {
+declare enum DiscountType {
   PERCENTAGE = "percentage",
   AMOUNT = "amount",
 }
@@ -648,11 +648,12 @@ declare interface IDiscount {
   id: string;
   _id: string;
   name: string;
-  vendorId: Schema.Types.ObjectId;
+  vendorId?: Schema.Types.ObjectId;
   description?: string;
   discountType: DiscountType;
   discountValue: number;
   targetType: "category";
+  parentCategoryId?: string;
   parentCategory: {
     _id: string;
     name: string;
@@ -745,3 +746,34 @@ declare interface OrderEmailData {
   vendorId?: string;
   cancellationReason?: string;
 }
+
+declare interface PaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+declare interface PaginatedResponse<T> {
+  success: boolean;
+  data?: T[];
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  error?: string;
+}
+
+declare type PaginationInfo = {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+};

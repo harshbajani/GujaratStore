@@ -47,6 +47,7 @@ export async function createParentCategory(
   }
 }
 
+// Keep the original action for backward compatibility
 export async function getAllParentCategory(): Promise<ParentCategoryResponse> {
   try {
     const result = await ParentCategoryService.getAllParentCategories();
@@ -57,6 +58,24 @@ export async function getAllParentCategory(): Promise<ParentCategoryResponse> {
     };
   } catch (error) {
     console.error("Get parent categories error:", error);
+    return {
+      success: false,
+      error: "Failed to fetch parent categories",
+    };
+  }
+}
+
+// New paginated action
+export async function getParentCategoriesPaginated(
+  params: PaginationParams = {}
+): Promise<PaginatedResponse<IParentCategory>> {
+  try {
+    const result = await ParentCategoryService.getParentCategoriesPaginated(
+      params
+    );
+    return result;
+  } catch (error) {
+    console.error("Get paginated parent categories error:", error);
     return {
       success: false,
       error: "Failed to fetch parent categories",

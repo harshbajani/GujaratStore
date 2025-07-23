@@ -150,8 +150,375 @@ export class OrdersService {
     }
   }
 
+  static async getAdminOrdersPaginated(
+    params: PaginationParams & {
+      userId?: string;
+      status?: string;
+      vendorId?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    } = {}
+  ): Promise<PaginatedResponse<IOrder>> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        sortBy = "createdAt",
+        sortOrder = "desc",
+        userId,
+        status,
+        vendorId,
+        dateFrom,
+        dateTo,
+      } = params;
+
+      // Create cache key based on all parameters
+      const cacheKey = `${
+        CACHE_KEYS.ORDER_LIST
+      }:admin:paginated:${JSON.stringify({
+        page,
+        limit,
+        search,
+        sortBy,
+        sortOrder,
+        userId,
+        status,
+        vendorId,
+        dateFrom,
+        dateTo,
+      })}`;
+
+      const cached = await CacheService.get<PaginatedResponse<IOrder>>(
+        cacheKey
+      );
+      if (cached) {
+        return cached;
+      }
+
+      // Build query object for admin (no vendor restrictions)
+      const query: any = {};
+
+      // Apply filters if provided
+      if (userId) query.userId = userId;
+      if (status) query.status = status;
+      if (vendorId) query["items.vendorId"] = vendorId;
+
+      // Add date range filter
+      if (dateFrom || dateTo) {
+        query.createdAt = {};
+        if (dateFrom) {
+          query.createdAt.$gte = new Date(dateFrom);
+        }
+        if (dateTo) {
+          query.createdAt.$lte = new Date(dateTo);
+        }
+      }
+
+      // Add search functionality
+      if (search) {
+        query.$or = [
+          { orderNumber: { $regex: search, $options: "i" } },
+          { "customerDetails.name": { $regex: search, $options: "i" } },
+          { "customerDetails.email": { $regex: search, $options: "i" } },
+          { "customerDetails.phone": { $regex: search, $options: "i" } },
+          { status: { $regex: search, $options: "i" } },
+          { "items.productName": { $regex: search, $options: "i" } },
+        ];
+      }
+
+      // Build sort object
+      const sort: any = {};
+      sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+
+      // Execute queries in parallel
+      const [orders, totalCount] = await Promise.all([
+        Order.find(query)
+          .populate("items.productId", "productName")
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean<IOrder[]>(),
+        Order.countDocuments(query),
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      const result: PaginatedResponse<IOrder> = {
+        success: true,
+        data: orders,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems: totalCount,
+          itemsPerPage: limit,
+          hasNext,
+          hasPrev,
+        },
+      };
+
+      // Cache the result
+      await CacheService.set(cacheKey, result, CACHE_TTL);
+
+      return result;
+    } catch (error) {
+      console.error("Get admin orders paginated error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to fetch orders",
+      };
+    }
+  }
+
+  static async getOrdersPaginated(
+    params: PaginationParams = {},
+    vendorId?: string,
+    userId?: string
+  ): Promise<PaginatedResponse<IOrder>> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        sortBy = "createdAt",
+        sortOrder = "desc",
+      } = params;
+
+      // Create cache key based on all parameters
+      const cacheKey = `${CACHE_KEYS.ORDER_LIST}:paginated:${
+        vendorId || userId || "all"
+      }:${page}:${limit}:${search}:${sortBy}:${sortOrder}`;
+
+      const cached = await CacheService.get<PaginatedResponse<IOrder>>(
+        cacheKey
+      );
+      if (cached) {
+        return cached;
+      }
+
+      // Build base query
+      const vendorResponse = await getCurrentVendor();
+      const query = await this.buildOrderQuery(vendorResponse, {
+        userId: undefined,
+        status: undefined,
+      });
+
+      // Add vendor filter if provided (for admin endpoints)
+      if (vendorId) {
+        query["items.vendorId"] = vendorId;
+      }
+
+      // Add search functionality
+      if (search) {
+        query.$or = [
+          { orderNumber: { $regex: search, $options: "i" } },
+          { "customerDetails.name": { $regex: search, $options: "i" } },
+          { "customerDetails.email": { $regex: search, $options: "i" } },
+          { "customerDetails.phone": { $regex: search, $options: "i" } },
+          { status: { $regex: search, $options: "i" } },
+          { "items.productName": { $regex: search, $options: "i" } },
+        ];
+      }
+
+      // Build sort object
+      const sort: any = {};
+      sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+
+      // Execute queries in parallel
+      const [orders, totalCount] = await Promise.all([
+        Order.find(query)
+          .populate("items.productId", "productName")
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean<IOrder[]>(),
+        Order.countDocuments(query),
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      const result: PaginatedResponse<IOrder> = {
+        success: true,
+        data: orders,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems: totalCount,
+          itemsPerPage: limit,
+          hasNext,
+          hasPrev,
+        },
+      };
+
+      // Cache the result
+      await CacheService.set(cacheKey, result, CACHE_TTL);
+
+      return result;
+    } catch (error) {
+      console.error("Get orders paginated error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to fetch orders",
+      };
+    }
+  }
+
+  // Enhanced method with filtering support
+  static async getOrdersPaginatedWithFilters(
+    params: PaginationParams & {
+      userId?: string;
+      status?: string;
+      vendorId?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    } = {}
+  ): Promise<PaginatedResponse<IOrder>> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        sortBy = "createdAt",
+        sortOrder = "desc",
+        userId,
+        status,
+        vendorId,
+        dateFrom,
+        dateTo,
+      } = params;
+
+      // Create cache key based on all parameters
+      const cacheKey = `${CACHE_KEYS.ORDER_LIST}:paginated:${JSON.stringify({
+        page,
+        limit,
+        search,
+        sortBy,
+        sortOrder,
+        userId,
+        status,
+        vendorId,
+        dateFrom,
+        dateTo,
+      })}`;
+
+      const cached = await CacheService.get<PaginatedResponse<IOrder>>(
+        cacheKey
+      );
+      if (cached) {
+        return cached;
+      }
+
+      let matchingUserIds = [];
+      if (search) {
+        matchingUserIds = await User.find({
+          name: { $regex: search, $options: "i" },
+        }).distinct("_id");
+      }
+
+      // Build base query
+      const vendorResponse = await getCurrentVendor();
+      const query = await this.buildOrderQuery(vendorResponse, {
+        userId,
+        status,
+      });
+      if (dateFrom || dateTo) {
+        query.createdAt = {};
+        if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+        if (dateTo) query.createdAt.$lte = new Date(dateTo);
+      }
+      if (vendorId) {
+        query["items.vendorId"] = vendorId;
+      }
+
+      // Add date range filter
+      if (dateFrom || dateTo) {
+        query.createdAt = {};
+        if (dateFrom) {
+          query.createdAt.$gte = new Date(dateFrom);
+        }
+        if (dateTo) {
+          query.createdAt.$lte = new Date(dateTo);
+        }
+      }
+
+      // Add search functionality
+      if (search) {
+        query.$or = [
+          { orderId: { $regex: search, $options: "i" } },
+          { "customerDetails.name": { $regex: search, $options: "i" } },
+          { "customerDetails.email": { $regex: search, $options: "i" } },
+          { "customerDetails.phone": { $regex: search, $options: "i" } },
+          { status: { $regex: search, $options: "i" } },
+          { "items.productName": { $regex: search, $options: "i" } },
+        ];
+        if (matchingUserIds.length) {
+          query.$or.push({ userId: { $in: matchingUserIds } });
+        }
+      }
+
+      // Build sort object
+      const sort: any = {};
+      sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+
+      // Execute queries in parallel
+      const [orders, totalCount] = await Promise.all([
+        Order.find(query)
+          .populate("items.productId", "productName")
+          .sort(sort)
+          .skip(skip)
+          .limit(limit)
+          .lean<IOrder[]>(),
+        Order.countDocuments(query),
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      const result: PaginatedResponse<IOrder> = {
+        success: true,
+        data: orders,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems: totalCount,
+          itemsPerPage: limit,
+          hasNext,
+          hasPrev,
+        },
+      };
+
+      // Cache the result
+      await CacheService.set(cacheKey, result, CACHE_TTL);
+
+      return result;
+    } catch (error) {
+      console.error("Get orders paginated with filters error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to fetch orders",
+      };
+    }
+  }
+
   // Get orders list with filtering
-  static async getOrders(params: {
+  static async getOrdersLegacy(params: {
     userId?: string;
     status?: string;
   }): Promise<ActionResponse<IOrder[]>> {

@@ -37,6 +37,7 @@ export async function createPrimaryCategory(
   }
 }
 
+// Keep the original action for backward compatibility
 export async function getAllPrimaryCategories(): Promise<PrimaryCategoryResponse> {
   try {
     const result = await PrimaryCategoryService.getAllPrimaryCategories();
@@ -47,6 +48,24 @@ export async function getAllPrimaryCategories(): Promise<PrimaryCategoryResponse
     };
   } catch (error) {
     console.error("Get primary categories error:", error);
+    return {
+      success: false,
+      error: "Failed to fetch primary categories",
+    };
+  }
+}
+
+// New paginated action
+export async function getPrimaryCategoriesPaginated(
+  params: PaginationParams & { parentCategoryId?: string } = {}
+): Promise<PaginatedResponse<IPrimaryCategory>> {
+  try {
+    const result = await PrimaryCategoryService.getPrimaryCategoriesPaginated(
+      params
+    );
+    return result;
+  } catch (error) {
+    console.error("Get paginated primary categories error:", error);
     return {
       success: false,
       error: "Failed to fetch primary categories",

@@ -47,6 +47,9 @@ export class VendorService {
         this.CACHE_TTL
       );
 
+      // Invalidate paginated cache
+      await this.invalidatePaginatedCache();
+
       return {
         success: true,
         message: "Vendor created successfully",
@@ -62,6 +65,94 @@ export class VendorService {
     }
   }
 
+  // NEW: Paginated vendors with server-side filtering and sorting
+  static async getAllVendorsPaginated(
+    params: PaginationParams = {}
+  ): Promise<PaginatedResponse<VendorResponse>> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        sortBy = "name",
+        sortOrder = "asc",
+      } = params;
+
+      // Create cache key based on all parameters
+      const cacheKey = `${this.CACHE_PREFIX}paginated:${page}:${limit}:${search}:${sortBy}:${sortOrder}`;
+
+      const cached = await CacheService.get<PaginatedResponse<VendorResponse>>(
+        cacheKey
+      );
+      if (cached) {
+        return cached;
+      }
+
+      await connectToDB();
+
+      // Build query for search
+      const query: any = {};
+      if (search) {
+        query.$or = [
+          { name: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+          { phone: { $regex: search, $options: "i" } },
+          { "store.storeName": { $regex: search, $options: "i" } },
+          { "store.contact": { $regex: search, $options: "i" } },
+        ];
+      }
+
+      // Build sort object
+      const sort: any = {};
+      if (sortBy === "storeName") {
+        sort["store.storeName"] = sortOrder === "desc" ? -1 : 1;
+      } else {
+        sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+      }
+
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+
+      // Execute queries in parallel
+      const [vendors, totalCount] = await Promise.all([
+        Vendor.find(query).sort(sort).skip(skip).limit(limit).lean(),
+        Vendor.countDocuments(query),
+      ]);
+
+      const sanitizedVendors = vendors.map(this.sanitizeVendor);
+
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      const result: PaginatedResponse<VendorResponse> = {
+        success: true,
+        data: sanitizedVendors,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems: totalCount,
+          itemsPerPage: limit,
+          hasNext,
+          hasPrev,
+        },
+      };
+
+      // Cache the result
+      await CacheService.set(cacheKey, result, this.CACHE_TTL);
+
+      return result;
+    } catch (error) {
+      console.error("Get vendors paginated error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to fetch vendors",
+      };
+    }
+  }
+
+  // LEGACY: Keep existing method for backward compatibility
   static async getAllVendors(): Promise<ActionResponse<VendorResponse[]>> {
     try {
       const cacheKey = `${this.CACHE_PREFIX}all`;
@@ -245,6 +336,9 @@ export class VendorService {
         await CacheService.delete(`${this.CACHE_PREFIX}email:${email}`);
       }
 
+      // Invalidate paginated cache
+      await this.invalidatePaginatedCache();
+
       return {
         success: true,
         message: "Vendor updated successfully",
@@ -278,6 +372,9 @@ export class VendorService {
       await CacheService.delete(`${this.CACHE_PREFIX}all`);
       await CacheService.delete(`${this.CACHE_PREFIX}email:${vendor.email}`);
 
+      // Invalidate paginated cache
+      await this.invalidatePaginatedCache();
+
       return {
         success: true,
         message: "Vendor deleted successfully",
@@ -289,6 +386,16 @@ export class VendorService {
         message:
           error instanceof Error ? error.message : "Failed to delete vendor",
       };
+    }
+  }
+
+  // Helper method to invalidate all paginated cache keys
+  private static async invalidatePaginatedCache(): Promise<void> {
+    try {
+      const keys = await CacheService.keys(`${this.CACHE_PREFIX}paginated:*`);
+      await Promise.all(keys.map((key) => CacheService.delete(key)));
+    } catch (error) {
+      console.error("Cache invalidation error:", error);
     }
   }
 }

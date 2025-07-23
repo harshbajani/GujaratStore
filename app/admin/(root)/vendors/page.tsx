@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import {
   Table,
@@ -14,12 +13,6 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getPaginationRowModel,
-  SortingState,
-  getSortedRowModel,
-  ColumnFiltersState,
-  getFilteredRowModel,
-  PaginationState,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,31 +28,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { deleteVendor } from "@/lib/actions/admin/vendor.actions";
-import { useVendors } from "@/hooks/useVendors";
-
-interface IVendor {
-  _id: string;
-  name: string;
-  email: string;
-  phone: string;
-  isVerified: boolean;
-  // Additional fields as needed
-}
+import { useVendorSearch } from "@/hooks/useVendors";
 
 const VendorPage = () => {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Use the custom hook to fetch vendor data.
-  const { data: vendors, isLoading, error, mutate } = useVendors<IVendor[]>();
-
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [pagination, setPagination] = React.useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
+  // Use the new search hook with server-side functionality
+  const {
+    vendors,
+    pagination,
+    loading,
+    error,
+    searchParams,
+    updateSearch,
+    mutate,
+  } = useVendorSearch({
+    page: 1,
+    limit: 10,
+    search: "",
+    sortBy: "name",
+    sortOrder: "asc",
   });
 
   const handleDelete = async (id: string) => {
@@ -68,7 +57,7 @@ const VendorPage = () => {
       if (!response.success) {
         throw new Error(response.message);
       }
-      // Revalidate vendor data after deletion.
+      // Revalidate vendor data after deletion
       mutate();
       toast({
         title: "Success",
@@ -86,31 +75,139 @@ const VendorPage = () => {
     }
   };
 
-  const columns: ColumnDef<IVendor>[] = [
+  // Handle search with debouncing
+  const handleSearchChange = (value: string) => {
+    updateSearch({ search: value });
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (size: number) => {
+    updateSearch({ limit: size, page: 1 });
+  };
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    updateSearch({ page });
+  };
+
+  // Handle sort
+  const handleSort = (column: string) => {
+    const newOrder =
+      searchParams.sortBy === column && searchParams.sortOrder === "asc"
+        ? "desc"
+        : "asc";
+    updateSearch({ sortBy: column, sortOrder: newOrder });
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    if (!pagination) return [];
+
+    const pages = [];
+    const maxVisible = 5;
+    const totalPages = pagination.totalPages;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const currentPage = pagination.currentPage;
+      if (currentPage <= 3) {
+        for (let i = 1; i <= maxVisible; i++) {
+          pages.push(i);
+        }
+      } else if (currentPage >= totalPages - 2) {
+        for (let i = totalPages - maxVisible + 1; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        for (let i = currentPage - 2; i <= currentPage + 2; i++) {
+          pages.push(i);
+        }
+      }
+    }
+
+    return pages;
+  };
+
+  const columns: ColumnDef<VendorResponse>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("name")}
+          className="hover:bg-gray-100 h-auto p-0"
+        >
+          Name
+          {searchParams.sortBy === "name" && (
+            <span className="ml-1">
+              {searchParams.sortOrder === "asc" ? "↑" : "↓"}
+            </span>
+          )}
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("name")}</div>
       ),
     },
     {
       accessorKey: "email",
-      header: "Email",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("email")}
+          className="hover:bg-gray-100 h-auto p-0"
+        >
+          Email
+          {searchParams.sortBy === "email" && (
+            <span className="ml-1">
+              {searchParams.sortOrder === "asc" ? "↑" : "↓"}
+            </span>
+          )}
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("email")}</div>
       ),
     },
     {
       accessorKey: "phone",
-      header: "Phone",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("phone")}
+          className="hover:bg-gray-100 h-auto p-0"
+        >
+          Phone
+          {searchParams.sortBy === "phone" && (
+            <span className="ml-1">
+              {searchParams.sortOrder === "asc" ? "↑" : "↓"}
+            </span>
+          )}
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("phone")}</div>
       ),
     },
     {
       accessorKey: "isVerified",
-      header: "Verified",
+      header: () => (
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("isVerified")}
+          className="hover:bg-gray-100 h-auto p-0"
+        >
+          Verified
+          {searchParams.sortBy === "isVerified" && (
+            <span className="ml-1">
+              {searchParams.sortOrder === "asc" ? "↑" : "↓"}
+            </span>
+          )}
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="font-medium">
           {row.getValue("isVerified") ? "Yes" : "No"}
@@ -150,29 +247,14 @@ const VendorPage = () => {
     data: vendors || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onPaginationChange: setPagination,
-    state: {
-      sorting,
-      columnFilters,
-      pagination,
-    },
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
+    pageCount: pagination?.totalPages || 0,
   });
 
-  const pageCount = table.getPageCount();
-  const currentPage = table.getState().pagination.pageIndex + 1;
-  const pageNumbers = Array.from({ length: pageCount }, (_, i) => i + 1);
-
-  if (isLoading) {
+  if (loading && vendors.length === 0) {
     return <Loader />;
-  }
-
-  if (error) {
-    return <div>Error loading vendors.</div>;
   }
 
   return (
@@ -184,22 +266,31 @@ const VendorPage = () => {
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <Input
-              placeholder="Filter by name..."
-              value={
-                (table.getColumn("name")?.getFilterValue() as string) ?? ""
-              }
-              onChange={(event) =>
-                table.getColumn("name")?.setFilterValue(event.target.value)
-              }
-              className="max-w-sm"
-            />
+            <div className="flex items-center gap-4">
+              <Input
+                placeholder="Search vendors..."
+                value={searchParams.search || ""}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="max-w-sm"
+              />
+              {loading && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand"></div>
+              )}
+            </div>
             <Link prefetch href="/admin/vendors/add">
               <Button className="bg-brand hover:bg-brand/90 text-white">
                 Add Vendor
               </Button>
             </Link>
           </div>
+
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600">
+                Error loading vendors: {error.message}
+              </p>
+            </div>
+          )}
 
           <div className="border rounded-lg">
             <Table>
@@ -220,7 +311,7 @@ const VendorPage = () => {
                 ))}
               </TableHeader>
               <TableBody>
-                {table.getRowModel().rows?.length ? (
+                {vendors.length > 0 ? (
                   table.getRowModel().rows.map((row) => (
                     <TableRow key={row.id} className="hover:bg-gray-50">
                       {row.getVisibleCells().map((cell) => (
@@ -239,7 +330,7 @@ const VendorPage = () => {
                       colSpan={columns.length}
                       className="h-24 text-center text-gray-500"
                     >
-                      No vendors found
+                      {loading ? "Loading..." : "No vendors found"}
                     </TableCell>
                   </TableRow>
                 )}
@@ -247,17 +338,16 @@ const VendorPage = () => {
             </Table>
           </div>
 
+          {/* Pagination Controls */}
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Rows per page:</span>
               <Select
-                value={pagination.pageSize.toString()}
-                onValueChange={(value) =>
-                  setPagination({ pageIndex: 0, pageSize: Number(value) })
-                }
+                value={searchParams.limit?.toString() || "10"}
+                onValueChange={(value) => handlePageSizeChange(Number(value))}
               >
                 <SelectTrigger className="w-[70px]">
-                  <SelectValue placeholder={pagination.pageSize} />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {[10, 20, 50, 100].map((size) => (
@@ -267,43 +357,63 @@ const VendorPage = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {pagination && (
+                <span className="text-sm text-gray-500 ml-4">
+                  Showing{" "}
+                  {(pagination.currentPage - 1) * pagination.itemsPerPage + 1}{" "}
+                  to{" "}
+                  {Math.min(
+                    pagination.currentPage * pagination.itemsPerPage,
+                    pagination.totalItems
+                  )}{" "}
+                  of {pagination.totalItems} results
+                </span>
+              )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                Previous
-              </Button>
-              <div className="flex gap-1">
-                {pageNumbers.map((pageNumber) => (
-                  <Button
-                    key={pageNumber}
-                    variant={currentPage === pageNumber ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => table.setPageIndex(pageNumber - 1)}
-                    className={
-                      currentPage === pageNumber
-                        ? "bg-brand hover:bg-brand/90 text-white"
-                        : ""
-                    }
-                  >
-                    {pageNumber}
-                  </Button>
-                ))}
+            {pagination && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.currentPage - 1)}
+                  disabled={!pagination.hasPrev}
+                >
+                  Previous
+                </Button>
+
+                <div className="flex gap-1">
+                  {getPageNumbers().map((pageNumber) => (
+                    <Button
+                      key={pageNumber}
+                      variant={
+                        pagination.currentPage === pageNumber
+                          ? "default"
+                          : "outline"
+                      }
+                      size="sm"
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={
+                        pagination.currentPage === pageNumber
+                          ? "bg-brand hover:bg-brand/90 text-white"
+                          : ""
+                      }
+                    >
+                      {pageNumber}
+                    </Button>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.currentPage + 1)}
+                  disabled={!pagination.hasNext}
+                >
+                  Next
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                Next
-              </Button>
-            </div>
+            )}
           </div>
         </div>
       </div>

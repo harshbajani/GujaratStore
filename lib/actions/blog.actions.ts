@@ -43,9 +43,25 @@ export async function createBlog(formData: FormData, vendorId: string) {
   }
 }
 
-export async function getAllBlogs(vendorId?: string) {
+export async function getAllBlogs(
+  params: PaginationParams = {},
+  vendorId?: string
+): Promise<PaginatedResponse<TransformedBlog>> {
   try {
-    const result = await BlogService.getBlogs(vendorId);
+    const result = await BlogService.getBlogs(params, vendorId);
+    return result;
+  } catch (error) {
+    console.error("Error fetching blogs:", error);
+    return {
+      success: false,
+      error: "Failed to fetch blogs",
+    };
+  }
+}
+
+export async function getAllBlogsLegacy(vendorId?: string) {
+  try {
+    const result = await BlogService.getBlogsLegacy(vendorId);
     return result;
   } catch (error) {
     console.error("Error fetching blogs:", error);
