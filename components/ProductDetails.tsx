@@ -33,6 +33,7 @@ import Loader from "@/components/Loader";
 import ReviewSection from "@/components/Review";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import Link from "next/link";
 
 const ProductsDetailPage = () => {
   const params = useParams();
@@ -284,7 +285,11 @@ const ProductsDetailPage = () => {
           {/* Product Info */}
           <div className="flex flex-col">
             <h1 className="text-3xl font-bold mb-0">{product.productName}</h1>
-            <p className="text-gray-500">By - {product.brands.name}</p>
+            <Link href={`/brand/${product.brands._id}`}>
+              <p className="text-gray-500 hover:text-brand transition-colors cursor-pointer hover:underline duration-200">
+                By - {product.brands.name}
+              </p>
+            </Link>
             <h2 className="text-lg text-gray-500">
               {product.parentCategory.name}, {product.primaryCategory.name},{" "}
               {product.secondaryCategory.name}
