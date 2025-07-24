@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import Image from "next/image";
 import Link from "next/link";
-import { useCategoryProducts } from "@/hooks/useCategoryProducts";
+import { useBrandProducts } from "@/hooks/useBrandProducts";
 import {
   Select,
   SelectContent,
@@ -27,16 +27,16 @@ import {
 } from "@/components/ui/tooltip";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 
-interface CategoryPageProps {
-  categoryName: string;
-  title: string;
+interface BrandProductsPageProps {
+  brandId: string;
 }
 
-const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
+const BrandProductsPage = ({ brandId }: BrandProductsPageProps) => {
   const {
     loading,
     error,
     sortedProducts,
+    brandName,
     sortBy,
     setSortBy,
     tempFilters,
@@ -50,7 +50,7 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
     handleColorChange,
     handlePriceRangeChange,
     clearFilters,
-  } = useCategoryProducts(categoryName);
+  } = useBrandProducts(brandId);
 
   // Animation ref
   const [organicRef, organicInView] = useInView({
@@ -88,7 +88,11 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BreadcrumbHeader title="Home" subtitle={title} titleHref="/" />
+      <BreadcrumbHeader 
+        title="Home" 
+        subtitle={brandName ? `${brandName} Products` : "Brand Products"} 
+        titleHref="/" 
+      />
 
       <div className="container mx-auto px-4 flex flex-col md:flex-row">
         {/* Filter Sidebar */}
@@ -216,7 +220,7 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
             {sortedProducts.length === 0 ? (
               <div className="col-span-full text-center py-12">
                 <p className="text-lg text-gray-500">
-                  No products match your filters.
+                  No products found for this brand.
                 </p>
                 <Button variant="link" onClick={clearFilters} className="mt-2">
                   Clear all filters
@@ -257,15 +261,9 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
                             <h2 className=" text-center text-sm font-semibold text-brand h-5 overflow-hidden">
                               {product.productName}
                             </h2>
-                            <Link
-                              href={`/brand/${product.brands._id}`}
-                              className="mb-2 text-sm text-muted-foreground hover:text-brand transition-colors cursor-pointer hover:underline duration-200"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                              }}
-                            >
+                            <p className="mb-2 text-sm text-muted-foreground">
                               {product.brands.name}
-                            </Link>
+                            </p>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs text-wrap">
                             {product.productName}
@@ -307,7 +305,7 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
                     </div>
                   </Link>
 
-                  {/* FIXED: Buttons Container - moved outside Link and added proper event handling */}
+                  {/* Buttons Container - moved outside Link and added proper event handling */}
                   <div className="flex w-full items-center justify-center gap-2">
                     <motion.div
                       whileHover={{ scale: 1.02 }}
@@ -372,4 +370,4 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
   );
 };
 
-export default CategoryPage;
+export default BrandProductsPage;
