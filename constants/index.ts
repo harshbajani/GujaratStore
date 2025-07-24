@@ -45,6 +45,10 @@ export const NavLinks = [
     route: "/organic",
     label: "Organic",
   },
+  {
+    route: "/nuts-and-dry-fruit",
+    label: "Dry Fruit and Nuts",
+  },
 ];
 
 export const FooterLinks = [
