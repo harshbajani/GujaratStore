@@ -36,47 +36,71 @@ export async function generateMetadata({
       };
     }
 
-    // Use product's meta data or fallback to generated content
+    // Build title and description
     const title =
       product.metaTitle ||
       `${product.productName} - ${product.brands?.name} | ${product.parentCategory?.name}`;
 
-    const description =
+    const baseDescription =
       product.metaDescription ||
       `Buy ${product.productName} from ${
         product.brands?.name
       }. ${product.productDescription
         ?.replace(/<[^>]*>/g, "")
         .substring(0, 100)}... Shop now at best prices.`;
+    const description = baseDescription.substring(0, 160);
 
-    // Keywords from product meta or generate from product data
-    let keywords = product.metaKeywords || "";
-    if (!keywords) {
-      const keywordArray = [
-        product.productName,
-        product.brands?.name,
-        product.parentCategory?.name,
-        product.primaryCategory?.name,
-        product.secondaryCategory?.name,
-        product.productColor,
-        "organic",
-        "natural",
-        "healthy",
-        "eco-friendly",
-        "nuts-and-dry-fruit",
-      ].filter(Boolean);
-      keywords = keywordArray.join(", ");
+    // Keywords: combine backend with extras
+    const extraKeywords = [
+      "nuts-and-dry-fruit",
+      "dry fruits",
+      "nuts",
+      "almonds",
+      "cashews",
+      "pistachios",
+      "raisins",
+      "healthy snacks",
+      "organic",
+      "natural",
+      "healthy",
+      "eco-friendly",
+      "sustainable",
+    ];
+
+    // Start with product.metaKeywords if any
+    const keywordsSet = new Set<string>();
+    if (product.metaKeywords) {
+      product.metaKeywords.split(",").forEach((k) => keywordsSet.add(k.trim()));
     }
 
+    // Add product-specific fields
+    [
+      product.productName,
+      product.brands?.name,
+      product.parentCategory?.name,
+      product.primaryCategory?.name,
+      product.secondaryCategory?.name,
+      product.productColor,
+    ]
+      .filter(Boolean)
+      .forEach((k) => keywordsSet.add(k as string));
+
+    // Add extra keywords
+    extraKeywords.forEach((k) => keywordsSet.add(k));
+
+    // Final keywords string
+    const keywords = Array.from(keywordsSet).join(", ");
+
+    // Open Graph & Twitter image
     const productImage = `/api/files/${product.productCoverImage}`;
 
     return {
       title,
-      description: description.substring(0, 160),
+      description,
       keywords,
       openGraph: {
         title,
-        description: description.substring(0, 160),
+        description,
         images: [
           {
             url: productImage,
@@ -93,7 +117,7 @@ export async function generateMetadata({
       twitter: {
         card: "summary_large_image",
         title,
-        description: description.substring(0, 160),
+        description,
         images: [productImage],
       },
       alternates: {
