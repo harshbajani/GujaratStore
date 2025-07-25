@@ -2,16 +2,22 @@ import CategoryPage from "@/components/CategoryPage";
 import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
 import { Metadata } from "next";
+
 export const dynamic = "force-dynamic";
+
+// Move these above the try block
+const defaultTitle = "Premium Dry Fruits & Nuts | Healthy Snacks & Gifts";
+const defaultDescription =
+  "Explore our premium selection of dry fruits and nuts—almonds, cashews, pistachios, raisins, and more. Healthy, natural snacking for every occasion.";
+const defaultKeywords =
+  "dry fruits, nuts, almonds, cashews, pistachios, raisins, healthy snacks, gourmet gifts, natural ingredients";
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
     await connectToDB();
 
-    // Get products from the organic category
-    const products = await Products.find({
-      productStatus: true,
-    })
+    // Fetch active products
+    const products = await Products.find({ productStatus: true })
       .populate([
         { path: "parentCategory", select: "name" },
         { path: "brands", select: "name" },
@@ -19,83 +25,58 @@ export async function generateMetadata(): Promise<Metadata> {
       .select(
         "productName metaTitle metaDescription metaKeywords parentCategory brands productCoverImage netPrice"
       )
-      .limit(10)
+      .limit(20)
       .lean();
 
-    // Filter products that belong to organic category
-    const DryFruitAndNutsProducts = products.filter(
-      (product) => product.parentCategory?.name?.toLowerCase() === "organic"
+    // Only include products in "Dry Fruits & Nuts" category
+    const categorySlug = "dry fruits and nuts";
+    const dryNuts = products.filter(
+      (p) => p.parentCategory?.name?.toLowerCase() === categorySlug
     );
 
-    if (DryFruitAndNutsProducts.length === 0) {
+    if (!dryNuts.length) {
       return {
-        title: "Organic Products - Natural & Healthy Living",
-        description: "Discover our collection of organic and natural products",
-        keywords: "organic, natural, healthy, eco-friendly, sustainable",
+        title: defaultTitle,
+        description: defaultDescription,
+        keywords: defaultKeywords,
+        alternates: { canonical: "/nuts-and-dry-fruit" },
       };
     }
 
-    // Extract metadata from products
-    const metaTitles = DryFruitAndNutsProducts.map(
-      (product) => product.metaTitle
-    )
+    // Use up to three product-specific titles/descriptions
+    const metaTitles = dryNuts
+      .map((p) => p.metaTitle)
+      .filter(Boolean)
+      .slice(0, 3);
+    const metaDescs = dryNuts
+      .map((p) => p.metaDescription)
       .filter(Boolean)
       .slice(0, 3);
 
-    const metaDescriptions = DryFruitAndNutsProducts.map(
-      (product) => product.metaDescription
-    )
-      .filter(Boolean)
-      .slice(0, 3);
-
-    // Collect all keywords
+    // Gather all keywords from products, brands, and defaults
     const keywordsSet = new Set<string>();
-    DryFruitAndNutsProducts.forEach((product) => {
-      if (product.metaKeywords) {
-        product.metaKeywords.split(",").forEach((keyword: string) => {
-          keywordsSet.add(keyword.trim());
-        });
-      }
+    dryNuts.forEach((p) => {
+      if (p.metaKeywords)
+        p.metaKeywords
+          .split(",")
+          .forEach((k: string) => keywordsSet.add(k.trim()));
+      if (p.brands?.name) keywordsSet.add(p.brands.name);
     });
+    defaultKeywords.split(",").forEach((k) => keywordsSet.add(k.trim()));
 
-    // Get brand names for additional keywords
-    const brandNames = [
-      ...new Set(
-        DryFruitAndNutsProducts.map((product) => product.brands?.name).filter(
-          Boolean
-        )
-      ),
-    ];
-    brandNames.forEach((brand) => keywordsSet.add(brand));
-
-    // Add category-specific keywords
-    keywordsSet.add("organic");
-    keywordsSet.add("natural");
-    keywordsSet.add("healthy");
-    keywordsSet.add("eco-friendly");
-    keywordsSet.add("sustainable");
-    keywordsSet.add("organic products");
-
-    const keywords = Array.from(keywordsSet).join(", ");
-
-    // Create title from product meta titles or fallback
     const title =
       metaTitles.length > 0
-        ? `Organic Collection - ${metaTitles
-            .slice(0, 2)
-            .join(" | ")} | Natural Living`
-        : "Organic Collection - Natural Living | Your Store";
-
-    // Create description from product meta descriptions or fallback
+        ? `${metaTitles[0]} | ${metaTitles[1] ?? "Dry Fruits & Nuts"}`
+        : defaultTitle;
     const description =
-      metaDescriptions.length > 0
-        ? metaDescriptions.join(". ").substring(0, 160)
-        : `Explore our organic collection featuring natural and healthy products. Discover eco-friendly and sustainable options for a better lifestyle.`;
+      metaDescs.length > 0
+        ? metaDescs.join(". ").substring(0, 160)
+        : defaultDescription;
+    const keywords = Array.from(keywordsSet).join(", ");
 
-    // Get featured product image for Open Graph
-    const featuredImage = DryFruitAndNutsProducts[0]?.productCoverImage
-      ? `/api/files/${DryFruitAndNutsProducts[0].productCoverImage}`
-      : null;
+    const openGraphImage = dryNuts[0]?.productCoverImage
+      ? `/api/files/${dryNuts[0].productCoverImage}`
+      : undefined;
 
     return {
       title,
@@ -104,7 +85,7 @@ export async function generateMetadata(): Promise<Metadata> {
       openGraph: {
         title,
         description,
-        images: featuredImage ? [featuredImage] : [],
+        images: openGraphImage ? [openGraphImage] : [],
         type: "website",
         url: "/nuts-and-dry-fruit",
       },
@@ -112,33 +93,23 @@ export async function generateMetadata(): Promise<Metadata> {
         card: "summary_large_image",
         title,
         description,
-        images: featuredImage ? [featuredImage] : [],
+        images: openGraphImage ? [openGraphImage] : [],
       },
-      alternates: {
-        canonical: "/nuts-and-dry-fruit",
-      },
+      alternates: { canonical: "/nuts-and-dry-fruit" },
     };
-  } catch (error) {
-    console.error("Error generating metadata for organic page:", error);
-
-    // Fallback metadata
+  } catch (err) {
+    console.error("generateMetadata error:", err);
     return {
-      title: "Organic Collection - Natural Living",
-      description:
-        "Explore our organic collection featuring natural and healthy products.",
-      keywords:
-        "organic, natural, healthy, eco-friendly, sustainable, organic products",
+      title: defaultTitle,
+      description: defaultDescription,
+      keywords: defaultKeywords,
+      alternates: { canonical: "/nuts-and-dry-fruit" },
     };
   }
 }
 
-const OrganicPage = () => {
-  return (
-    <CategoryPage
-      categoryName="nuts-and-dry-fruit"
-      title="Dry Fruits and Nuts"
-    />
-  );
-};
+const DryFruitNutsPage = () => (
+  <CategoryPage categoryName="nuts-and-dry-fruit" title="Dry Fruits and Nuts" />
+);
 
-export default OrganicPage;
+export default DryFruitNutsPage;
