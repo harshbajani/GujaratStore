@@ -13,12 +13,15 @@ interface UseUsersResult<T> {
 
 export function useUsers<T = any>(id?: string): UseUsersResult<T> {
   // Determine the API endpoint based on the id presence.
-  const endpoint = id ? `/api/admin/user?id=${id}` : `/api/admin/user`;
+  const endpoint = id ? `/api/admin/user/${id}` : `/api/admin/user`;
 
-  const { data, error, mutate } = useSWR<T>(endpoint, fetcher);
+  const { data, error, mutate } = useSWR<any>(endpoint, fetcher);
+
+  // For single user requests, extract the user data from the API response
+  const transformedData = id && data?.success ? data.data : data;
 
   return {
-    data,
+    data: transformedData,
     error,
     isLoading: !data && !error,
     mutate,
