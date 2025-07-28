@@ -398,3 +398,42 @@ export const vendorAddSchema = z
   })
   // Optionally, you could set additional fields here (e.g. isVerified) on the backend
   .strict();
+
+export const vendorAdminSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Phone number must be at least 10 characters"),
+  store: z
+    .object({
+      storeName: z.string().min(2, "Store name is required").optional(),
+      contact: z.string().min(10, "Store contact is required").optional(),
+      addresses: z
+        .object({
+          address_line_1: z.string().min(1, "Address line 1 is required"),
+          address_line_2: z.string().min(1, "Address line 2 is required"),
+          locality: z.string().min(1, "Locality is required"),
+          pincode: z.string().min(6, "Pincode must be at least 6 characters"),
+          state: z.string().min(1, "State is required"),
+          landmark: z.string().optional(),
+        })
+        .optional(),
+      alternativeContact: z.string().optional(),
+    })
+    .optional(),
+  bankDetails: z.object({
+    bankName: z.string().min(2, "Bank name is required"),
+    bankCode: z.string().min(2, "Bank code is required"),
+    ifscCode: z
+      .string()
+      .min(11, "IFSC code must be 11 characters")
+      .max(11, "IFSC code must be 11 characters")
+      .regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "Invalid IFSC code format"),
+    accountHolderName: z.string().min(2, "Account holder name is required"),
+    accountNumber: z
+      .string()
+      .min(8, "Account number must be at least 8 digits"),
+    accountType: z.enum(["savings", "current"], {
+      required_error: "Account type is required",
+    }),
+  }),
+});

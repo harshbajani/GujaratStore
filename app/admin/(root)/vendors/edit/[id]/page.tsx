@@ -21,32 +21,15 @@ import { updateVendorById } from "@/lib/actions/admin/vendor.actions";
 import Link from "next/link";
 import { RegionDropdown } from "react-country-region-selector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// Import the new hook to fetch a vendor (expects an id)
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useVendors } from "@/hooks/useVendors";
-
-// Combined schema for vendor profile and store details
-const vendorAdminSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 characters"),
-  store: z
-    .object({
-      storeName: z.string().min(2, "Store name is required").optional(),
-      contact: z.string().min(10, "Store contact is required").optional(),
-      addresses: z
-        .object({
-          address_line_1: z.string().min(1, "Address line 1 is required"),
-          address_line_2: z.string().min(1, "Address line 2 is required"),
-          locality: z.string().min(1, "Locality is required"),
-          pincode: z.string().min(6, "Pincode must be at least 6 characters"),
-          state: z.string().min(1, "State is required"),
-          landmark: z.string().optional(),
-        })
-        .optional(),
-      alternativeContact: z.string().optional(),
-    })
-    .optional(),
-});
+import { vendorAdminSchema } from "@/lib/validations";
 
 type VendorAdminFormValues = z.infer<typeof vendorAdminSchema>;
 
@@ -76,6 +59,14 @@ const EditVendorAdminForm = () => {
           landmark: "",
         },
         alternativeContact: "",
+      },
+      bankDetails: {
+        bankName: "",
+        bankCode: "",
+        ifscCode: "",
+        accountHolderName: "",
+        accountNumber: "",
+        accountType: "savings",
       },
     },
   });
@@ -335,6 +326,114 @@ const EditVendorAdminForm = () => {
                       )}
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Bank Detail Section */}
+              <div className="border rounded-lg p-6 bg-muted/20 mt-8">
+                <h3 className="text-lg font-medium mb-4">Bank Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="bankDetails.bankName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bank Name*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter bank name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bankDetails.bankCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bank Code*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter bank code" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bankDetails.ifscCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>IFSC Code*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., SBIN0001234" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bankDetails.accountHolderName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Holder Name*</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter account holder name"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bankDetails.accountNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Number*</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter account number"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bankDetails.accountType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Type*</FormLabel>
+                        <div className="relative">
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select account type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="savings">
+                                Savings Account
+                              </SelectItem>
+                              <SelectItem value="current">
+                                Current Account
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </div>
 
