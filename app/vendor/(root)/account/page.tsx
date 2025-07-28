@@ -1,17 +1,9 @@
 "use client";
-import { Bell } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
+
 import { withVendorProtection } from "../../HOC";
 import Storeform from "@/lib/forms/storeform";
 import VendorProfileForm from "@/lib/forms/vendorProfileForm";
+import BankDetailsForm from "@/lib/forms/bankDetailsForm";
 
 const AccountSettingsPage = () => {
   return (
@@ -22,8 +14,11 @@ const AccountSettingsPage = () => {
       {/* Store Overview Card */}
       <Storeform />
 
+      {/* Bank Details Card */}
+      <BankDetailsForm />
+
       {/* Preferences Card */}
-      <Card className="border-none shadow-lg">
+      {/* <Card className="border-none shadow-lg">
         <CardHeader className="bg-brand/5 rounded-t-lg">
           <div className="flex items-center justify-between">
             <div>
@@ -58,7 +53,7 @@ const AccountSettingsPage = () => {
             <Switch defaultChecked />
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 };

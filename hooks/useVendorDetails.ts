@@ -19,6 +19,7 @@ interface VendorDetails {
   phone: string;
   addresses?: IAddress[];
   alternativeContact?: string;
+  bankDetails?: BankDetails;
 }
 
 export const useVendorDetails = (): UseUserDetailsReturn => {
