@@ -21,6 +21,7 @@ export type VendorUpdateData = Partial<{
     };
     alternativeContact?: string;
   };
+  bankDetails?: BankDetails;
 }>;
 export async function createVendor(
   data: VendorUpdateData & { password: string; isVerified?: boolean }
