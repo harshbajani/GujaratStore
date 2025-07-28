@@ -9,6 +9,15 @@ const storeAddressSchema = new mongoose.Schema({
   landmark: { type: String, optional: true },
 });
 
+const bankDetailsSchema = new mongoose.Schema({
+  bankName: { type: String, required: true },
+  bankCode: { type: String, required: true },
+  ifscCode: { type: String, required: true, minlength: 11 },
+  accountHolderName: { type: String, required: true },
+  accountNumber: { type: String, required: true },
+  accountType: { type: String, enum: ["savings", "current"], required: true },
+});
+
 const store = new mongoose.Schema({
   storeName: { type: String, required: true, minlength: 2 },
   contact: { type: String, required: true, minlength: 10 },
@@ -23,6 +32,7 @@ const vendorSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { type: String, enum: ["vendor"], default: "vendor" },
   store: { type: store, required: false },
+  bankDetails: { type: bankDetailsSchema, required: false },
   isVerified: { type: Boolean, default: false },
   verificationToken: String,
   verificationTokenExpiry: Date,

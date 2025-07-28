@@ -37,6 +37,7 @@ declare interface IVendor {
   password: string;
   role: "vendor";
   store: IStore;
+  bankDetails?: BankDetails;
   isVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
@@ -777,3 +778,32 @@ declare type PaginationInfo = {
   hasNext: boolean;
   hasPrev: boolean;
 };
+
+declare interface BankDetails {
+  bankName: string;
+  bankCode: string;
+  ifscCode: string;
+  accountHolderName: string;
+  accountNumber: string;
+  accountType: "savings" | "current";
+}
+
+declare interface Bank {
+  bankCode: string;
+  bankName: string;
+  ifscPrefix: string;
+}
+
+declare interface BankBranchDetails {
+  BANK: string;
+  IFSC: string;
+  BRANCH: string;
+  ADDRESS: string;
+  CONTACT: string;
+  CITY: string;
+  RTGS: boolean;
+  NEFT: boolean;
+  MICR: string;
+  UPI: boolean;
+  IMPS: boolean;
+}

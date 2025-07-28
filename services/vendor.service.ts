@@ -7,7 +7,7 @@ import { sendOrderConfirmationEmail } from "@/lib/workflows/email";
 
 export class VendorService {
   private static readonly CACHE_PREFIX = "vendor:";
-  private static readonly CACHE_TTL = 300; // 5 minutes
+  private static readonly CACHE_TTL = 86400; // 24 hours
 
   private static getCacheKey(id: string) {
     return `${this.CACHE_PREFIX}${id}`;

@@ -6,7 +6,7 @@ import { Types } from "mongoose";
 import { getCurrentVendor } from "@/lib/actions/vendor.actions";
 
 export class UserService {
-  private static CACHE_TTL = 300; // 5 minutes
+  private static CACHE_TTL = 86400; // 24 hours
 
   private static async getCacheKey(key: string): Promise<string> {
     return `users:${key}`;
