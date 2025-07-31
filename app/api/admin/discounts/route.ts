@@ -1,9 +1,9 @@
 // app/api/admin/discounts/route.ts (Admin API)
 import { DiscountService } from "@/services/discount.service";
 import { NextRequest, NextResponse } from "next/server";
-import { withAdminAuth } from "@/lib/middleware/auth";
+import { withAdminOrVendorAuth } from "@/lib/middleware/auth";
 
-export const GET = withAdminAuth(async (request: NextRequest) => {
+export const GET = withAdminOrVendorAuth(async (request: NextRequest) => {
   try {
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get("id");
@@ -59,7 +59,7 @@ export const GET = withAdminAuth(async (request: NextRequest) => {
   }
 });
 
-export const POST = withAdminAuth(async (request: Request) => {
+export const POST = withAdminOrVendorAuth(async (request: Request) => {
   try {
     const body = await request.json();
     const result = await DiscountService.createDiscount(body, true);
@@ -73,7 +73,7 @@ export const POST = withAdminAuth(async (request: Request) => {
   }
 });
 
-export const PUT = withAdminAuth(async (request: Request) => {
+export const PUT = withAdminOrVendorAuth(async (request: Request) => {
   try {
     const body = await request.json();
 
@@ -95,7 +95,7 @@ export const PUT = withAdminAuth(async (request: Request) => {
   }
 });
 
-export const DELETE = withAdminAuth(async (request: NextRequest) => {
+export const DELETE = withAdminOrVendorAuth(async (request: NextRequest) => {
   try {
     const id = request.nextUrl.searchParams.get("id");
 

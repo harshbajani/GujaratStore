@@ -57,9 +57,12 @@ const ProductsDetailPage = () => {
     const fetchProductAndUserData = async () => {
       try {
         // Always fetch product data
-        const productResp = await fetch(`/api/products/slug/${productSlug}`, {
-          signal: controller.signal,
-        });
+        const productResp = await fetch(
+          `/api/vendor/products/slug/${productSlug}`,
+          {
+            signal: controller.signal,
+          }
+        );
         const productData = await productResp.json();
 
         if (!isMounted) return;

@@ -137,7 +137,7 @@ const SimilarProducts = () => {
       try {
         // Fetch the current product to get its category
         const productResponse = await fetch(
-          `/api/products/slug/${productSlug}`
+          `/api/vendor/products/slug/${productSlug}`
         );
         const productData = await productResponse.json();
 
@@ -157,7 +157,7 @@ const SimilarProducts = () => {
         }
 
         // Fetch all products in the same category
-        const productsResponse = await fetch("/api/products?all=true");
+        const productsResponse = await fetch("/api/vendor/products?all=true");
         const productsData = await productsResponse.json();
 
         if (productsData.success) {

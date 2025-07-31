@@ -77,7 +77,7 @@ export const useCart = () => {
         }
 
         const productPromises = cartProductIds.map((id: string) =>
-          fetch(`/api/products/${id}`).then((res) => res.json())
+          fetch(`/api/vendor/products/${id}`).then((res) => res.json())
         );
 
         const productResponses = await Promise.all(productPromises);
@@ -95,7 +95,7 @@ export const useCart = () => {
         // Handle guest cart
         try {
           const productPromises = guestCart.map((id) =>
-            fetch(`/api/products/${id}`).then((res) => res.json())
+            fetch(`/api/vendor/products/${id}`).then((res) => res.json())
           );
 
           const productResponses = await Promise.all(productPromises);
@@ -235,7 +235,7 @@ export const useCart = () => {
       }
 
       // Fetch product data first
-      const productResponse = await fetch(`/api/products/${productId}`);
+      const productResponse = await fetch(`/api/vendor/products/${productId}`);
       const productData = await productResponse.json();
 
       if (!productData.success) {

@@ -77,7 +77,7 @@ const DashboardPage: React.FC = () => {
       if (month !== undefined) queryParams.append("month", month.toString());
       if (year !== undefined) queryParams.append("year", year.toString());
 
-      const response = await fetch(`/api/dashboard?${queryParams}`);
+      const response = await fetch(`/api/vendor/dashboard?${queryParams}`);
       const result = await response.json();
 
       if (result.success) {
