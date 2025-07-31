@@ -907,7 +907,7 @@ const ProductCategoryPage = () => {
               >
                 {/* Image Container */}
                 <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
-                  <Link prefetch href={`/product/${product._id}`}>
+                  <Link prefetch href={`/product/${product.slug}`}>
                     <Image
                       src={getImageUrl(product.productCoverImage)}
                       alt={product.productName}
@@ -919,7 +919,7 @@ const ProductCategoryPage = () => {
                 </div>
 
                 {/* Product Info */}
-                <Link prefetch href={`/product/${product._id}`}>
+                <Link prefetch href={`/product/${product.slug}`}>
                   <div className="flex w-full flex-1 flex-col items-center">
                     <TooltipProvider>
                       <Tooltip>
