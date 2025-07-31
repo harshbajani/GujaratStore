@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllBrands } from "@/lib/actions/brand.actions";
+import { withAdminOrVendorAuth } from "@/lib/middleware/auth";
 
-export async function GET(request: NextRequest) {
+export const GET = withAdminOrVendorAuth(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
 
@@ -23,4 +24,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
