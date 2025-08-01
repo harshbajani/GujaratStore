@@ -118,7 +118,7 @@ export default function ReviewSection({
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/products/${productId}/reviews`);
+      const response = await fetch(`/api/vendor/products/${productId}/reviews`);
       const data = await response.json();
 
       if (data.success) {
@@ -179,18 +179,21 @@ export default function ReviewSection({
 
     try {
       setSubmitting(true);
-      const response = await fetch(`/api/products/${productId}/reviews`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: session.user.id,
-          userName: session.user.name || "Anonymous User",
-          rating: tempRating,
-          comment: tempComment,
-        }),
-      });
+      const response = await fetch(
+        `/api/vendor/products/${productId}/reviews`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: session.user.id,
+            userName: session.user.name || "Anonymous User",
+            rating: tempRating,
+            comment: tempComment,
+          }),
+        }
+      );
 
       const data = await response.json();
 

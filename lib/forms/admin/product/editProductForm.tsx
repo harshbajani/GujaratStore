@@ -205,7 +205,7 @@ const EditProductsForm = () => {
     const fetchProduct = async () => {
       try {
         // Make sure we're using the correct URL structure
-        const response = await fetch(`/api/products/${params.id}`);
+        const response = await fetch(`/api/admin/products/${params.id}`);
         const data = await response.json();
 
         if (data.success) {

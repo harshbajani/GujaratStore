@@ -263,7 +263,9 @@ export const useBrandProducts = (brandId: string) => {
     const fetchBrandProducts = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/products/brand/${brandId}?all=true`);
+        const response = await fetch(
+          `/api/vendor/products/brand/${brandId}?all=true`
+        );
         const data = await response.json();
 
         if (data.success) {
@@ -332,9 +334,7 @@ export const useBrandProducts = (brandId: string) => {
           setAvailableColors(colors);
 
           // Calculate price range
-          const prices = brandProducts.map(
-            (p: IProductResponse) => p.netPrice
-          );
+          const prices = brandProducts.map((p: IProductResponse) => p.netPrice);
           const minPrice = Math.floor(Math.min(...prices));
           const maxPrice = Math.ceil(Math.max(...prices));
           setPriceRange([minPrice, maxPrice]);

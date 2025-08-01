@@ -5,8 +5,9 @@ import User from "@/lib/models/user.model";
 import { connectToDB } from "@/lib/mongodb";
 import { OrdersService } from "@/services/orders.service";
 import { NextResponse } from "next/server";
+import { withAdminAuth } from "@/lib/middleware/auth";
 
-export async function POST(request: Request) {
+export const POST = withAdminAuth(async (request: Request) => {
   try {
     // Establish database connection
     await connectToDB();
@@ -115,9 +116,9 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function GET(request: Request) {
+export const GET = withAdminAuth(async (request: Request) => {
   try {
     // Establish database connection
     await connectToDB();
@@ -194,4 +195,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+});

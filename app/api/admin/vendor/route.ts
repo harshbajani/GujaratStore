@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { VendorService } from "@/services/vendor.service";
+import { withAdminAuth } from "@/lib/middleware/auth";
 
-export async function GET(request: NextRequest) {
+export const GET = withAdminAuth(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
 
@@ -52,4 +53,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

@@ -2,6 +2,7 @@ import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
 import { ProductService } from "@/services/product.service";
 import { NextRequest, NextResponse } from "next/server";
+import { withAdminAuth } from "@/lib/middleware/auth";
 
 // Commonly needed fields that we always want to retrieve
 const commonFields =
@@ -18,7 +19,7 @@ const populateConfig = [
   { path: "productReviews", select: "rating" },
 ];
 
-export async function POST(request: Request) {
+export const POST = withAdminAuth(async (request: Request) => {
   try {
     await connectToDB();
     const body = await request.json();
@@ -36,9 +37,9 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-}
+});
 
-export async function GET(request: NextRequest) {
+export const GET = withAdminAuth(async (request: NextRequest) => {
   try {
     await connectToDB();
     const searchParams = request.nextUrl.searchParams;
@@ -76,9 +77,9 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function PUT(request: Request) {
+export const PUT = withAdminAuth(async (request: Request) => {
   try {
     await connectToDB();
     const body = await request.json();
@@ -107,9 +108,9 @@ export async function PUT(request: Request) {
       { status: 400 }
     );
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAdminAuth(async (request: NextRequest) => {
   try {
     await connectToDB();
     const searchParams = request.nextUrl.searchParams;
@@ -142,4 +143,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

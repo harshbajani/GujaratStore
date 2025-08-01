@@ -3,8 +3,9 @@ import { getCurrentVendor } from "@/lib/actions/vendor.actions";
 import { OrdersService } from "@/services/orders.service";
 import { connectToDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
+import { withAdminOrVendorAuth } from "@/lib/middleware/auth";
 
-export async function POST(request: Request) {
+export const POST = withAdminOrVendorAuth(async (request: Request) => {
   try {
     // Establish database connection
     await connectToDB();
@@ -32,9 +33,9 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function GET(request: Request) {
+export const GET = withAdminOrVendorAuth(async (request: Request) => {
   try {
     await connectToDB();
     const { searchParams } = new URL(request.url);
@@ -138,4 +139,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+});

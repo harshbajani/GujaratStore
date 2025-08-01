@@ -245,7 +245,7 @@ const AddProductsForm = () => {
       };
 
       // Submit to API
-      const response = await fetch("/api/products", {
+      const response = await fetch("/api/vendor/products", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

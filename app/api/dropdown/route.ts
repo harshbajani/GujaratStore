@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { DropdownService } from "@/services/dropdown.service";
+import { withAdminOrVendorAuth } from "@/lib/middleware/auth";
 
-export async function GET() {
+export const GET = withAdminOrVendorAuth(async () => {
   try {
     const result = await DropdownService.getAllDropdownData();
     return NextResponse.json(result);
@@ -15,4 +16,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});

@@ -159,7 +159,9 @@ async function checkReferralDiscount(
 
     // Fetch and check each product's parent category
     const discountPromises = checkoutData.items.map(async (item) => {
-      const productResponse = await fetch(`/api/products/${item.productId}`);
+      const productResponse = await fetch(
+        `/api/vendor/products/${item.productId}`
+      );
       const productData = await productResponse.json();
 
       // Check if product's parent category matches referral's parent category
@@ -447,7 +449,7 @@ export function useCheckout() {
 
     dispatch({ type: "SET_LOADING_DISCOUNT", payload: true });
     try {
-      const response = await fetch(`/api/discounts/validate`, {
+      const response = await fetch(`/api/vendor/discounts/validate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

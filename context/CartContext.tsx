@@ -30,7 +30,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           if (data.success) {
             // Fetch full product details for each cart item
             const productPromises = data.data.cart.map((id: string) =>
-              fetch(`/api/products/${id}`).then((res) => res.json())
+              fetch(`/api/vendor/products/${id}`).then((res) => res.json())
             );
             const products = await Promise.all(productPromises);
             const cartProducts = products
@@ -45,7 +45,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         // Fetch product details for guest cart items
         try {
           const productPromises = guestCart.map((id) =>
-            fetch(`/api/products/${id}`).then((res) => res.json())
+            fetch(`/api/vendor/products/${id}`).then((res) => res.json())
           );
           const products = await Promise.all(productPromises);
           const cartProducts = products
@@ -66,7 +66,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addToCart = async (productId: string) => {
     try {
       // Optimistically update the UI
-      const productResponse = await fetch(`/api/products/${productId}`);
+      const productResponse = await fetch(`/api/vendor/products/${productId}`);
       const productData = await productResponse.json();
       if (productData.success) {
         setCartItems((prev) => [
@@ -127,7 +127,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
         if (!response.ok) {
           // Revert the optimistic update if the API call fails
-          const productResponse = await fetch(`/api/products/${productId}`);
+          const productResponse = await fetch(
+            `/api/vendor/products/${productId}`
+          );
           const productData = await productResponse.json();
           if (productData.success) {
             setCartItems((prev) => [
