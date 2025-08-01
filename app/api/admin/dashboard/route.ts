@@ -4,8 +4,9 @@ import { NextResponse } from "next/server";
 import Order from "@/lib/models/order.model";
 import Products from "@/lib/models/product.model";
 import { connectToDB } from "@/lib/mongodb";
+import { withAdminAuth } from "@/lib/middleware/auth";
 
-export async function GET(request: Request) {
+export const GET = withAdminAuth(async (request: Request) => {
   try {
     await connectToDB();
 
@@ -53,7 +54,7 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+});
 
 async function calculateSalesSummary(
   month?: number,

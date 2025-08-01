@@ -90,7 +90,7 @@ const ProductsPage = () => {
         sortOrder,
       });
 
-      const response = await fetch(`/api/products?${queryParams}`);
+      const response = await fetch(`/api/vendor/products?${queryParams}`);
       const result = await response.json();
 
       if (!result.success) {
@@ -131,7 +131,7 @@ const ProductsPage = () => {
   // Handle delete
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`/api/products?id=${id}`, {
+      const response = await fetch(`/api/vendor/products?id=${id}`, {
         method: "DELETE",
       });
 

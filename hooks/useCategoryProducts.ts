@@ -131,7 +131,7 @@ export const useCategoryProducts = (categoryName: string) => {
   // Use SWR for data fetching with a stable key
   const { error, isLoading, mutate } = useSWR(
     `products-${categoryName}`,
-    () => fetcher("/api/products?all=true"),
+    () => fetcher("/api/vendor/products?all=true"),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,

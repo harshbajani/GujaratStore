@@ -1,7 +1,8 @@
 import { getAllUsers } from "@/lib/actions/admin/user.actions";
 import { NextResponse } from "next/server";
+import { withAdminAuth } from "@/lib/middleware/auth";
 
-export async function GET(request: Request) {
+export const GET = withAdminAuth(async (request: Request) => {
   try {
     const { searchParams } = new URL(request.url);
 
@@ -38,4 +39,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+});

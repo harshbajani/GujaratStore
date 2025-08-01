@@ -47,7 +47,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
           if (data.success) {
             // Fetch full product details for each wishlist item
             const productPromises = data.data.map((id: string) =>
-              fetch(`/api/products/${id}`).then((res) => res.json())
+              fetch(`/api/vendor/products/${id}`).then((res) => res.json())
             );
             const products = await Promise.all(productPromises);
             const wishlistProducts = products
@@ -71,7 +71,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       const productPromises = wishlistIds.map((id) =>
-        fetch(`/api/products/${id}`).then((res) => res.json())
+        fetch(`/api/vendor/products/${id}`).then((res) => res.json())
       );
       const products = await Promise.all(productPromises);
       const wishlistProducts = products
@@ -88,7 +88,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const addToWishlist = async (productId: string) => {
     try {
       // Optimistically update the UI
-      const productResponse = await fetch(`/api/products/${productId}`);
+      const productResponse = await fetch(`/api/vendor/products/${productId}`);
       const productData = await productResponse.json();
       if (productData.success) {
         setWishlistItems((prev) => [
@@ -153,7 +153,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
         if (!response.ok) {
           // Revert the optimistic update if the API call fails
-          const productResponse = await fetch(`/api/products/${productId}`);
+          const productResponse = await fetch(
+            `/api/vendor/products/${productId}`
+          );
           const productData = await productResponse.json();
           if (productData.success) {
             setWishlistItems((prev) => [

@@ -11,7 +11,7 @@ interface UseDiscountsOptions {
 export function useDiscounts({
   initialPage = 1,
   initialLimit = 10,
-  apiBasePath = "/api/discounts",
+  apiBasePath = "/api/vendor/discounts",
 }: UseDiscountsOptions = {}) {
   // 1. useState calls (always same order)
   const [discounts, setDiscounts] = useState<IDiscount[]>([]);

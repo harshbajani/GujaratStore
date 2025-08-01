@@ -5,8 +5,9 @@ import {
   validateIFSCCode,
   getBankFromIFSC,
 } from "@/lib/actions/bank.actions";
+import { withAdminOrVendorAuth } from "@/lib/middleware/auth";
 
-export async function GET(request: NextRequest) {
+export const GET = withAdminOrVendorAuth(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("search");
@@ -90,4 +91,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
