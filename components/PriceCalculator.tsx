@@ -40,10 +40,10 @@ const PriceCalculator = ({ control }: IPriceCalculatorProps) => {
 
         <FormField
           control={control}
-          name="basePrice"
+          name="landingPrice"
           render={({ field: { onChange, ...field } }) => (
             <FormItem>
-              <FormLabel>Base Price</FormLabel>
+              <FormLabel>Landing Price</FormLabel>
               <FormControl>
                 <Input
                   type="number"

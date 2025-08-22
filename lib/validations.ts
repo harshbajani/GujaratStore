@@ -202,7 +202,7 @@ export const productSchema = z.object({
       "Cover image is required"
     ),
   mrp: z.number().positive("MRP must be a positive number"),
-  basePrice: z.number().positive("Base price must be a positive number"),
+  landingPrice: z.number().positive("Base price must be a positive number"),
   discountType: z.enum(["percentage", "amount"]),
   gender: z.enum(["male", "female", "unisex", "not-applicable"]).optional(),
   discountValue: z
@@ -266,7 +266,7 @@ export const adminProductSchema = z.object({
       "Cover image is required"
     ),
   mrp: z.number().positive("MRP must be a positive number"),
-  basePrice: z.number().positive("Base price must be a positive number"),
+  landingPrice: z.number().positive("Base price must be a positive number"),
   discountType: z.enum(["percentage", "amount"]),
   gender: z.enum(["male", "female", "unisex", "not-applicable"]).optional(),
   discountValue: z

@@ -82,7 +82,7 @@ const EditProductsForm = () => {
       productImages: [],
       productCoverImage: "",
       mrp: 0,
-      basePrice: 0,
+      landingPrice: 0,
       discountType: "percentage",
       discountValue: 0,
       gstRate: 0,
@@ -99,22 +99,23 @@ const EditProductsForm = () => {
   });
 
   // * price handling
-  const basePrice = form.watch("basePrice");
+  const mrp = form.watch("mrp");
   const discountType = form.watch("discountType");
   const discountValue = form.watch("discountValue");
   const gstRate = form.watch("gstRate");
 
   useEffect(() => {
-    const basePriceAfterDiscount =
+    const discountedBase =
       discountType === "percentage"
-        ? basePrice - basePrice * (discountValue / 100)
-        : basePrice - discountValue;
+        ? mrp - mrp * (discountValue / 100)
+        : mrp - discountValue;
 
-    const calculatedGstAmount = (basePriceAfterDiscount * gstRate) / 100;
+    const safeDiscountedBase = Math.max(discountedBase || 0, 0);
+    const calculatedGstAmount = ((mrp || 0) * (gstRate || 0)) / 100;
 
     form.setValue("gstAmount", calculatedGstAmount);
-    form.setValue("netPrice", basePriceAfterDiscount + calculatedGstAmount);
-  }, [basePrice, discountType, discountValue, gstRate, form]);
+    form.setValue("netPrice", safeDiscountedBase + calculatedGstAmount);
+  }, [mrp, discountType, discountValue, gstRate, form]);
 
   // * function to look out for attributes based on secondary category
   const { fields } = useFieldArray({
@@ -239,7 +240,7 @@ const EditProductsForm = () => {
     if (params.id) {
       fetchProduct();
     }
-  }, [params.id]);
+  }, [params.id, form]);
 
   // * data submission
   const onSubmit = async (data: IAdminProduct) => {

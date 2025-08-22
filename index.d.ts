@@ -320,7 +320,7 @@ declare interface IProduct {
   productImages: (string | File)[];
   productCoverImage: string | File;
   mrp: number;
-  basePrice: number;
+  landingPrice: number;
   discountType: "percentage" | "amount";
   gender?: "male" | "female" | "unisex" | "not-applicable";
   discountValue: number;
@@ -356,7 +356,7 @@ declare interface IAdminProduct {
   productImages: (string | File)[];
   productCoverImage: string | File;
   mrp: number;
-  basePrice: number;
+  landingPrice: number;
   discountType: "percentage" | "amount";
   gender?: "male" | "female" | "unisex" | "not-applicable";
   discountValue: number;
@@ -433,7 +433,7 @@ declare interface IProductResponse {
   productImages: (string | File)[];
   productCoverImage: string | File;
   mrp: number;
-  basePrice: number;
+  landingPrice: number;
   discountType: "percentage" | "amount";
   gender?: "male" | "female" | "unisex" | "not-applicable";
   discountValue: number;
