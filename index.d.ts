@@ -320,8 +320,9 @@ declare interface IProduct {
   productImages: (string | File)[];
   productCoverImage: string | File;
   mrp: number;
-  basePrice: number;
+  landingPrice: number;
   discountType: "percentage" | "amount";
+  gstType?: "exclusive" | "inclusive";
   gender?: "male" | "female" | "unisex" | "not-applicable";
   discountValue: number;
   gstRate: number;
@@ -356,8 +357,9 @@ declare interface IAdminProduct {
   productImages: (string | File)[];
   productCoverImage: string | File;
   mrp: number;
-  basePrice: number;
+  landingPrice: number;
   discountType: "percentage" | "amount";
+  gstType?: "exclusive" | "inclusive";
   gender?: "male" | "female" | "unisex" | "not-applicable";
   discountValue: number;
   gstRate: number;
@@ -433,8 +435,9 @@ declare interface IProductResponse {
   productImages: (string | File)[];
   productCoverImage: string | File;
   mrp: number;
-  basePrice: number;
+  landingPrice: number;
   discountType: "percentage" | "amount";
+  gstType?: "exclusive" | "inclusive";
   gender?: "male" | "female" | "unisex" | "not-applicable";
   discountValue: number;
   gstRate: number;

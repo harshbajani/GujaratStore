@@ -40,10 +40,10 @@ const PriceCalculator = ({ control }: IPriceCalculatorProps) => {
 
         <FormField
           control={control}
-          name="basePrice"
+          name="landingPrice"
           render={({ field: { onChange, ...field } }) => (
             <FormItem>
-              <FormLabel>Base Price</FormLabel>
+              <FormLabel>Landing Price</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -119,6 +119,31 @@ const PriceCalculator = ({ control }: IPriceCalculatorProps) => {
                     <SelectItem value="12">12%</SelectItem>
                     <SelectItem value="18">18%</SelectItem>
                     <SelectItem value="28">28%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name="gstType"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>GST Type</FormLabel>
+              <FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value || "exclusive"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select GST Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="exclusive">Exclusive</SelectItem>
+                    <SelectItem value="inclusive">Inclusive</SelectItem>
                   </SelectContent>
                 </Select>
               </FormControl>
