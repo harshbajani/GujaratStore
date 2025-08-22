@@ -129,6 +129,31 @@ const PriceCalculator = ({ control }: IPriceCalculatorProps) => {
 
         <FormField
           control={control}
+          name="gstType"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>GST Type</FormLabel>
+              <FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value || "exclusive"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select GST Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="exclusive">Exclusive</SelectItem>
+                    <SelectItem value="inclusive">Inclusive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
           name="gstAmount"
           render={({ field: { onChange, ...field } }) => (
             <FormItem>

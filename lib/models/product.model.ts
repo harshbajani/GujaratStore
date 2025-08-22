@@ -68,6 +68,12 @@ const productSchema = new Schema({
     enum: ["percentage", "amount"],
     required: true,
   },
+  gstType: {
+    type: String,
+    enum: ["exclusive", "inclusive"],
+    default: "exclusive",
+    required: false,
+  },
   discountValue: { type: Number, required: true },
   gstRate: { type: Number, required: true },
   gstAmount: { type: Number, required: true },

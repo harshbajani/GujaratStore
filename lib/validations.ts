@@ -204,6 +204,7 @@ export const productSchema = z.object({
   mrp: z.number().positive("MRP must be a positive number"),
   landingPrice: z.number().positive("Base price must be a positive number"),
   discountType: z.enum(["percentage", "amount"]),
+  gstType: z.enum(["exclusive", "inclusive"]).default("exclusive"),
   gender: z.enum(["male", "female", "unisex", "not-applicable"]).optional(),
   discountValue: z
     .number()
@@ -268,6 +269,7 @@ export const adminProductSchema = z.object({
   mrp: z.number().positive("MRP must be a positive number"),
   landingPrice: z.number().positive("Base price must be a positive number"),
   discountType: z.enum(["percentage", "amount"]),
+  gstType: z.enum(["exclusive", "inclusive"]).default("exclusive"),
   gender: z.enum(["male", "female", "unisex", "not-applicable"]).optional(),
   discountValue: z
     .number()

@@ -322,6 +322,7 @@ declare interface IProduct {
   mrp: number;
   landingPrice: number;
   discountType: "percentage" | "amount";
+  gstType?: "exclusive" | "inclusive";
   gender?: "male" | "female" | "unisex" | "not-applicable";
   discountValue: number;
   gstRate: number;
@@ -358,6 +359,7 @@ declare interface IAdminProduct {
   mrp: number;
   landingPrice: number;
   discountType: "percentage" | "amount";
+  gstType?: "exclusive" | "inclusive";
   gender?: "male" | "female" | "unisex" | "not-applicable";
   discountValue: number;
   gstRate: number;
@@ -435,6 +437,7 @@ declare interface IProductResponse {
   mrp: number;
   landingPrice: number;
   discountType: "percentage" | "amount";
+  gstType?: "exclusive" | "inclusive";
   gender?: "male" | "female" | "unisex" | "not-applicable";
   discountValue: number;
   gstRate: number;

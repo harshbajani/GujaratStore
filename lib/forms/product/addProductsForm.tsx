@@ -91,6 +91,7 @@ const AddProductsForm = () => {
       landingPrice: 0,
       discountType: "percentage",
       discountValue: 0,
+      gstType: "exclusive",
       gstRate: 0,
       gstAmount: 0,
       netPrice: 0,
@@ -106,6 +107,7 @@ const AddProductsForm = () => {
 
   const productName = form.watch("productName");
   const mrp = form.watch("mrp");
+  const gstType = form.watch("gstType");
   const discountType = form.watch("discountType");
   const discountValue = form.watch("discountValue");
   const gstRate = form.watch("gstRate");
@@ -117,11 +119,19 @@ const AddProductsForm = () => {
         : mrp - discountValue;
 
     const safeDiscountedBase = Math.max(discountedBase || 0, 0);
-    const calculatedGstAmount = ((mrp || 0) * (gstRate || 0)) / 100;
-
-    form.setValue("gstAmount", calculatedGstAmount);
-    form.setValue("netPrice", safeDiscountedBase + calculatedGstAmount);
-  }, [mrp, discountType, discountValue, gstRate, form]);
+    if (gstType === "inclusive") {
+      // discountedBase is tax-inclusive net price
+      const gstAmountInclusive =
+        (safeDiscountedBase * (gstRate || 0)) / (100 + (gstRate || 0));
+      form.setValue("gstAmount", gstAmountInclusive);
+      form.setValue("netPrice", safeDiscountedBase);
+    } else {
+      // exclusive: add GST on top of discounted base
+      const calculatedGstAmount = ((mrp || 0) * (gstRate || 0)) / 100;
+      form.setValue("gstAmount", calculatedGstAmount);
+      form.setValue("netPrice", safeDiscountedBase + calculatedGstAmount);
+    }
+  }, [mrp, discountType, discountValue, gstRate, gstType, form]);
 
   // * function to look out for attributes based on secondary category
   const { fields } = useFieldArray({
