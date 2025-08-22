@@ -62,11 +62,17 @@ const productSchema = new Schema({
   productImages: { type: [String], required: true },
   productCoverImage: { type: String, required: true },
   mrp: { type: Number, required: true },
-  basePrice: { type: Number, required: true },
+  landingPrice: { type: Number, required: true },
   discountType: {
     type: String,
     enum: ["percentage", "amount"],
     required: true,
+  },
+  gstType: {
+    type: String,
+    enum: ["exclusive", "inclusive"],
+    default: "exclusive",
+    required: false,
   },
   discountValue: { type: Number, required: true },
   gstRate: { type: Number, required: true },

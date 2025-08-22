@@ -610,17 +610,18 @@ export class DiscountService {
     }
   }
 
-  // Utility function to calculate discounted price
+  // Utility function to calculate discounted price (based on MRP)
   static calculateDiscountedPrice(
-    basePrice: number,
+    mrp: number,
     discountType: DiscountType,
     discountValue: number
   ): number {
+    const normalizedMrp = Math.max(mrp || 0, 0);
     if (discountType === DiscountType.PERCENTAGE) {
       const validPercentage = Math.min(Math.max(discountValue, 0), 100);
-      return basePrice - (basePrice * validPercentage) / 100;
+      return normalizedMrp - (normalizedMrp * validPercentage) / 100;
     } else {
-      return Math.max(basePrice - discountValue, 0);
+      return Math.max(normalizedMrp - (discountValue || 0), 0);
     }
   }
 
