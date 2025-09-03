@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Poppins } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 // Optimize font loading with preload and display swap
 const poppins = Poppins({
@@ -57,7 +58,10 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} ${playfair.variable} font-poppins antialiased`}
       >
-        <div>{children}</div>
+        <div>
+          {children}
+          <Analytics />
+        </div>
       </body>
     </html>
   );
