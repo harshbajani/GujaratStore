@@ -32,6 +32,14 @@ export async function addAddress(address: IAddress) {
     }
 
     revalidatePath("/profile");
+    // Also drop user cache to reflect address immediately in client hooks
+    try {
+      const { CacheService } = await import("@/services/cache.service");
+      const keys = await CacheService.keys("users:*");
+      await Promise.all(keys.map((k) => CacheService.delete(k)));
+    } catch (e) {
+      console.error("Address add cache invalidation error", e);
+    }
 
     // * Convert addresses to a serializable format
     const addresses = user.addresses.map((addr: Document & IAddress) => ({
@@ -89,6 +97,13 @@ export async function updateAddress(addressId: string, address: IAddress) {
     }
 
     revalidatePath("/profile");
+    try {
+      const { CacheService } = await import("@/services/cache.service");
+      const keys = await CacheService.keys("users:*");
+      await Promise.all(keys.map((k) => CacheService.delete(k)));
+    } catch (e) {
+      console.error("Address update cache invalidation error", e);
+    }
 
     // Convert addresses to a serializable format
     const addresses = user.addresses.map((addr: Document & IAddress) => ({
@@ -126,6 +141,13 @@ export async function deleteAddress(addressId: string) {
     }
 
     revalidatePath("/profile");
+    try {
+      const { CacheService } = await import("@/services/cache.service");
+      const keys = await CacheService.keys("users:*");
+      await Promise.all(keys.map((k) => CacheService.delete(k)));
+    } catch (e) {
+      console.error("Address delete cache invalidation error", e);
+    }
     return { success: true };
   } catch {
     return { success: false, message: "Failed to delete address" };

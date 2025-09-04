@@ -672,6 +672,12 @@ export function useCheckout() {
 
           // Continue with order confirmation process
           sessionStorage.removeItem("checkoutData");
+          try {
+            // Clear server/user cart and any client cart context
+            await fetch("/api/user/cart", { method: "DELETE" });
+          } catch (e) {
+            console.error("Failed to clear cart after order", e);
+          }
           dispatch({ type: "SET_CONFIRMED_ORDER_ID", payload: orderId });
           dispatch({ type: "SET_CONFIRMATION_OPEN", payload: true });
           toast({

@@ -63,6 +63,14 @@ export class OrdersService {
       // Update user cart and orders
       await this.updateUserData(orderData.userId as string, newOrder._id);
 
+      // Also invalidate user caches so profile/cart reflect immediately
+      try {
+        const userKeys = await CacheService.keys("users:*");
+        await Promise.all(userKeys.map((key) => CacheService.delete(key)));
+      } catch (e) {
+        console.error("Failed to invalidate user cache after order", e);
+      }
+
       // Invalidate relevant caches
       await this.invalidateOrderCaches();
 
