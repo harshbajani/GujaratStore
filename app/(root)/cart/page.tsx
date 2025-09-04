@@ -16,57 +16,38 @@ import QuantitySelector from "@/components/ui/quantity-selector";
 import Loader from "@/components/Loader";
 import { useRouter } from "next/navigation";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/context/CartContext";
 
 const CartPage = () => {
   const router = useRouter();
   const {
     cartItems,
     loading,
-    error,
     subtotal,
     deliveryCharges,
     total,
-    formattedDeliveryDate,
     updateQuantity,
     removeFromCart,
-    fetchCartItems,
   } = useCart();
 
   const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>(
     {}
   );
 
-  // Force a cart refresh when the page loads
-  useEffect(() => {
-    const refreshCart = async () => {
-      try {
-        await fetchCartItems();
-      } catch (error) {
-        console.error("Error refreshing cart:", error);
-        toast({
-          title: "Error",
-          description: "Failed to refresh cart items",
-          variant: "destructive",
-        });
-      }
-    };
-
-    refreshCart();
-  }, [fetchCartItems]);
-
-  // Listen for navigation events to refresh cart
-  useEffect(() => {
-    // Subscribe to router events
-    const handleRouteChange = () => {
-      fetchCartItems();
-    };
-
-    window.addEventListener("popstate", handleRouteChange);
-    return () => {
-      window.removeEventListener("popstate", handleRouteChange);
-    };
-  }, [fetchCartItems]);
+  // Helper for formatted delivery date
+  const formattedDeliveryDate = (deliveryDays: number) => {
+    const currentDate = new Date();
+    const deliveryDate = new Date(
+      currentDate.getTime() + deliveryDays * 24 * 60 * 60 * 1000
+    );
+    return deliveryDate
+      .toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+      .replace(/\//g, "/");
+  };
 
   const handleSizeSelect = (productId: string, sizeId: string) => {
     setSelectedSizes((prev) => ({
@@ -121,13 +102,6 @@ const CartPage = () => {
   };
 
   if (loading) return <Loader />;
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-500">
-        {error}
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen">

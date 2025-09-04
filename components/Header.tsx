@@ -25,7 +25,7 @@ import { signOut as nextAuthSignOut, useSession } from "next-auth/react";
 import { signOut as serverSignOut } from "@/lib/actions/auth.actions";
 import { useRouter } from "next/navigation";
 import SearchDropdown from "./SearchDropdown";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/context/CartContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 
 // Define the search result type
@@ -51,11 +51,11 @@ const Header = () => {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { isLoading } = useAuth({ redirectIfAuthenticated: false });
   const { data: session, status } = useSession();
-  const { cartItems, fetchCartItems } = useCart();
+  const { cartCount } = useCart();
   const router = useRouter();
   const { toast } = useToast();
 
-  const cartItemsCount = cartItems?.length || 0;
+  const cartItemsCount = cartCount || 0;
   const isAuthenticated = status === "authenticated";
 
   // * Search function with debouncing
@@ -98,13 +98,7 @@ const Header = () => {
   };
 
   // Add cleanup effect for search timeout
-  useEffect(() => {
-    const onCartChanged = () => {
-      fetchCartItems?.();
-    };
-    window.addEventListener("cart:changed", onCartChanged);
-    return () => window.removeEventListener("cart:changed", onCartChanged);
-  }, [fetchCartItems]);
+  // Remove the cart change event listener since we now use centralized context
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
