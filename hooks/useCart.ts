@@ -91,9 +91,6 @@ export const useCart = () => {
           }));
 
         setCartItems(cartProducts);
-        try {
-          window.dispatchEvent(new Event("cart:changed"));
-        } catch {}
       } else if (guestCart && guestCart.length > 0) {
         // Handle guest cart
         try {
@@ -112,9 +109,6 @@ export const useCart = () => {
             }));
 
           setCartItems(cartProducts);
-          try {
-            window.dispatchEvent(new Event("cart:changed"));
-          } catch {}
         } catch (err) {
           console.error("Error fetching guest cart items:", err);
           setError("Failed to load guest cart items");
@@ -122,9 +116,6 @@ export const useCart = () => {
         }
       } else {
         setCartItems([]);
-        try {
-          window.dispatchEvent(new Event("cart:changed"));
-        } catch {}
       }
     } catch (err) {
       console.error("Error fetching cart:", err);
@@ -138,7 +129,7 @@ export const useCart = () => {
   // Initialize cart items when session or guestCart changes
   useEffect(() => {
     fetchCartItems();
-  }, [session?.user?.email, guestCart]); // Only depend on session email and guestCart
+  }, [session?.user?.email, guestCart, fetchCartItems]); // Include fetchCartItems but with useCallback to prevent changes
 
   const updateQuantity = async (productId: string, newQuantity: number) => {
     try {

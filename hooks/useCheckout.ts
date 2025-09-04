@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { generateOrderId } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { useCart } from "@/context/CartContext";
 
 // Define the shape of our checkout state
 interface CheckoutState {
@@ -235,6 +236,7 @@ async function checkReferralDiscount(
 export function useCheckout() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { clearCart, removeFromCart } = useCart();
   const [state, dispatch] = useReducer(checkoutReducer, initialState);
   const [referralDiscount, setReferralDiscount] = useState(0);
   const [referralDiscountType, setReferralDiscountType] = useState<
@@ -375,19 +377,8 @@ export function useCheckout() {
     if (!state.checkoutData) return;
 
     try {
-      if (session) {
-        // Remove item from authenticated user's cart
-        const response = await fetch("/api/user/cart", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId }),
-        });
-        const result = await response.json();
-
-        if (!result.success) {
-          throw new Error(result.error || "Failed to remove item from cart");
-        }
-      }
+      // Use the cart context to remove the item (this handles both server and client state)
+      await removeFromCart(productId);
 
       // Update local checkout data
       const updatedItems = state.checkoutData.items.filter(
@@ -673,8 +664,8 @@ export function useCheckout() {
           // Continue with order confirmation process
           sessionStorage.removeItem("checkoutData");
           try {
-            // Clear server/user cart and any client cart context
-            await fetch("/api/user/cart", { method: "DELETE" });
+            // Clear cart using the centralized context (this will clear both server and client state)
+            await clearCart();
           } catch (e) {
             console.error("Failed to clear cart after order", e);
           }
