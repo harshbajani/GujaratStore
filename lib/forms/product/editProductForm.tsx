@@ -665,7 +665,6 @@ const EditProductsForm = () => {
                   <Input
                     {...field}
                     placeholder="Enter product quantity"
-                    defaultValue={field.value}
                     type="number"
                   />
                 </FormControl>
