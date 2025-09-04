@@ -60,6 +60,9 @@ const EditProductsForm = () => {
     SecondaryCategoryWithPopulatedFields[]
   >([]);
   const [attributes, setAttributes] = useState<IAttribute[]>([]);
+  const [preloadedAttributeNames, setPreloadedAttributeNames] = useState<
+    Record<string, string>
+  >({});
   const [brands, setBrands] = useState<IBrand[]>([]);
   const [sizes, setSizes] = useState<ISizes[]>([]);
 
@@ -127,12 +130,37 @@ const EditProductsForm = () => {
   }, [mrp, discountType, discountValue, gstRate, gstType, form]);
 
   // * function to look out for attributes based on secondary category
-  const { fields } = useFieldArray({
+  const { fields, replace } = useFieldArray({
     control: form.control,
     name: "attributes",
   });
 
   const selectedSecondaryCategoryId = form.watch("secondaryCategory");
+
+  const selectedSecondaryCategory = useMemo(() => {
+    if (!selectedSecondaryCategoryId) return undefined;
+    return secondaryCategory.find((cat) => {
+      const catId = (cat._id || cat.id || "").toString();
+      return catId === selectedSecondaryCategoryId.toString();
+    });
+  }, [selectedSecondaryCategoryId, secondaryCategory]);
+
+  const attributeNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const id in preloadedAttributeNames) {
+      map.set(id, preloadedAttributeNames[id]);
+    }
+    if (selectedSecondaryCategory?.attributes) {
+      selectedSecondaryCategory.attributes.forEach((attr) => {
+        if (attr._id) map.set(attr._id.toString(), attr.name);
+      });
+    }
+    attributes.forEach((attr) => {
+      const key = attr._id?.toString();
+      if (key && !map.has(key)) map.set(key, attr.name);
+    });
+    return map;
+  }, [selectedSecondaryCategory, attributes, preloadedAttributeNames]);
 
   useEffect(() => {
     if (selectedSecondaryCategoryId) {
@@ -149,11 +177,11 @@ const EditProductsForm = () => {
             attributeId: attr._id,
             value: "",
           }));
-          form.setValue("attributes", initialAttributes);
+          replace(initialAttributes);
         }
       }
     }
-  }, [selectedSecondaryCategoryId, secondaryCategory, form]);
+  }, [selectedSecondaryCategoryId, secondaryCategory, form, replace]);
 
   // * function to handle the product images and cover images
   const productCoverImage = form.watch("productCoverImage");
@@ -236,6 +264,36 @@ const EditProductsForm = () => {
             productSize: productSizeIds,
             vendorId: currentVendorId || product.vendorId || "",
           });
+
+          // If the product already has attributes, seed them to the field array
+          if (
+            Array.isArray(product.attributes) &&
+            product.attributes.length > 0
+          ) {
+            const nameMap: Record<string, string> = {};
+            const normalized = product.attributes.map(
+              (a: {
+                attributeId: string | { _id?: string; name?: string };
+                value: string;
+              }) => {
+                const id =
+                  typeof a.attributeId === "string"
+                    ? a.attributeId
+                    : a.attributeId?._id || "";
+                const nm =
+                  typeof a.attributeId === "string"
+                    ? undefined
+                    : a.attributeId?.name;
+                if (id && nm) nameMap[id] = nm;
+                return { attributeId: id, value: a.value || "" } as {
+                  attributeId: string;
+                  value: string;
+                };
+              }
+            );
+            replace(normalized);
+            setPreloadedAttributeNames(nameMap);
+          }
         }
       } catch (error) {
         console.error("Error fetching product:", error);
@@ -252,7 +310,7 @@ const EditProductsForm = () => {
     if (params.id) {
       fetchProduct();
     }
-  }, [params.id, form]);
+  }, [params.id, form, replace]);
 
   // * data submission
   const onSubmit = async (data: IProduct) => {
@@ -538,10 +596,7 @@ const EditProductsForm = () => {
               <FormItem>
                 <FormLabel>Brand</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select Brand" />
                     </SelectTrigger>
@@ -565,10 +620,7 @@ const EditProductsForm = () => {
               <FormItem>
                 <FormLabel>Parent Category</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select parent category" />
                     </SelectTrigger>
@@ -592,10 +644,7 @@ const EditProductsForm = () => {
               <FormItem>
                 <FormLabel>Primary Category</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select primary category" />
                     </SelectTrigger>
@@ -621,16 +670,16 @@ const EditProductsForm = () => {
               <FormItem>
                 <FormLabel>Secondary Category</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select secondary category" />
                     </SelectTrigger>
                     <SelectContent>
                       {secondaryCategory.map((category) => (
-                        <SelectItem key={category.id} value={category.id!}>
+                        <SelectItem
+                          key={category._id || category.id}
+                          value={category._id || category.id!}
+                        >
                           {category.name}
                         </SelectItem>
                       ))}
@@ -665,7 +714,6 @@ const EditProductsForm = () => {
                   <Input
                     {...field}
                     placeholder="Enter product quantity"
-                    defaultValue={field.value}
                     type="number"
                   />
                 </FormControl>
@@ -733,11 +781,21 @@ const EditProductsForm = () => {
             )}
           />
         </div>
+        {fields.length > 0 && (
+          <div className="col-span-5">
+            <h3 className="text-sm font-semibold">Attributes</h3>
+          </div>
+        )}
         <div className="grid grid-cols-5 gap-6">
           {fields.map((field, index) => {
             const attribute = attributes.find(
-              (attr) => attr._id === field.attributeId
+              (attr) =>
+                (attr._id || "").toString() ===
+                (field.attributeId || "").toString()
             );
+            const label =
+              attributeNameById.get((field.attributeId || "").toString()) ||
+              attribute?.name;
             return (
               <FormField
                 control={form.control}
@@ -745,10 +803,10 @@ const EditProductsForm = () => {
                 name={`attributes.${index}.value`}
                 render={({ field: inputField }) => (
                   <FormItem>
-                    <FormLabel>{attribute?.name}</FormLabel>
+                    <FormLabel>{label}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={`Enter ${attribute?.name}`}
+                        placeholder={`Enter ${label || "value"}`}
                         {...inputField}
                       />
                     </FormControl>

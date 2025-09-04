@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/form";
 
 import { getAllDropdownData } from "@/lib/actions/dropdown.actions";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -136,6 +136,29 @@ const AddProductsForm = () => {
   });
 
   const selectedSecondaryCategoryId = form.watch("secondaryCategory");
+
+  const selectedSecondaryCategory = useMemo(() => {
+    if (!selectedSecondaryCategoryId) return undefined;
+    return secondaryCategory.find((cat) => {
+      const catId = (cat._id || cat.id || "").toString();
+      return catId === selectedSecondaryCategoryId.toString();
+    });
+  }, [selectedSecondaryCategoryId, secondaryCategory]);
+
+  const attributeNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    if (selectedSecondaryCategory?.attributes) {
+      selectedSecondaryCategory.attributes.forEach((attr) => {
+        if (attr._id) map.set(attr._id.toString(), attr.name);
+      });
+    }
+    // Also include global attributes as fallback
+    attributes.forEach((attr) => {
+      const key = attr._id?.toString();
+      if (key && !map.has(key)) map.set(key, attr.name);
+    });
+    return map;
+  }, [selectedSecondaryCategory, attributes]);
 
   useEffect(() => {
     if (selectedSecondaryCategoryId) {
@@ -433,10 +456,7 @@ const AddProductsForm = () => {
               <FormItem>
                 <FormLabel>Brand</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select Brand" />
                     </SelectTrigger>
@@ -460,10 +480,7 @@ const AddProductsForm = () => {
               <FormItem>
                 <FormLabel>Parent Category</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select parent category" />
                     </SelectTrigger>
@@ -487,10 +504,7 @@ const AddProductsForm = () => {
               <FormItem>
                 <FormLabel>Primary Category</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select primary category" />
                     </SelectTrigger>
@@ -516,16 +530,16 @@ const AddProductsForm = () => {
               <FormItem>
                 <FormLabel>Secondary Category</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select secondary category" />
                     </SelectTrigger>
                     <SelectContent>
                       {secondaryCategory.map((category) => (
-                        <SelectItem key={category.id} value={category.id!}>
+                        <SelectItem
+                          key={category._id || category.id}
+                          value={category._id || category.id!}
+                        >
                           {category.name}
                         </SelectItem>
                       ))}
@@ -624,11 +638,21 @@ const AddProductsForm = () => {
             )}
           />
         </div>
+        {fields.length > 0 && (
+          <div className="col-span-5">
+            <h3 className="text-sm font-semibold">Attributes</h3>
+          </div>
+        )}
         <div className="grid grid-cols-5 gap-6">
           {fields.map((field, index) => {
             const attribute = attributes.find(
-              (attr) => attr._id === field.attributeId
+              (attr) =>
+                (attr._id || "").toString() ===
+                (field.attributeId || "").toString()
             );
+            const label =
+              attributeNameById.get((field.attributeId || "").toString()) ||
+              attribute?.name;
             return (
               <FormField
                 control={form.control}
@@ -636,10 +660,10 @@ const AddProductsForm = () => {
                 name={`attributes.${index}.value`}
                 render={({ field: inputField }) => (
                   <FormItem>
-                    <FormLabel>{attribute?.name}</FormLabel>
+                    <FormLabel>{label}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={`Enter ${attribute?.name}`}
+                        placeholder={`Enter ${label || "value"}`}
                         {...inputField}
                       />
                     </FormControl>
