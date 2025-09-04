@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import {
   addToCart,
@@ -5,6 +6,8 @@ import {
   removeFromCart,
 } from "@/lib/actions/user.actions";
 import Products from "@/lib/models/product.model";
+import { connectToDB } from "@/lib/mongodb";
+import { UserService } from "@/services/user.service";
 
 export async function GET() {
   try {
@@ -69,26 +72,46 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const { productId } = await request.json();
+    let productId: string | undefined;
+    try {
+      const body = await request.json();
+      productId = body?.productId;
+    } catch {
+      productId = undefined;
+    }
 
-    if (!productId) {
+    // If productId provided, remove only that item (existing behavior)
+    if (productId) {
+      const result = await removeFromCart(productId);
+      if (!result.success) {
+        return NextResponse.json(result, { status: 400 });
+      }
+      return NextResponse.json(result);
+    }
+
+    // If no productId provided, clear entire cart for the current user
+    const userResult = await getCurrentUser();
+    if (!userResult.success || !userResult.data?._id) {
       return NextResponse.json(
-        { success: false, error: "Product ID is required" },
-        { status: 400 }
+        { success: false, error: "User not authenticated" },
+        { status: 401 }
       );
     }
 
-    const result = await removeFromCart(productId);
+    await connectToDB();
+    const clearResult = await UserService.updateUser(userResult.data._id, {
+      cart: [],
+    } as any);
 
-    if (!result.success) {
-      return NextResponse.json(result, { status: 400 });
+    if (!clearResult.success) {
+      return NextResponse.json(clearResult, { status: 400 });
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json(clearResult, { status: 200 });
   } catch (error) {
-    console.error("Error removing from cart:", error);
+    console.error("Error clearing cart:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to remove item from cart" },
+      { success: false, error: "Failed to clear cart" },
       { status: 500 }
     );
   }

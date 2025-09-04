@@ -25,7 +25,7 @@ import { signOut as nextAuthSignOut, useSession } from "next-auth/react";
 import { signOut as serverSignOut } from "@/lib/actions/auth.actions";
 import { useRouter } from "next/navigation";
 import SearchDropdown from "./SearchDropdown";
-import { useCart } from "@/context/CartContext";
+import { useCart } from "@/hooks/useCart";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 
 // Define the search result type
@@ -51,7 +51,7 @@ const Header = () => {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { isLoading } = useAuth({ redirectIfAuthenticated: false });
   const { data: session, status } = useSession();
-  const { cartItems } = useCart();
+  const { cartItems, fetchCartItems } = useCart();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -98,6 +98,13 @@ const Header = () => {
   };
 
   // Add cleanup effect for search timeout
+  useEffect(() => {
+    const onCartChanged = () => {
+      fetchCartItems?.();
+    };
+    window.addEventListener("cart:changed", onCartChanged);
+    return () => window.removeEventListener("cart:changed", onCartChanged);
+  }, [fetchCartItems]);
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {

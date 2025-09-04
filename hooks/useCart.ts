@@ -91,6 +91,9 @@ export const useCart = () => {
           }));
 
         setCartItems(cartProducts);
+        try {
+          window.dispatchEvent(new Event("cart:changed"));
+        } catch {}
       } else if (guestCart && guestCart.length > 0) {
         // Handle guest cart
         try {
@@ -109,6 +112,9 @@ export const useCart = () => {
             }));
 
           setCartItems(cartProducts);
+          try {
+            window.dispatchEvent(new Event("cart:changed"));
+          } catch {}
         } catch (err) {
           console.error("Error fetching guest cart items:", err);
           setError("Failed to load guest cart items");
@@ -116,6 +122,9 @@ export const useCart = () => {
         }
       } else {
         setCartItems([]);
+        try {
+          window.dispatchEvent(new Event("cart:changed"));
+        } catch {}
       }
     } catch (err) {
       console.error("Error fetching cart:", err);
@@ -210,6 +219,9 @@ export const useCart = () => {
         // and the guestCart state change will trigger a re-fetch
       }
 
+      try {
+        window.dispatchEvent(new Event("cart:changed"));
+      } catch {}
       toast({
         title: "Success",
         description: "Item removed from cart",
@@ -272,6 +284,9 @@ export const useCart = () => {
         addToGuestCart(productId);
       }
 
+      try {
+        window.dispatchEvent(new Event("cart:changed"));
+      } catch {}
       toast({
         title: "Success",
         description: "Item added to cart",
