@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { newCollection } from "@/constants";
 import { Button } from "./ui/button";
-import Link from "next/link";
+// import Link from "next/link";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 
@@ -92,9 +92,9 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
               className="text-white px-6 py-2 rounded bg-brand hover:bg-white hover:text-brand"
               asChild
             >
-              <Link prefetch href="/shop">
+              {/* <Link prefetch href="/shop">
                 Buy Now
-              </Link>
+              </Link> */}
             </Button>
           </motion.div>
         </motion.div>
@@ -138,9 +138,9 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
             variant="outline"
             asChild
           >
-            <Link prefetch href="/shop">
+            {/* <Link prefetch href="/shop">
               Buy Now
-            </Link>
+            </Link> */}
           </Button>
         </motion.div>
       </motion.div>

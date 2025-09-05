@@ -281,7 +281,7 @@ export const sendOrderConfirmationEmail = async (orderData: OrderEmailData) => {
                     <h3 style="margin: 0 0 10px; color: #333; font-size: 16px;">Need Help?</h3>
                     <p style="margin: 0; color: #666; font-size: 14px;">
                       If you have any questions about your order, please contact our customer support at 
-                      <a href="mailto:support@thegujaratstore.com" style="color: #C93326;">support@thegujaratstore.com</a> 
+                      <a href="mailto:contact@thegujaratstore.com" style="color: #C93326;">contact@thegujaratstore.com</a> 
                       or call us at <strong>+91-1234567890</strong>.
                     </p>
                   </td>
@@ -497,7 +497,7 @@ export const sendOrderCancellationEmail = async (orderData: OrderEmailData) => {
                     <h3 style="margin: 0 0 10px; color: #333; font-size: 16px;">Need Help?</h3>
                     <p style="margin: 0; color: #666; font-size: 14px;">
                       If you have any questions about your order cancellation, please contact our customer support at 
-                      <a href="mailto:support@thegujaratstore.com" style="color: #C93326;">support@thegujaratstore.com</a> 
+                      <a href="mailto:contact@thegujaratstore.com" style="color: #C93326;">contact@thegujaratstore.com</a> 
                       or call us at <strong>+91-1234567890</strong>.
                     </p>
                   </td>
@@ -717,7 +717,7 @@ export const sendVendorCancellationEmail = async (
                     <h3 style="margin: 0 0 10px; color: #333; font-size: 16px;">Need Help?</h3>
                     <p style="margin: 0; color: #666; font-size: 14px;">
                       If you have any questions about your order cancellation, please contact our customer support at 
-                      <a href="mailto:support@thegujaratstore.com" style="color: #C93326;">support@thegujaratstore.com</a> 
+                      <a href="mailto:contact@thegujaratstore.com" style="color: #C93326;">contact@thegujaratstore.com</a> 
                       or call us at <strong>+91-1234567890</strong>.
                     </p>
                   </td>
@@ -943,7 +943,7 @@ export const sendAdminCancellationEmail = async (
                     <h3 style="margin: 0 0 10px; color: #333; font-size: 16px;">Need Help?</h3>
                     <p style="margin: 0; color: #666; font-size: 14px;">
                       If you have any questions about your order cancellation, please contact our customer support at 
-                      <a href="mailto:support@thegujaratstore.com" style="color: #C93326;">support@thegujaratstore.com</a> 
+                      <a href="mailto:contact@thegujaratstore.com" style="color: #C93326;">contact@thegujaratstore.com</a> 
                       or call us at <strong>+91-1234567890</strong>.
                     </p>
                   </td>

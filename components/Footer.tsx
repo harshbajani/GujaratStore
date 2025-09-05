@@ -1,4 +1,4 @@
-import { FooterLinks, NavLinks, SocialLinks } from "@/constants";
+import { FooterLinks, NavLinks } from "@/constants";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -18,12 +18,14 @@ const Footer = () => {
             />
             <div>
               <h3 className="text-white mb-2">Corporate Address</h3>
-              <p className="text-gray-300 text-sm mb-1">
-                C-18/17 & Road no. 1, Sandar Estate, Ajwa Road, Vadodara-390019
+              <p className="text-gray-300 text-sm mb-1 max-w-sm">
+                206-A, Platinum Commercial Center, Via Char Rasta Rd, opp. VIA
+                Ground, GIDC, Vapi, Gujarat 396195
               </p>
               <Link
                 prefetch
-                href="https://goo.gl/maps/xyz"
+                target="_blank"
+                href="https://www.google.com/maps/place/Platinum+Commercial+Center/@20.3658138,72.9211053,17z/data=!3m1!4b1!4m6!3m5!1s0x3be0cf0cf01d762d:0x6a8777e2f8c0bf3b!8m2!3d20.3658088!4d72.9236802!16s%2Fg%2F11h6dh4b_g?entry=ttu&g_ep=EgoyMDI1MDkwMi4wIKXMDSoASAFQAw%3D%3D"
                 className="text-brand text-sm"
               >
                 View Google Map
@@ -73,10 +75,10 @@ const Footer = () => {
               <div className="flex flex-wrap gap-x-4">
                 <Link
                   prefetch
-                  href={"mailto:thegujaratstore@gmail.com"}
+                  href={"contact@thegujaratstore.com"}
                   className="text-gray-300 hover:text-brand hover:underline text-sm"
                 >
-                  thegujaratstore@gmail.com
+                  contact@thegujaratstore.com
                 </Link>
               </div>
             </div>
@@ -86,16 +88,16 @@ const Footer = () => {
               <div className="flex flex-wrap gap-x-4">
                 <Link
                   prefetch
-                  href={"tel:123-4567890"}
+                  href={"tel:9724203447"}
                   className="text-gray-300 hover:text-brand hover:underline text-sm"
                 >
-                  +91 123 45 67890
+                  +91 97242 03447
                 </Link>
               </div>
             </div>
 
             {/* Social Media Icons */}
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <h3 className="text-white">Follow us:</h3>
               <div className="flex flex-wrap gap-x-4">
                 {SocialLinks.map((social, index) => (
@@ -109,7 +111,7 @@ const Footer = () => {
                   </Link>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 
