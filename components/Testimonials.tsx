@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { Button } from "./ui/button";
-import Link from "next/link";
+// import Link from "next/link";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import TestimonialSlider from "./Slider";
@@ -86,9 +86,9 @@ const Testimonials = () => {
                         className="mt-4 text-brand border-brand w-44 hover:bg-brand hover:text-white"
                         asChild
                       >
-                        <Link prefetch href="/shop">
+                        {/* <Link prefetch href="/shop">
                           Buy Now
-                        </Link>
+                        </Link> */}
                       </Button>
                     </motion.div>
                   </motion.div>
@@ -135,9 +135,9 @@ const Testimonials = () => {
                         className="mt-4 text-brand border-brand w-44 hover:bg-brand hover:text-white"
                         asChild
                       >
-                        <Link prefetch href="/shop">
+                        {/* <Link prefetch href="/shop">
                           Buy Now
-                        </Link>
+                        </Link> */}
                       </Button>
                     </motion.div>
                   </motion.div>

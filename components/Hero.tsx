@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import Link from "next/link";
+// import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "./ui/button";
 import { homeImageCircles } from "@/constants";
@@ -79,16 +79,16 @@ const Hero = () => {
               className="w-36 bg-brand hover:bg-white px-4 py-2 mt-4 text-white hover:text-brand rounded"
               asChild
             >
-              <Link prefetch href="/shop">
+              {/* <Link prefetch href="/shop">
                 Buy now
-              </Link>
+              </Link> */}
             </Button>
           </motion.div>
         </div>
       </div>
 
       {/* Section with Line and Images */}
-      <div className="relative flex flex-col items-center justify-center mt-24 sm:mt-16">
+      <div className="relative flex flex-col items-center justify-center mt-24 sm:mt-32">
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
