@@ -14,8 +14,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import Link from "next/link";
-import { SocialLinks } from "@/constants";
+// import Link from "next/link";
+// import { SocialLinks } from "@/constants";
 import { inquirySchema } from "@/lib/validations";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { z } from "zod";
@@ -183,7 +183,7 @@ const ContactPage = () => {
             <div className="hidden sm:block absolute md:left-5 top-10 w-2/4 lg:-ml-36 ">
               <div className="bg-white rounded-lg shadow-lg overflow-hidden h-[420px] md:h-[500px] xl:h-[520px] w-[300px] md:w-[310px] xl:w-[400px]">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d230.68900762413762!2d73.23401023530472!3d22.314927459267135!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395fcf834404785d%3A0x6a0d68c29605ea9b!2sc%2C%20D-16%2C%20Rd%20Number%201%2C%20Bhagya%20Laxmi%20Nagar%2C%20Sardar%20Estate%2C%20Sayaji%20Park%20Society%2C%20Vadodara%2C%20Gujarat%20390019!5e0!3m2!1sen!2sin!4v1736758779257!5m2!1sen!2sin"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3740.413987897261!2d72.9211052761374!3d20.365813810216167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be0cf0cf01d762d%3A0x6a8777e2f8c0bf3b!2sPlatinum%20Commercial%20Center!5e0!3m2!1sen!2sin!4v1757067865871!5m2!1sen!2sin"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -204,14 +204,16 @@ const ContactPage = () => {
                         <Phone className="w-5 h-5" />
                         Mobile No.
                       </span>
-                      <span className="block mt-1">0123456789</span>
+                      <span className="block mt-1">+91 97242 03447</span>
                     </div>
                     <div>
                       <span className="font-semibold text-base sm:text-lg flex gap-2 items-center">
                         <Mail className="w-5 h-5" />
                         E-mail
                       </span>
-                      <span className="block mt-1">abc@gmail.com</span>
+                      <span className="block mt-1">
+                        contact@thegujaratstore.com
+                      </span>
                     </div>
                     <div className="mb-6 sm:mb-10">
                       <span className="font-semibold text-base sm:text-lg flex gap-2 items-center">
@@ -219,15 +221,15 @@ const ContactPage = () => {
                         Address
                       </span>
                       <p className="mt-1">
-                        C-16/17 B, Road no. 1, Sardar Estate,
+                        206-A, Platinum Commercial Center,
                         <br />
-                        Ajwa Road,
+                        Via Char Rasta Rd, opp. VIA Ground,
                         <br />
-                        Vadodara-390019.
+                        GIDC, Vapi, Gujarat 396195
                       </p>
                     </div>
 
-                    <div className="space-y-3">
+                    {/* <div className="space-y-3">
                       <span className="font-semibold text-base sm:text-lg block">
                         Follow us at
                       </span>
@@ -243,7 +245,7 @@ const ContactPage = () => {
                           </Link>
                         ))}
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>
