@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useReducer, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { generateOrderId } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
@@ -326,10 +327,9 @@ export function useCheckout() {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load checkout data",
-          variant: "destructive",
+        toast.error("Failed to load checkout data", {
+          description: "Please try again later.",
+          duration: 5000,
         });
       } finally {
         dispatch({ type: "SET_LOADING", payload: false });
@@ -410,16 +410,15 @@ export function useCheckout() {
 
       updateCheckoutData(newCheckoutData);
 
-      toast({
-        title: "Item removed",
+      toast.success("Item removed", {
         description: "Item has been removed from your order",
+        duration: 5000,
       });
     } catch (error) {
       console.error("Error removing item:", error);
-      toast({
-        title: "Error",
+      toast.error("Oops!", {
         description: "Failed to remove item",
-        variant: "destructive",
+        duration: 5000,
       });
     }
   };
@@ -430,10 +429,9 @@ export function useCheckout() {
 
     // Prevent reapplying the same discount
     if (state.discountCode === state.appliedDiscountCode) {
-      toast({
-        title: "Warning",
+      toast.warning("Warning", {
         description: "This discount code is already applied",
-        variant: "destructive",
+        duration: 5000,
       });
       return;
     }
@@ -473,27 +471,24 @@ export function useCheckout() {
         };
 
         updateCheckoutData(updatedCheckoutData);
-        toast({
-          title: "Success",
+        toast.success("Success", {
           description: result.message,
-          className: "bg-green-500 text-white",
+          duration: 5000,
         });
       } else {
         dispatch({ type: "SET_DISCOUNT_INFO", payload: "" });
         dispatch({ type: "SET_DISCOUNT_AMOUNT", payload: 0 });
-        toast({
-          title: "Invalid Code",
+        toast.error("Invalid Code", {
           description:
             result.message || "This discount code is invalid or expired",
-          variant: "destructive",
+          duration: 5000,
         });
       }
     } catch (error) {
       console.error("Error applying discount:", error);
-      toast({
-        title: "Error",
+      toast.error("Oops!", {
         description: "Failed to apply discount code",
-        variant: "destructive",
+        duration: 5000,
       });
     } finally {
       dispatch({ type: "SET_LOADING_DISCOUNT", payload: false });
@@ -507,10 +502,9 @@ export function useCheckout() {
 
     // Validate points to redeem
     if (state.pointsToRedeem > (state.userData.rewardPoints || 0)) {
-      toast({
-        title: "Warning",
+      toast.warning("Warning", {
         description: "You don't have enough reward points",
-        variant: "destructive",
+        duration: 5000,
       });
       return;
     }
@@ -557,58 +551,194 @@ export function useCheckout() {
 
         updateCheckoutData(updatedCheckoutData);
 
-        toast({
-          title: "Success",
+        toast.success("Success", {
           description: `Redeemed ${state.pointsToRedeem} points for ₹${result.data.discountAmount} discount`,
-          className: "bg-green-500 text-white",
+          duration: 5000,
         });
       } else {
-        toast({
-          title: "Redemption Failed",
+        toast.error("Redemption Failed", {
           description: result.error || "Failed to redeem reward points",
-          variant: "destructive",
+          duration: 5000,
         });
       }
     } catch (error) {
       console.error("Error redeeming reward points:", error);
-      toast({
-        title: "Error",
+      toast.error("Oops!", {
         description: "Failed to redeem reward points",
-        variant: "destructive",
+        duration: 5000,
       });
     } finally {
       dispatch({ type: "SET_LOADING_REWARD_REDEMPTION", payload: false });
     }
   };
 
-  // Confirm the order
-  const confirmOrder = () => {
-    if (!state.selectedAddress || !state.checkoutData || !state.userData) {
-      toast({
-        title: "Error",
-        description: "Please select a delivery address",
-        variant: "destructive",
+  // Initialize Razorpay payment
+  const initializeRazorpayPayment = async (orderId: string, amount: number) => {
+    try {
+      // Create Razorpay order
+      const razorpayResponse = await fetch("/api/razorpay/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: amount,
+          orderId: orderId,
+          currency: "INR",
+          notes: {
+            orderId: orderId,
+            userId: state.userData?._id,
+            platform: "gujarat-store",
+          },
+        }),
       });
-      return;
+
+      const razorpayData = await razorpayResponse.json();
+
+      if (!razorpayData.success) {
+        throw new Error(
+          razorpayData.error || "Failed to create Razorpay order"
+        );
+      }
+
+      // Initialize Razorpay checkout
+      const options = {
+        key: razorpayData.data.keyId,
+        amount: razorpayData.data.amount,
+        currency: razorpayData.data.currency,
+        name: "Gujarat Store",
+        description: `Order ${orderId}`,
+        order_id: razorpayData.data.razorpayOrderId,
+        handler: async (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) => {
+          await handleRazorpaySuccess(response, orderId);
+        },
+        prefill: {
+          name: state.userData?.name,
+          email: state.userData?.email,
+          contact: state.userData?.phone || "",
+        },
+        theme: {
+          color: "#DC2626", // Red theme color
+        },
+        modal: {
+          ondismiss: () => {
+            dispatch({ type: "SET_SUBMITTING", payload: false });
+            toast.error("Payment Cancelled", {
+              description: "Payment was cancelled by user",
+              duration: 5000,
+            });
+          },
+        },
+      };
+
+      // Load Razorpay script if not already loaded
+      if (!window.Razorpay) {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = () => {
+          const razorpay = new window.Razorpay(options);
+          razorpay.open();
+        };
+        script.onerror = () => {
+          throw new Error("Failed to load Razorpay checkout script");
+        };
+        document.body.appendChild(script);
+      } else {
+        const razorpay = new window.Razorpay(options);
+        razorpay.open();
+      }
+    } catch (error) {
+      console.error("Razorpay initialization error:", error);
+      dispatch({ type: "SET_SUBMITTING", payload: false });
+      toast.error("Payment Error", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to initialize payment",
+        duration: 5000,
+      });
     }
+  };
 
-    dispatch({ type: "SET_SUBMITTING", payload: true });
-    const orderId = generateOrderId();
+  // Handle successful Razorpay payment
+  const handleRazorpaySuccess = async (
+    response: {
+      razorpay_payment_id: string;
+      razorpay_order_id: string;
+      razorpay_signature: string;
+    },
+    orderId: string
+  ) => {
+    try {
+      console.log("Processing Razorpay payment success for order:", orderId);
+      console.log("Payment response:", {
+        payment_id: response.razorpay_payment_id,
+        order_id: response.razorpay_order_id,
+      });
 
+      // Verify payment
+      const verifyResponse = await fetch("/api/razorpay/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+          orderId: orderId,
+        }),
+      });
+
+      const verifyData = await verifyResponse.json();
+      console.log("Payment verification result:", verifyData);
+
+      if (!verifyData.success) {
+        throw new Error(verifyData.error || "Payment verification failed");
+      }
+
+      // Payment verified successfully, now create the order
+      console.log(
+        "Payment verified successfully, creating order in database..."
+      );
+      await createOrderWithPayment(orderId, {
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_order_id: response.razorpay_order_id,
+        payment_status: "paid",
+        payment_method: verifyData.data?.method || "card",
+        payment_amount: verifyData.data?.amount || 0,
+        verified_at: verifyData.data?.verifiedAt,
+      });
+    } catch (error) {
+      console.error("Payment verification error:", error);
+      dispatch({ type: "SET_SUBMITTING", payload: false });
+      toast.error("Payment Verification Failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Payment could not be verified",
+        duration: 5000,
+      });
+    }
+  };
+
+  // Create order with payment information
+  const createOrderWithPayment = async (orderId: string, paymentInfo?: any) => {
     const orderPayload = {
       orderId,
       status: "confirmed",
-      userId: state.userData._id,
-      items: state.checkoutData.items,
-      subtotal: state.checkoutData.subtotal,
-      deliveryCharges: state.checkoutData.deliveryCharges,
-      discountAmount: state.checkoutData.discountAmount || 0,
-      discountCode: state.checkoutData.discountCode || "",
+      userId: state.userData!._id,
+      items: state.checkoutData!.items,
+      subtotal: state.checkoutData!.subtotal,
+      deliveryCharges: state.checkoutData!.deliveryCharges,
+      discountAmount: state.checkoutData!.discountAmount || 0,
+      discountCode: state.checkoutData!.discountCode || "",
       rewardDiscountAmount: state.rewardDiscountAmount || 0,
       pointsRedeemed: state.pointsToRedeem || 0,
-      total: state.checkoutData.total,
+      total: state.checkoutData!.total,
       addressId: state.selectedAddress,
       paymentOption: state.paymentOption,
+      paymentInfo: paymentInfo || null,
     };
 
     fetch("/api/order", {
@@ -671,30 +801,52 @@ export function useCheckout() {
           }
           dispatch({ type: "SET_CONFIRMED_ORDER_ID", payload: orderId });
           dispatch({ type: "SET_CONFIRMATION_OPEN", payload: true });
-          toast({
-            title: "Success",
+          toast.success("Success", {
             description: "Order Confirmed",
-            className: "bg-green-500 text-white",
+            duration: 5000,
           });
         } else {
-          toast({
-            title: "Error",
+          toast.error("Order confirmation failed", {
             description: data.error || "Failed to confirm order",
-            variant: "destructive",
+            duration: 5000,
           });
         }
       })
       .catch((error) => {
         console.error("Error processing order:", error);
-        toast({
-          title: "Error",
+        toast.error("Oops!", {
           description: "Something went wrong. Please try again.",
-          variant: "destructive",
+          duration: 5000,
         });
       })
       .finally(() => {
         dispatch({ type: "SET_SUBMITTING", payload: false });
       });
+  };
+
+  // Confirm the order
+  const confirmOrder = () => {
+    if (!state.selectedAddress || !state.checkoutData || !state.userData) {
+      toast.error("Oops!", {
+        description: "Please select a delivery address",
+        duration: 5000,
+      });
+      return;
+    }
+
+    dispatch({ type: "SET_SUBMITTING", payload: true });
+
+    // Handle payment based on selected option
+    if (state.paymentOption === "razorpay") {
+      // For Razorpay, generate order ID and initialize payment
+      // Order will be created only after successful payment
+      const orderId = generateOrderId();
+      initializeRazorpayPayment(orderId, state.checkoutData.total);
+    } else {
+      // For COD, create order immediately
+      const orderId = generateOrderId();
+      createOrderWithPayment(orderId);
+    }
   };
 
   // Toggle accordion sections (e.g., delivery address, order summary)
