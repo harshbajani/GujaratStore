@@ -2,7 +2,7 @@
 
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 import { CartProvider } from "@/context/CartContext";
 import { SessionProvider } from "next-auth/react";
 import { GuestProvider } from "@/context/GuestContext";
@@ -27,7 +27,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     <main className=" flex-grow">{children}</main>
                     <Footer />
                   </div>
-                  <Toaster />
+                  <Toaster richColors />
                 </WishlistProvider>
               </CartProvider>
             </GuestProvider>
