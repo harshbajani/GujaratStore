@@ -368,21 +368,14 @@ const CheckoutPage = () => {
                 </div>
                 <div className="flex items-center space-x-2 p-2 border rounded-md">
                   <RadioGroupItem
-                    value="google-pay"
-                    id="google-pay"
+                    value="razorpay"
+                    id="razorpay"
                     className="text-red-600 border-red-600"
-                    disabled
                   />
-                  <Label htmlFor="google-pay">Google Pay (coming soon)</Label>
-                </div>
-                <div className="flex items-center space-x-2 p-2 border rounded-md">
-                  <RadioGroupItem
-                    value="net-banking"
-                    id="net-banking"
-                    className="text-red-600 border-red-600"
-                    disabled
-                  />
-                  <Label htmlFor="net-banking">Net Banking (coming soon)</Label>
+                  <Label htmlFor="razorpay" className="flex items-center gap-2">
+                    <span>Online Payment</span>
+                    <span className="text-xs text-gray-500">(Cards, UPI, Wallets, NetBanking)</span>
+                  </Label>
                 </div>
               </RadioGroup>
             </AccordionSection>
