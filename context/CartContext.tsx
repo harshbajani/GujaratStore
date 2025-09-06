@@ -1,10 +1,16 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { useSession } from "next-auth/react";
-import { toast } from "@/hooks/use-toast";
 import { useGuest } from "./GuestContext";
 import Cookies from "js-cookie";
+import { toast } from "sonner";
 
 interface CartItem extends IProductResponse {
   cartQuantity: number;
@@ -61,10 +67,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         // Fetch authenticated user's cart
         const response = await fetch("/api/user/cart");
         const data = await response.json();
-        
+
         if (data.success) {
           const cartProductIds = data.data?.cart || [];
-          
+
           if (cartProductIds.length === 0) {
             setCartItems([]);
             return;
@@ -81,7 +87,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               ...p.data,
               cartQuantity: 1,
               deliveryCharges: calculateDeliveryCharges(p.data),
-              inCart: true
+              inCart: true,
             }));
           setCartItems(cartProducts);
         } else {
@@ -99,7 +105,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             ...p.data,
             cartQuantity: 1,
             deliveryCharges: calculateDeliveryCharges(p.data),
-            inCart: true
+            inCart: true,
           }));
         setCartItems(cartProducts);
       } else {
@@ -118,160 +124,166 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     refreshCart();
   }, [session?.user?.email, guestCart]);
 
-  const addToCart = useCallback(async (productId: string) => {
-    try {
-      // Check if item already exists
-      const existingItem = cartItems.find(item => item._id === productId);
-      if (existingItem) {
-        await updateQuantity(productId, existingItem.cartQuantity + 1);
-        return;
-      }
-
-      // Fetch product data first for optimistic update
-      const productResponse = await fetch(`/api/vendor/products/${productId}`);
-      const productData = await productResponse.json();
-      
-      if (!productData.success) {
-        throw new Error("Failed to fetch product data");
-      }
-
-      // Optimistically update the UI immediately
-      const newItem: CartItem = {
-        ...productData.data,
-        cartQuantity: 1,
-        deliveryCharges: calculateDeliveryCharges(productData.data),
-        inCart: true
-      };
-      
-      setCartItems(prev => [...prev, newItem]);
-
-      // Then make the API call
-      if (session) {
-        const response = await fetch("/api/user/cart", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ productId }),
-        });
-
-        if (!response.ok) {
-          // Revert the optimistic update if the API call fails
-          setCartItems(prev => prev.filter(item => item._id !== productId));
-          throw new Error("Failed to add to cart");
+  const addToCart = useCallback(
+    async (productId: string) => {
+      try {
+        // Check if item already exists
+        const existingItem = cartItems.find((item) => item._id === productId);
+        if (existingItem) {
+          await updateQuantity(productId, existingItem.cartQuantity + 1);
+          return;
         }
-      } else {
-        // Use GuestContext to handle guest cart
-        addToGuestCart(productId);
-      }
 
-      toast({
-        title: "Success",
-        description: "Product added to cart",
-        className: "bg-green-500 text-white",
-      });
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add to cart",
-        variant: "destructive",
-      });
-    }
-  }, [cartItems, session, addToGuestCart, calculateDeliveryCharges]);
+        // Fetch product data first for optimistic update
+        const productResponse = await fetch(
+          `/api/vendor/products/${productId}`
+        );
+        const productData = await productResponse.json();
 
-  const removeFromCart = useCallback(async (productId: string) => {
-    try {
-      // Store the item being removed for potential rollback
-      const removedItem = cartItems.find(item => item._id === productId);
-
-      // Optimistically update the UI immediately
-      setCartItems(prev => prev.filter(item => item._id !== productId));
-
-      // Then make the API call
-      if (session) {
-        const response = await fetch("/api/user/cart", {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ productId }),
-        });
-
-        if (!response.ok) {
-          // Revert the optimistic update if the API call fails
-          if (removedItem) {
-            setCartItems(prev => [...prev, removedItem]);
-          }
-          throw new Error("Failed to remove from cart");
+        if (!productData.success) {
+          throw new Error("Failed to fetch product data");
         }
-      } else {
-        // Use GuestContext to handle guest cart
-        removeFromGuestCart(productId);
-      }
 
-      toast({
-        title: "Success",
-        description: "Product removed from cart",
-        className: "bg-green-500 text-white",
-      });
-    } catch (error) {
-      console.error("Error removing from cart:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove from cart",
-        variant: "destructive",
-      });
-    }
-  }, [cartItems, session, removeFromGuestCart]);
+        // Optimistically update the UI immediately
+        const newItem: CartItem = {
+          ...productData.data,
+          cartQuantity: 1,
+          deliveryCharges: calculateDeliveryCharges(productData.data),
+          inCart: true,
+        };
 
-  const updateQuantity = useCallback(async (productId: string, quantity: number) => {
-    try {
-      if (quantity < 1) return;
+        setCartItems((prev) => [...prev, newItem]);
 
-      // Store the original item for potential rollback
-      const originalItem = cartItems.find(item => item._id === productId);
+        // Then make the API call
+        if (session) {
+          const response = await fetch("/api/user/cart", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ productId }),
+          });
 
-      // Optimistically update the UI immediately
-      setCartItems(prev => 
-        prev.map(item => 
-          item._id === productId 
-            ? { ...item, cartQuantity: quantity }
-            : item
-        )
-      );
-
-      if (session) {
-        const response = await fetch("/api/user/cart", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId, quantity }),
-        });
-
-        if (!response.ok) {
-          // Revert the optimistic update if the API call fails
-          if (originalItem) {
-            setCartItems(prev => 
-              prev.map(item => 
-                item._id === productId 
-                  ? { ...item, cartQuantity: originalItem.cartQuantity }
-                  : item
-              )
+          if (!response.ok) {
+            // Revert the optimistic update if the API call fails
+            setCartItems((prev) =>
+              prev.filter((item) => item._id !== productId)
             );
+            throw new Error("Failed to add to cart");
           }
-          throw new Error("Failed to update quantity");
+        } else {
+          // Use GuestContext to handle guest cart
+          addToGuestCart(productId);
         }
+
+        toast.success("Success", {
+          description: "Product added to cart",
+          duration: 5000,
+        });
+      } catch (error) {
+        console.error("Error adding to cart:", error);
+        toast.error("Oops!", {
+          description: "Failed to add to cart",
+          duration: 5000,
+        });
       }
-      // For guest users, the quantity is only maintained in local state
-    } catch (error) {
-      console.error("Error updating quantity:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update quantity",
-        variant: "destructive",
-      });
-    }
-  }, [cartItems, session]);
+    },
+    [cartItems, session, addToGuestCart, calculateDeliveryCharges]
+  );
+
+  const removeFromCart = useCallback(
+    async (productId: string) => {
+      try {
+        // Store the item being removed for potential rollback
+        const removedItem = cartItems.find((item) => item._id === productId);
+
+        // Optimistically update the UI immediately
+        setCartItems((prev) => prev.filter((item) => item._id !== productId));
+
+        // Then make the API call
+        if (session) {
+          const response = await fetch("/api/user/cart", {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ productId }),
+          });
+
+          if (!response.ok) {
+            // Revert the optimistic update if the API call fails
+            if (removedItem) {
+              setCartItems((prev) => [...prev, removedItem]);
+            }
+            throw new Error("Failed to remove from cart");
+          }
+        } else {
+          // Use GuestContext to handle guest cart
+          removeFromGuestCart(productId);
+        }
+
+        toast.success("Success", {
+          description: "Product removed from cart",
+          duration: 5000,
+        });
+      } catch (error) {
+        console.error("Error removing from cart:", error);
+        toast.error("Oops!", {
+          description: "Failed to remove from cart",
+          duration: 5000,
+        });
+      }
+    },
+    [cartItems, session, removeFromGuestCart]
+  );
+
+  const updateQuantity = useCallback(
+    async (productId: string, quantity: number) => {
+      try {
+        if (quantity < 1) return;
+
+        // Store the original item for potential rollback
+        const originalItem = cartItems.find((item) => item._id === productId);
+
+        // Optimistically update the UI immediately
+        setCartItems((prev) =>
+          prev.map((item) =>
+            item._id === productId ? { ...item, cartQuantity: quantity } : item
+          )
+        );
+
+        if (session) {
+          const response = await fetch("/api/user/cart", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ productId, quantity }),
+          });
+
+          if (!response.ok) {
+            // Revert the optimistic update if the API call fails
+            if (originalItem) {
+              setCartItems((prev) =>
+                prev.map((item) =>
+                  item._id === productId
+                    ? { ...item, cartQuantity: originalItem.cartQuantity }
+                    : item
+                )
+              );
+            }
+            throw new Error("Failed to update quantity");
+          }
+        }
+        // For guest users, the quantity is only maintained in local state
+      } catch (error) {
+        console.error("Error updating quantity:", error);
+        toast.error("Oops!", {
+          description: "Failed to update quantity",
+          duration: 5000,
+        });
+      }
+    },
+    [cartItems, session]
+  );
 
   const clearCart = useCallback(async () => {
     try {

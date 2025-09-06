@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Loader from "@/components/Loader";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 import { addAddress } from "@/lib/actions/address.actions";
 import AddressDialog from "@/lib/forms/addressForm";
 import { z } from "zod";
@@ -21,6 +20,7 @@ import AccordionSection from "@/components/AccordionSection";
 import { useCheckout } from "@/hooks/useCheckout"; // Adjust the import path as needed
 import { RewardRedemptionComponent } from "@/components/RewardPointsSection";
 import GuestCheckoutForm from "@/components/GuestCheckoutForm";
+import { toast } from "sonner";
 
 type DeliveryAddress = z.infer<typeof AddressSchema>;
 
@@ -28,7 +28,6 @@ const CheckoutPage = () => {
   const { data: session } = useSession();
   const [showGuestForm, setShowGuestForm] = useState(false);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
-  const { toast } = useToast();
   const {
     state,
     dispatch,
@@ -73,24 +72,22 @@ const CheckoutPage = () => {
           payload: newAddress._id,
         });
 
-        toast({
-          title: "Success",
+        toast.success("Success", {
           description: "Address added successfully",
+          duration: 5000,
         });
         setShowAddressDialog(false);
       } else {
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description: response.message || "Failed to add address",
-          variant: "destructive",
+          duration: 5000,
         });
       }
     } catch (error) {
       console.error("Error adding address:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Something went wrong",
-        variant: "destructive",
+        duration: 5000,
       });
     }
   };
@@ -374,7 +371,9 @@ const CheckoutPage = () => {
                   />
                   <Label htmlFor="razorpay" className="flex items-center gap-2">
                     <span>Online Payment</span>
-                    <span className="text-xs text-gray-500">(Cards, UPI, Wallets, NetBanking)</span>
+                    <span className="text-xs text-gray-500">
+                      (Cards, UPI, Wallets, NetBanking)
+                    </span>
                   </Label>
                 </div>
               </RadioGroup>
