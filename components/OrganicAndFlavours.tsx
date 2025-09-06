@@ -1,14 +1,25 @@
 "use client";
 import Image from "next/image";
 import { Button } from "./ui/button";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, ShoppingCart, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { flavoursOfGujarat, organicBucket } from "@/constants";
+import { flavoursOfGujarat } from "@/constants";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
+import { useOrganicProducts } from "@/hooks/useOrganicProducts";
+import Loader from "./Loader";
 
 const OrganicAndFlavours = () => {
+  // * Custom hook for organic products
+  const {
+    products: organicProducts,
+    loading,
+    error,
+    handleToggleCart,
+    handleToggleWishlist,
+  } = useOrganicProducts();
+
   // * Refs for different sections
   const [titleRef, titleInView] = useInView({
     threshold: 0.3,
@@ -22,6 +33,9 @@ const OrganicAndFlavours = () => {
     threshold: 0.1,
     triggerOnce: true,
   });
+
+  // * Helper function to construct image URL from GridFS ID
+  const getImageUrl = (imageId: string) => `/api/files/${imageId}`;
 
   // * Animation variants
   const containerVariants = {
@@ -108,37 +122,68 @@ const OrganicAndFlavours = () => {
             animate={organicInView ? "visible" : "hidden"}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 py-16"
           >
-            {organicBucket.map((item, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                whileHover={{ y: -10, transition: { duration: 0.3 } }}
-              >
-                <Link
-                  prefetch
-                  href="/organic"
-                  className="flex flex-col items-center"
+            {loading ? (
+              <div className="col-span-full flex justify-center items-center py-16">
+                <Loader />
+              </div>
+            ) : error ? (
+              <div className="col-span-full flex justify-center items-center py-16">
+                <p className="text-red-500 text-center">
+                  Failed to load organic products. Please try again later.
+                </p>
+              </div>
+            ) : organicProducts.length === 0 ? (
+              <div className="col-span-full flex justify-center items-center py-16">
+                <p className="text-gray-500 text-center">
+                  No organic products available at the moment.
+                </p>
+              </div>
+            ) : (
+              organicProducts.map((product) => (
+                <motion.div
+                  key={product._id}
+                  variants={itemVariants}
+                  whileHover={{ y: -10, transition: { duration: 0.3 } }}
+                  className="flex flex-col items-center justify-between min-h-[420px]"
                 >
-                  <motion.div
-                    className="mb-4 rounded-full overflow-hidden w-[250px] h-[250px]"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.3 }}
+                  <Link
+                    prefetch
+                    href={`/${product.parentCategory.name.toLowerCase()}/${
+                      product.slug
+                    }`}
+                    className="flex flex-col items-center w-full flex-1"
                   >
-                    <Image
-                      src={item.src}
-                      alt={item.title}
-                      width={250}
-                      height={250}
-                      className="object-cover w-full h-full"
-                    />
-                  </motion.div>
+                    <motion.div
+                      className="mb-4 rounded-full overflow-hidden w-[250px] h-[250px]"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Image
+                        src={getImageUrl(product.productCoverImage)}
+                        alt={product.productName}
+                        width={250}
+                        height={250}
+                        className="object-cover w-full h-full"
+                      />
+                    </motion.div>
 
-                  <div className="text-center mb-4">
-                    <h3 className="text-sm mb-2 px-4 leading-tight min-h-[40px]">
-                      {item.title}
-                    </h3>
-                    <p className="font-bold text-lg">{item.price}</p>
-                  </div>
+                    <div className="text-center mb-4 px-2">
+                      <h3 className="text-sm mb-2 leading-tight h-9 flex items-center justify-center hover:text-brand transition-colors line-clamp-2">
+                        {product.productName}
+                      </h3>
+                      <div className="flex items-center justify-center gap-2 flex-wrap">
+                        <p className="font-bold text-lg">
+                          ₹
+                          {Math.floor(product.netPrice).toLocaleString("en-IN")}
+                        </p>
+                        {product.mrp > product.netPrice && (
+                          <span className="text-sm text-gray-500 line-through">
+                            ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
 
                   <div className="flex items-center gap-2">
                     <motion.div
@@ -148,30 +193,47 @@ const OrganicAndFlavours = () => {
                       <Button
                         variant="secondary"
                         className="shadow-md flex items-center gap-2"
+                        onClick={(e) => handleToggleCart(e, product)}
+                        disabled={
+                          !product.productStatus || product.productQuantity <= 0
+                        }
                       >
-                        <div className="bg-brand p-2 rounded -ml-3">
-                          <ShoppingCart className="size-5 text-white" />
+                        <div
+                          className={cn(
+                            product.inCart ? "bg-secondary/90" : "bg-brand",
+                            "p-2 rounded -ml-3 transition-all duration-300"
+                          )}
+                        >
+                          {product.inCart ? (
+                            <Check className="size-5 text-green-500" />
+                          ) : (
+                            <ShoppingCart className="size-5 text-white" />
+                          )}
                         </div>
-                        Add to cart
+                        {product.inCart ? "Remove" : "Add to cart"}
                       </Button>
                     </motion.div>
                     <motion.div
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Button variant="secondary" className="shadow-md">
+                      <Button
+                        variant="secondary"
+                        className="shadow-md"
+                        onClick={(e) => handleToggleWishlist(e, product)}
+                      >
                         <Heart
                           className={cn(
                             "text-red-600",
-                            item.wishlist && "fill-red-600"
+                            product.wishlist && "fill-red-600"
                           )}
                         />
                       </Button>
                     </motion.div>
                   </div>
-                </Link>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            )}
           </motion.div>
         </motion.div>
 
