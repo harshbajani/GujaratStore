@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -11,12 +11,12 @@ import {
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, Trash2 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 import QuantitySelector from "@/components/ui/quantity-selector";
 import Loader from "@/components/Loader";
 import { useRouter } from "next/navigation";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 import { useCart } from "@/context/CartContext";
+import { toast } from "sonner";
 
 const CartPage = () => {
   const router = useRouter();
@@ -62,10 +62,9 @@ const CartPage = () => {
     );
 
     if (missingSize) {
-      toast({
-        title: "Please select size",
+      toast.warning("Please select size", {
         description: "Size selection is required for some items",
-        variant: "destructive",
+        duration: 5000,
       });
       return;
     }

@@ -20,12 +20,11 @@ import { inquirySchema } from "@/lib/validations";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { z } from "zod";
 import { createInquiry } from "@/lib/actions/inquiry.actions";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const ContactPage = () => {
   // * useStates and hooks
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   type InquiryData = z.infer<typeof inquirySchema>;
   const form = useForm({
@@ -48,7 +47,10 @@ const ContactPage = () => {
       });
       const result = await createInquiry(formData);
       if (result.success) {
-        toast({ title: "Success", description: "Inquiry sent successfully." });
+        toast.success("Success", {
+          description: "Inquiry sent successfully.",
+          duration: 5000,
+        });
         form.reset({
           name: "",
           email: "",
@@ -65,10 +67,9 @@ const ContactPage = () => {
           ? "This phone number is already registered. Please use another number."
           : "Failed to send inquiry. Please try again later.";
 
-      toast({
-        title: "Error",
+      toast.error("Oops!", {
         description: errorMessage,
-        variant: "destructive",
+        duration: 5000,
       });
     } finally {
       setIsSubmitting(false);

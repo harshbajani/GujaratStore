@@ -9,9 +9,9 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Truck, Clock, CheckCircle } from "lucide-react";
 import Loader from "@/components/Loader";
-import { toast } from "@/hooks/use-toast";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface OrderItem {
   productId: string;
@@ -78,10 +78,9 @@ const OrderSummaryPage = () => {
         const orderData = await orderResponse.json();
 
         if (!orderData.success) {
-          toast({
-            title: "Error",
+          toast.error("Oops!", {
             description: "Failed to load order details",
-            variant: "destructive",
+            duration: 5000,
           });
           router.push("/");
           return;
@@ -105,10 +104,9 @@ const OrderSummaryPage = () => {
         }
       } catch (error) {
         console.error("Error fetching order data:", error);
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description: "Something went wrong",
-          variant: "destructive",
+          duration: 5000,
         });
       } finally {
         setLoading(false);

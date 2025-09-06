@@ -8,7 +8,6 @@ import { motion } from "framer-motion";
 import { Star, Heart, ShoppingCart, Check, Filter } from "lucide-react";
 import { cn, getProductRating } from "@/lib/utils";
 import Loader from "@/components/Loader";
-import { toast } from "@/hooks/use-toast";
 import useProductFilter from "@/hooks/useProductFilter";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -44,6 +43,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useInView } from "react-intersection-observer";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
+import { toast } from "sonner";
 
 interface Category {
   _id: string;
@@ -116,10 +116,9 @@ const ProductCategoryPage = () => {
             p._id === product._id ? { ...p, wishlist: false } : p
           )
         );
-        toast({
-          title: "Success",
+        toast("Success", {
           description: "Product removed from wishlist",
-          className: "bg-green-500 text-white",
+          duration: 5000,
         });
       } else {
         await addToWishlist(product._id);
@@ -128,18 +127,16 @@ const ProductCategoryPage = () => {
             p._id === product._id ? { ...p, wishlist: true } : p
           )
         );
-        toast({
-          title: "Success",
+        toast.success("Success", {
           description: "Product added to wishlist",
-          className: "bg-green-500 text-white",
+          duration: 5000,
         });
       }
     } catch (error) {
       console.error("Error updating wishlist:", error);
-      toast({
-        title: "Error",
+      toast.error("Oops!", {
         description: "Failed to update wishlist",
-        variant: "destructive",
+        duration: 5000,
       });
     }
   };
@@ -156,28 +153,25 @@ const ProductCategoryPage = () => {
         setProducts((prev) =>
           prev.map((p) => (p._id === product._id ? { ...p, inCart: false } : p))
         );
-        toast({
-          title: "Success",
+        toast.success("Success", {
           description: "Product removed from cart",
-          className: "bg-green-500 text-white",
+          duration: 5000,
         });
       } else {
         await addToCart(product._id);
         setProducts((prev) =>
           prev.map((p) => (p._id === product._id ? { ...p, inCart: true } : p))
         );
-        toast({
-          title: "Success",
+        toast.success("Success", {
           description: "Product added to cart",
-          className: "bg-green-500 text-white",
+          duration: 5000,
         });
       }
     } catch (error) {
       console.error("Error updating cart:", error);
-      toast({
-        title: "Error",
+      toast.error("Oops!", {
         description: "Failed to update cart",
-        variant: "destructive",
+        duration: 5000,
       });
     }
   };
