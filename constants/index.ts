@@ -52,10 +52,10 @@ export const NavLinks = [
 ];
 
 export const FooterLinks = [
-  // {
-  //   route: "/about-us",
-  //   label: "About us",
-  // },
+  {
+    route: "/about-us",
+    label: "About us",
+  },
   {
     route: "/contact-us",
     label: "Contact us",

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface WishlistContextType {
   wishlistItems: IProductResponse[];
@@ -121,17 +121,15 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("guestWishlist", JSON.stringify(newGuestWishlist));
       }
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Product added to wishlist",
-        className: "bg-green-500 text-white",
+        duration: 5000,
       });
     } catch (error) {
       console.error("Error adding to wishlist:", error);
-      toast({
-        title: "Error",
+      toast.error("Oops!", {
         description: "Failed to add to wishlist",
-        variant: "destructive",
+        duration: 5000,
       });
     }
   };
@@ -172,17 +170,15 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("guestWishlist", JSON.stringify(newGuestWishlist));
       }
 
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Product removed from wishlist",
-        className: "bg-green-500 text-white",
+        duration: 5000,
       });
     } catch (error) {
       console.error("Error removing from wishlist:", error);
-      toast({
-        title: "Error",
+      toast.error("Oops!", {
         description: "Failed to remove from wishlist",
-        variant: "destructive",
+        duration: 5000,
       });
     }
   };
