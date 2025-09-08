@@ -403,6 +403,19 @@ export const vendorAddSchema = z
   // Optionally, you could set additional fields here (e.g. isVerified) on the backend
   .strict();
 
+export const vendorIdentitySchema = z.object({
+  aadharCardNumber: z
+    .string()
+    .min(12, "Aadhar number must be 12 digits")
+    .max(12, "Aadhar number must be 12 digits"),
+  aadharCardDoc: z.string().min(1, "Aadhar card document is required"),
+  panCard: z
+    .string()
+    .min(10, "PAN number must be 10 characters")
+    .max(10, "PAN number must be 10 characters"),
+  panCardDoc: z.string().min(1, "PAN card document is required"),
+});
+
 export const vendorAdminSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),

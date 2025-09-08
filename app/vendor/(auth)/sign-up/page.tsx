@@ -1,4 +1,4 @@
-import VendorForm from "@/lib/forms/vendorForm";
+import VendorForm from "@/lib/forms/vendor/vendorForm";
 
 const SignUp = () => <VendorForm type="sign-up" />;
 

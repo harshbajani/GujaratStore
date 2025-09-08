@@ -38,6 +38,13 @@ declare interface IVendor {
   role: "vendor";
   store: IStore;
   bankDetails?: BankDetails;
+  vendorIdentity?: {
+    aadharCardNumber: string;
+    aadharCardDoc: string;
+    panCard: string;
+    panCardDoc: string;
+  };
+
   isVerified: boolean;
   emailVerified: boolean;
   verificationToken?: string;

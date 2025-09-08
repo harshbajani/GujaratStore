@@ -35,6 +35,7 @@ export async function GET() {
         emailVerified: vendor.emailVerified,
         hasStore: !!vendor.store,
         hasBankDetails: !!vendor.bankDetails,
+        hasIdentity: !!vendor.vendorIdentity,
       },
     });
   } catch (error) {
