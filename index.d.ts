@@ -39,6 +39,7 @@ declare interface IVendor {
   store: IStore;
   bankDetails?: BankDetails;
   isVerified: boolean;
+  emailVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
   __v: number;

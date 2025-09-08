@@ -22,7 +22,11 @@ export class VendorService {
   }
 
   static async createVendor(
-    data: VendorUpdateData & { password: string; isVerified?: boolean }
+    data: VendorUpdateData & {
+      password: string;
+      isVerified?: boolean;
+      emailVerified?: boolean;
+    }
   ): Promise<ActionResponse<VendorResponse>> {
     try {
       await connectToDB();
@@ -38,6 +42,7 @@ export class VendorService {
       const vendor = await Vendor.create({
         ...data,
         isVerified: data.isVerified ?? false,
+        emailVerified: data.emailVerified ?? false,
       });
 
       const sanitizedVendor = this.sanitizeVendor(vendor.toObject());
