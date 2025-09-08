@@ -25,14 +25,22 @@ const store = new mongoose.Schema({
   alternativeContact: { type: String, optional: true },
 });
 
+const identitySchema = new mongoose.Schema({
+  aadharCardNumber: { type: String, required: true },
+  aadharCardDoc: { type: String, required: true },
+  panCard: { type: String, required: true },
+  panCardDoc: { type: String, required: true },
+});
+
 const vendorSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ["vendor"], default: "vendor" },
-  store: { type: store, required: false },
-  bankDetails: { type: bankDetailsSchema, required: false },
+  store: { type: store, required: true },
+  bankDetails: { type: bankDetailsSchema, required: true },
+  vendorIdentity: { type: identitySchema, required: false },
   isVerified: { type: Boolean, default: false }, // Business approval by admin
   emailVerified: { type: Boolean, default: false }, // Email verification via OTP
   verificationToken: String,
