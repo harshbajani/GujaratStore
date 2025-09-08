@@ -35,7 +35,7 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid credentials");
           }
 
-          if (role === "vendor" && !account.isVerified) {
+          if (role === "vendor" && !account.emailVerified) {
             throw new Error("Please verify your email before signing in");
           }
 

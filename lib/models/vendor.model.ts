@@ -33,7 +33,8 @@ const vendorSchema = new mongoose.Schema({
   role: { type: String, enum: ["vendor"], default: "vendor" },
   store: { type: store, required: false },
   bankDetails: { type: bankDetailsSchema, required: false },
-  isVerified: { type: Boolean, default: false },
+  isVerified: { type: Boolean, default: false }, // Business approval by admin
+  emailVerified: { type: Boolean, default: false }, // Email verification via OTP
   verificationToken: String,
   verificationTokenExpiry: Date,
 });

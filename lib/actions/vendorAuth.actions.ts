@@ -92,8 +92,8 @@ export async function verifyOTP(
       };
     }
 
-    // Update user verification status
-    await Vendor.updateOne({ email }, { isVerified: true });
+    // Update email verification status (not business approval)
+    await Vendor.updateOne({ email }, { emailVerified: true });
 
     // Delete OTP record
     await OTP.deleteOne({ email });

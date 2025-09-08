@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
@@ -6,12 +6,45 @@ const useVendorAuth = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
-  const publicPaths = [
-    "/vendor/sign-in",
-    "/vendor/sign-up",
-    "/vendor/forgot-password",
-    "/vendor/reset-password",
-  ];
+  const [verificationStatus, setVerificationStatus] = useState<{
+    isVerified: boolean;
+    emailVerified: boolean;
+    hasStore: boolean;
+    hasBankDetails: boolean;
+  } | null>(null);
+
+  const publicPaths = useMemo(
+    () => [
+      "/vendor/sign-in",
+      "/vendor/sign-up",
+      "/vendor/forgot-password",
+      "/vendor/reset-password",
+      "/vendor/account",
+      "/vendor/verification-pending",
+    ],
+    []
+  );
+
+  // Check verification status
+  useEffect(() => {
+    const checkVerificationStatus = async () => {
+      if (status === "loading" || !session || session.user.role !== "vendor")
+        return;
+
+      try {
+        const response = await fetch("/api/vendor/verification");
+        const data = await response.json();
+
+        if (data.success) {
+          setVerificationStatus(data.data);
+        }
+      } catch (error) {
+        console.error("Error checking verification status:", error);
+      }
+    };
+
+    checkVerificationStatus();
+  }, [session, status]);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -28,16 +61,33 @@ const useVendorAuth = () => {
       session.user.role === "vendor" &&
       pathname === "/vendor/sign-in"
     ) {
-      // Redirect authenticated vendor to dashboard
-      router.replace("/vendor/dashboard");
+      // Check verification status before redirecting to dashboard
+      if (verificationStatus) {
+        if (!verificationStatus.isVerified) {
+          router.replace("/vendor/verification-pending");
+        } else if (!verificationStatus.hasStore) {
+          router.replace("/vendor/account");
+        } else {
+          router.replace("/vendor/dashboard");
+        }
+      }
     } else if (
       session.user.role !== "vendor" &&
       pathname.startsWith("/vendor")
     ) {
       // Redirect users without the vendor role
       router.replace("/vendor/sign-in");
+    } else if (
+      session.user.role === "vendor" &&
+      verificationStatus &&
+      !verificationStatus.isVerified &&
+      !pathname.includes("/vendor/account") &&
+      !pathname.includes("/vendor/verification-pending")
+    ) {
+      // Redirect unverified vendors to verification pending page
+      router.replace("/vendor/verification-pending");
     }
-  }, [session, status, router]);
+  }, [session, status, verificationStatus, router, pathname, publicPaths]);
 };
 
 export default useVendorAuth;
