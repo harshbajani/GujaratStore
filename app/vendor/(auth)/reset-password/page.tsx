@@ -1,5 +1,5 @@
 "use client";
-import VendorResetPasswordForm from "@/lib/forms/vendorResetPasswordForm";
+import VendorResetPasswordForm from "@/lib/forms/vendor/vendorResetPasswordForm";
 import { redirect } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 

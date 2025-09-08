@@ -12,7 +12,8 @@ export async function middleware(request: NextRequest) {
     path.includes("/vendor/sign-up") ||
     path.includes("/vendor/forgot-password") ||
     path.includes("/vendor/reset-password") ||
-    path.includes("/vendor/account");
+    path.includes("/vendor/account") ||
+    path.includes("/vendor/verification-pending");
 
   // Skip middleware for public routes
   if (isPublicRoute) {
@@ -33,9 +34,9 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      // Make a request to your API to check if store exists
-      const response = await fetch(
-        `${request.nextUrl.origin}/api/vendor/store`,
+      // Make a request to your API to check vendor verification and store status
+      const verificationResponse = await fetch(
+        `${request.nextUrl.origin}/api/vendor/verification`,
         {
           headers: {
             Cookie: request.headers.get("cookie") || "",
@@ -43,14 +44,21 @@ export async function middleware(request: NextRequest) {
         }
       );
 
-      const data = await response.json();
+      const verificationData = await verificationResponse.json();
+
+      // If vendor is not verified, redirect to verification pending page
+      if (!verificationData.success || !verificationData.data.isVerified) {
+        return NextResponse.redirect(
+          new URL("/vendor/verification-pending", request.url)
+        );
+      }
 
       // If no store exists, redirect to account page
-      if (!data.success || !data.data) {
+      if (!verificationData.data.hasStore) {
         return NextResponse.redirect(new URL("/vendor/account", request.url));
       }
     } catch {
-      // If there's an error checking store, redirect to account page
+      // If there's an error checking verification, redirect to account page
       return NextResponse.redirect(new URL("/vendor/account", request.url));
     }
   }

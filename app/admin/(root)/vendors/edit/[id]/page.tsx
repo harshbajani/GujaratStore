@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useVendors } from "@/hooks/useVendors";
 import { vendorAdminSchema } from "@/lib/validations";
+import { Switch } from "@/components/ui/switch";
 
 type VendorAdminFormValues = z.infer<typeof vendorAdminSchema>;
 
@@ -47,6 +48,8 @@ const EditVendorAdminForm = () => {
       name: "",
       email: "",
       phone: "",
+      isVerified: false,
+      emailVerified: true, // Admin-edited vendors have verified emails
       store: {
         storeName: "",
         contact: "",
@@ -436,6 +439,38 @@ const EditVendorAdminForm = () => {
                   />
                 </div>
               </div>
+
+              <FormField
+                control={form.control}
+                name="emailVerified"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Email Verified</FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isVerified"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Business Approved</FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
               <div className="flex justify-end gap-4 pt-4">
                 <Button variant="outline" asChild>

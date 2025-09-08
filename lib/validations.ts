@@ -363,6 +363,8 @@ export const vendorAddSchema = z
     email: z.string().email("Invalid email address"),
     phone: z.string().min(10, "Phone number must be at least 10 characters"),
     password: z.string().min(6, "Password must be at least 6 characters"),
+    isVerified: z.boolean().default(true),
+    emailVerified: z.boolean().default(true), // Admin-created vendors have verified emails
     // Optional nested store fields
     store: z
       .object({
@@ -401,10 +403,25 @@ export const vendorAddSchema = z
   // Optionally, you could set additional fields here (e.g. isVerified) on the backend
   .strict();
 
+export const vendorIdentitySchema = z.object({
+  aadharCardNumber: z
+    .string()
+    .min(12, "Aadhar number must be 12 digits")
+    .max(12, "Aadhar number must be 12 digits"),
+  aadharCardDoc: z.string().min(1, "Aadhar card document is required"),
+  panCard: z
+    .string()
+    .min(10, "PAN number must be 10 characters")
+    .max(10, "PAN number must be 10 characters"),
+  panCardDoc: z.string().min(1, "PAN card document is required"),
+});
+
 export const vendorAdminSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Phone number must be at least 10 characters"),
+  isVerified: z.boolean().default(false),
+  emailVerified: z.boolean().default(true), // Admin-created vendors have verified emails
   store: z
     .object({
       storeName: z.string().min(2, "Store name is required").optional(),

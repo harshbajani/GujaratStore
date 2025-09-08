@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { vendorAddSchema } from "@/lib/validations";
+import { Switch } from "@/components/ui/switch";
 
 type VendorAddFormValues = z.infer<typeof vendorAddSchema>;
 
@@ -45,6 +46,8 @@ const AddVendorAdminForm = () => {
       email: "",
       phone: "",
       password: "",
+      isVerified: false,
+      emailVerified: true,
       store: {
         storeName: "",
         contact: "",
@@ -72,8 +75,8 @@ const AddVendorAdminForm = () => {
   const onSubmit = async (data: VendorAddFormValues) => {
     setLoading(true);
     try {
-      // Append isVerified flag (true) since vendor is created by admin
-      const payload = { ...data, isVerified: true };
+      // Append verification flags since vendor is created by admin
+      const payload = { ...data, isVerified: true, emailVerified: true };
 
       const result = await createVendor(payload);
       if (result.success) {
@@ -453,6 +456,38 @@ const AddVendorAdminForm = () => {
                   />
                 </div>
               </div>
+
+              <FormField
+                control={form.control}
+                name="emailVerified"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Email Verified</FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isVerified"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Is Verified</FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
               <div className="flex justify-end gap-4 pt-4">
                 <Button variant="outline" asChild>
