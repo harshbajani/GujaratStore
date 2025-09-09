@@ -43,10 +43,8 @@ export const useVendorDetails = (): UseUserDetailsReturn => {
 
       // Check if response.data is defined and set user accordingly
       if (response.data) {
-        setUser({
-          ...response.data,
-          _id: response.data._id.toString(),
-        });
+        // Data is already serialized by VendorService.sanitizeVendor, so _id is already a string
+        setUser(response.data);
       } else {
         setUser(null); // Set user to null if no data is returned
       }

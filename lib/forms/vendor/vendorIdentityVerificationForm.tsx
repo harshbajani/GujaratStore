@@ -29,34 +29,12 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-const vendorIdentityFormSchema = z.object({
-  aadharCardNumber: z
-    .string()
-    .min(12, "Aadhar number must be 12 digits")
-    .max(12, "Aadhar number must be 12 digits"),
-  aadharCardDoc: z
-    .union([z.string(), z.instanceof(File)])
-    .refine(
-      (val) => val !== null && val !== undefined && val !== "",
-      "Aadhar card document is required"
-    ),
-  panCard: z
-    .string()
-    .min(10, "PAN number must be 10 characters")
-    .max(10, "PAN number must be 10 characters"),
-  panCardDoc: z
-    .union([z.string(), z.instanceof(File)])
-    .refine(
-      (val) => val !== null && val !== undefined && val !== "",
-      "PAN card document is required"
-    ),
-});
+import { vendorIdentityFormSchema } from "@/lib/validations";
 
 type IdentityFormValues = z.infer<typeof vendorIdentityFormSchema>;
 
 const VendorIdentityVerificationForm = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingData, setIsLoadingData] = useState(true);
   const { toast } = useToast();
 
   const form = useForm<IdentityFormValues>({
@@ -84,8 +62,6 @@ const VendorIdentityVerificationForm = () => {
         }
       } catch (error) {
         console.error("Error loading vendor identity:", error);
-      } finally {
-        setIsLoadingData(false);
       }
     };
 
@@ -197,139 +173,133 @@ const VendorIdentityVerificationForm = () => {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            {isLoadingData ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Aadhar Section */}
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="aadharCardNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Aadhar Card Number</FormLabel>
-                        <div className="relative flex items-center">
-                          <IdCard className="w-4 h-4 absolute left-3 top-3 text-muted-foreground pointer-events-none" />
-                          <FormControl>
-                            <Input
-                              {...field}
-                              className="bg-muted/50 pl-10"
-                              maxLength={12}
-                              placeholder="Enter 12-digit Aadhar number"
-                            />
-                          </FormControl>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="aadharCardDoc"
-                    render={({ field: { onChange, value, ...field } }) => (
-                      <FormItem>
-                        <FormLabel>Upload Aadhar Card Document</FormLabel>
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Aadhar Section */}
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="aadharCardNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Aadhar Card Number</FormLabel>
+                      <div className="relative flex items-center">
+                        <IdCard className="w-4 h-4 absolute left-3 top-3 text-muted-foreground pointer-events-none" />
                         <FormControl>
-                          <div className="space-y-2">
-                            <Input
-                              {...field}
-                              type="file"
-                              accept=".png,.jpg,.jpeg,.pdf"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  onChange(file);
-                                }
-                              }}
-                              className="cursor-pointer"
-                            />
-                            {value && (
-                              <div className="flex items-center space-x-2 text-sm text-green-600">
-                                <Upload className="w-4 h-4" />
-                                <span>
-                                  {value &&
-                                  typeof value === "object" &&
-                                  "name" in value
-                                    ? (value as File).name
-                                    : "Document uploaded"}
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                          <Input
+                            {...field}
+                            className="bg-muted/50 pl-10"
+                            maxLength={12}
+                            placeholder="Enter 12-digit Aadhar number"
+                          />
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="aadharCardDoc"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem>
+                      <FormLabel>Upload Aadhar Card Document</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <Input
+                            {...field}
+                            type="file"
+                            accept=".png,.jpg,.jpeg,.pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                onChange(file);
+                              }
+                            }}
+                            className="cursor-pointer"
+                          />
+                          {value && (
+                            <div className="flex items-center space-x-2 text-sm text-green-600">
+                              <Upload className="w-4 h-4" />
+                              <span>
+                                {value &&
+                                typeof value === "object" &&
+                                "name" in value
+                                  ? (value as File).name
+                                  : "Document uploaded"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                {/* PAN Section */}
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="panCard"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>PAN Card Number</FormLabel>
-                        <div className="relative flex items-center">
-                          <IdCard className="w-4 h-4 absolute left-3 top-3 text-muted-foreground pointer-events-none" />
-                          <FormControl>
-                            <Input
-                              {...field}
-                              className="bg-muted/50 pl-10 uppercase"
-                              maxLength={10}
-                              placeholder="Enter 10-character PAN number"
-                            />
-                          </FormControl>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="panCardDoc"
-                    render={({ field: { onChange, value, ...field } }) => (
-                      <FormItem>
-                        <FormLabel>Upload PAN Card Document</FormLabel>
+              {/* PAN Section */}
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="panCard"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>PAN Card Number</FormLabel>
+                      <div className="relative flex items-center">
+                        <IdCard className="w-4 h-4 absolute left-3 top-3 text-muted-foreground pointer-events-none" />
                         <FormControl>
-                          <div className="space-y-2">
-                            <Input
-                              {...field}
-                              type="file"
-                              accept=".png,.jpg,.jpeg,.pdf"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  onChange(file);
-                                }
-                              }}
-                              className="cursor-pointer"
-                            />
-                            {value && (
-                              <div className="flex items-center space-x-2 text-sm text-green-600">
-                                <Upload className="w-4 h-4" />
-                                <span>
-                                  {value &&
-                                  typeof value === "object" &&
-                                  "name" in value
-                                    ? (value as File).name
-                                    : "Document uploaded"}
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                          <Input
+                            {...field}
+                            className="bg-muted/50 pl-10 uppercase"
+                            maxLength={10}
+                            placeholder="Enter 10-character PAN number"
+                          />
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="panCardDoc"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem>
+                      <FormLabel>Upload PAN Card Document</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <Input
+                            {...field}
+                            type="file"
+                            accept=".png,.jpg,.jpeg,.pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                onChange(file);
+                              }
+                            }}
+                            className="cursor-pointer"
+                          />
+                          {value && (
+                            <div className="flex items-center space-x-2 text-sm text-green-600">
+                              <Upload className="w-4 h-4" />
+                              <span>
+                                {value &&
+                                typeof value === "object" &&
+                                "name" in value
+                                  ? (value as File).name
+                                  : "Document uploaded"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-            )}
+            </div>
           </CardContent>
           <CardFooter className="flex items-end justify-end">
             <div className="flex justify-end gap-4">

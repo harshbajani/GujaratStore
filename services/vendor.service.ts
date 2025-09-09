@@ -14,11 +14,43 @@ export class VendorService {
   }
 
   private static sanitizeVendor(vendor: any): VendorResponse {
-    const { ...safeVendor } = vendor;
-    return {
-      ...safeVendor,
-      _id: safeVendor._id.toString(),
+    const sanitized = JSON.parse(JSON.stringify(vendor));
+    
+    // Convert main _id
+    if (sanitized._id) {
+      sanitized._id = sanitized._id.toString();
+    }
+    
+    // Convert nested object IDs
+    if (sanitized.store && sanitized.store._id) {
+      sanitized.store._id = sanitized.store._id.toString();
+    }
+    
+    if (sanitized.documents && sanitized.documents._id) {
+      sanitized.documents._id = sanitized.documents._id.toString();
+    }
+    
+    if (sanitized.personalInfo && sanitized.personalInfo._id) {
+      sanitized.personalInfo._id = sanitized.personalInfo._id.toString();
+    }
+    
+    // Handle any other nested objects that might have _id fields
+    const convertNestedIds = (obj: any) => {
+      if (obj && typeof obj === 'object') {
+        if (obj._id && typeof obj._id === 'object') {
+          obj._id = obj._id.toString();
+        }
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key) && typeof obj[key] === 'object' && obj[key] !== null) {
+            convertNestedIds(obj[key]);
+          }
+        }
+      }
     };
+    
+    convertNestedIds(sanitized);
+    
+    return sanitized;
   }
 
   static async createVendor(
