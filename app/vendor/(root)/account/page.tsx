@@ -16,6 +16,7 @@ import { CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import VendorIdentityVerificationForm from "@/lib/forms/vendor/vendorIdentityVerificationForm";
 import Loader from "@/components/Loader";
+import BusinessIdentityVerificationForm from "@/lib/forms/vendor/businessIdentityVerificationForm";
 
 const AccountSettingsPage = () => {
   const [verificationStatus, setVerificationStatus] = useState<{
@@ -24,6 +25,7 @@ const AccountSettingsPage = () => {
     hasStore: boolean;
     hasBankDetails: boolean;
     hasIdentity: boolean;
+    hasBusinessIdentity: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -50,7 +52,8 @@ const AccountSettingsPage = () => {
     verificationStatus.isVerified &&
     verificationStatus.hasStore &&
     verificationStatus.hasBankDetails &&
-    verificationStatus.hasIdentity;
+    verificationStatus.hasIdentity &&
+    verificationStatus.hasBusinessIdentity;
 
   return (
     <Suspense fallback={<Loader />}>
@@ -192,6 +195,27 @@ const AccountSettingsPage = () => {
                         )}
                       </div>
                     </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Business Identity</span>
+                      <div className="flex items-center space-x-2">
+                        {verificationStatus.hasBusinessIdentity ? (
+                          <>
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-green-600 font-medium">
+                              Complete
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="w-4 h-4 text-red-600" />
+                            <span className="text-red-600 font-medium">
+                              Incomplete
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {!verificationStatus.emailVerified && (
@@ -229,6 +253,9 @@ const AccountSettingsPage = () => {
 
         {/* Store Overview Card */}
         <Storeform />
+
+        {/* Business Identity Card */}
+        <BusinessIdentityVerificationForm />
 
         {/* Bank Details Card */}
         <BankDetailsForm />

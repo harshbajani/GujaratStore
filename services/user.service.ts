@@ -13,15 +13,60 @@ export class UserService {
   }
 
   private static transformUser(user: any): UserResponse {
-    const { ...safeUser } = user;
-
-    return {
-      ...safeUser,
-      _id: safeUser._id.toString(),
-      wishlist: safeUser.wishlist?.map((id: any) => id.toString()) || [],
-      cart: safeUser.cart?.map((id: any) => id.toString()) || [],
-      order: safeUser.order?.map((id: any) => id.toString()) || [],
+    // Use JSON serialization to handle all nested objects with ObjectIds
+    const sanitized = JSON.parse(JSON.stringify(user));
+    
+    // Convert main _id
+    if (sanitized._id) {
+      sanitized._id = sanitized._id.toString();
+    }
+    
+    // Convert arrays of ObjectIds
+    if (sanitized.wishlist) {
+      sanitized.wishlist = sanitized.wishlist.map((id: any) => 
+        typeof id === 'object' ? id.toString() : id
+      );
+    }
+    
+    if (sanitized.cart) {
+      sanitized.cart = sanitized.cart.map((id: any) => 
+        typeof id === 'object' ? id.toString() : id
+      );
+    }
+    
+    if (sanitized.order) {
+      sanitized.order = sanitized.order.map((id: any) => 
+        typeof id === 'object' ? id.toString() : id
+      );
+    }
+    
+    // Handle addresses array with potential nested ObjectIds
+    if (sanitized.addresses && Array.isArray(sanitized.addresses)) {
+      sanitized.addresses = sanitized.addresses.map((address: any) => {
+        if (address._id && typeof address._id === 'object') {
+          address._id = address._id.toString();
+        }
+        return address;
+      });
+    }
+    
+    // Handle any other nested objects that might have _id fields
+    const convertNestedIds = (obj: any) => {
+      if (obj && typeof obj === 'object') {
+        if (obj._id && typeof obj._id === 'object') {
+          obj._id = obj._id.toString();
+        }
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key) && typeof obj[key] === 'object' && obj[key] !== null) {
+            convertNestedIds(obj[key]);
+          }
+        }
+      }
     };
+    
+    convertNestedIds(sanitized);
+    
+    return sanitized;
   }
 
   static async createUser(

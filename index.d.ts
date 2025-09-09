@@ -44,7 +44,13 @@ declare interface IVendor {
     panCard: string;
     panCardDoc: string;
   };
-
+  businessIdentity: {
+    MSMECertificate?: string;
+    UdhyamAadhar?: string;
+    Fassai?: string;
+    CorporationCertificate?: string;
+    OtherDocuments?: string;
+  };
   isVerified: boolean;
   emailVerified: boolean;
   verificationToken?: string;

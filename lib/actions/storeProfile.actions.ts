@@ -117,7 +117,13 @@ export async function getStore() {
       return { success: false, error: "Store not found" };
     }
 
-    const formattedData = toInterfaceFormat(vendor.store);
+    // Sanitize the store data to convert ObjectIds to strings
+    const sanitizedStore = JSON.parse(JSON.stringify(vendor.store));
+    if (sanitizedStore._id && typeof sanitizedStore._id === 'object') {
+      sanitizedStore._id = sanitizedStore._id.toString();
+    }
+
+    const formattedData = toInterfaceFormat(sanitizedStore);
     if (!formattedData) {
       return { success: false, error: "Failed to process store data" };
     }
