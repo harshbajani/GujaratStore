@@ -32,6 +32,14 @@ const identitySchema = new mongoose.Schema({
   panCardDoc: { type: String, required: true },
 });
 
+const businessSchema = new mongoose.Schema({
+  MSMECertificate: { type: String, optional: true },
+  UdhyamAadhar: { type: String, optional: true },
+  Fassai: { type: String, optional: true },
+  CorporationCertificate: { type: String, optional: true },
+  OtherDocuments: { type: String, optional: true },
+});
+
 const vendorSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -41,6 +49,7 @@ const vendorSchema = new mongoose.Schema({
   store: { type: store, required: true },
   bankDetails: { type: bankDetailsSchema, required: true },
   vendorIdentity: { type: identitySchema, required: false },
+  businessIdentity: { type: businessSchema, required: false },
   isVerified: { type: Boolean, default: false }, // Business approval by admin
   emailVerified: { type: Boolean, default: false }, // Email verification via OTP
   verificationToken: String,

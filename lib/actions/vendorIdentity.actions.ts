@@ -32,10 +32,16 @@ export async function createVendorIdentity(data: {
       throw new Error("Failed to create vendor identity");
     }
 
+    // Sanitize the vendorIdentity data to convert ObjectIds to strings
+    const sanitizedVendorIdentity = JSON.parse(JSON.stringify(updatedVendor.vendorIdentity));
+    if (sanitizedVendorIdentity._id && typeof sanitizedVendorIdentity._id === 'object') {
+      sanitizedVendorIdentity._id = sanitizedVendorIdentity._id.toString();
+    }
+
     revalidatePath("/vendor/account");
     return {
       success: true,
-      data: updatedVendor.vendorIdentity,
+      data: sanitizedVendorIdentity,
     };
   } catch (error) {
     console.error("Error creating vendor identity:", error);
@@ -74,10 +80,16 @@ export async function updateVendorIdentity(data: {
       throw new Error("Failed to update vendor identity");
     }
 
+    // Sanitize the vendorIdentity data to convert ObjectIds to strings
+    const sanitizedVendorIdentity = JSON.parse(JSON.stringify(updatedVendor.vendorIdentity));
+    if (sanitizedVendorIdentity._id && typeof sanitizedVendorIdentity._id === 'object') {
+      sanitizedVendorIdentity._id = sanitizedVendorIdentity._id.toString();
+    }
+
     revalidatePath("/vendor/account");
     return {
       success: true,
-      data: updatedVendor.vendorIdentity,
+      data: sanitizedVendorIdentity,
     };
   } catch (error) {
     console.error("Error updating vendor identity:", error);
@@ -106,9 +118,18 @@ export async function getVendorIdentity() {
       throw new Error("Vendor not found");
     }
 
+    // Sanitize the vendorIdentity data to convert ObjectIds to strings
+    let sanitizedVendorIdentity = null;
+    if (vendor.vendorIdentity) {
+      sanitizedVendorIdentity = JSON.parse(JSON.stringify(vendor.vendorIdentity));
+      if (sanitizedVendorIdentity._id && typeof sanitizedVendorIdentity._id === 'object') {
+        sanitizedVendorIdentity._id = sanitizedVendorIdentity._id.toString();
+      }
+    }
+
     return {
       success: true,
-      data: vendor.vendorIdentity || null,
+      data: sanitizedVendorIdentity,
     };
   } catch (error) {
     console.error("Error getting vendor identity:", error);

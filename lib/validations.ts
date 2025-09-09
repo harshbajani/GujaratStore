@@ -456,3 +456,42 @@ export const vendorAdminSchema = z.object({
     }),
   }),
 });
+
+export const vendorIdentityFormSchema = z.object({
+  aadharCardNumber: z
+    .string()
+    .min(12, "Aadhar number must be 12 digits")
+    .max(12, "Aadhar number must be 12 digits"),
+  aadharCardDoc: z
+    .union([z.string(), z.instanceof(File)])
+    .refine(
+      (val) => val !== null && val !== undefined && val !== "",
+      "Aadhar card document is required"
+    ),
+  panCard: z
+    .string()
+    .min(10, "PAN number must be 10 characters")
+    .max(10, "PAN number must be 10 characters"),
+  panCardDoc: z
+    .union([z.string(), z.instanceof(File)])
+    .refine(
+      (val) => val !== null && val !== undefined && val !== "",
+      "PAN card document is required"
+    ),
+});
+
+export const businessIdentityFormSchema = z.object({
+  MSMECertificate: z.union([z.string(), z.instanceof(File)]).optional(),
+  UdhyamAadhar: z.union([z.string(), z.instanceof(File)]).optional(),
+  Fassai: z.union([z.string(), z.instanceof(File)]).optional(),
+  CorporationCertificate: z.union([z.string(), z.instanceof(File)]).optional(),
+  OtherDocuments: z.union([z.string(), z.instanceof(File)]),
+});
+
+export const businessIdentitySchema = z.object({
+  MSMECertificate: z.string().optional(),
+  UdhyamAadhar: z.string().optional(),
+  Fassai: z.string().optional(),
+  CorporationCertificate: z.string().optional(),
+  OtherDocuments: z.string().optional(),
+});

@@ -36,6 +36,7 @@ export async function GET() {
         hasStore: !!vendor.store,
         hasBankDetails: !!vendor.bankDetails,
         hasIdentity: !!vendor.vendorIdentity,
+        hasBusinessIdentity: !!vendor.businessIdentity,
       },
     });
   } catch (error) {
