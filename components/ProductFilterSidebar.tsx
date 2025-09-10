@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   Accordion, 
   AccordionContent, 
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { DualThumbSlider } from "@/components/ui/dual-slider";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
+import { generatePriceRanges, PriceRange } from "@/lib/utils/priceRangeUtils";
 
 interface FilterSidebarProps {
   filters: {
@@ -17,6 +18,7 @@ interface FilterSidebarProps {
     secondaryCategories: string[];
     colors: string[];
     priceRange: [number, number];
+    priceRanges?: string[]; // Selected price range IDs
   };
   categories: {
     primary: { _id: string; name: string; count: number }[];
@@ -24,7 +26,9 @@ interface FilterSidebarProps {
   };
   colors: { color: string; count: number }[];
   priceRange: [number, number];
+  products?: any[]; // All products for calculating price ranges
   onFilterChange: (filterType: string, value: string | [number, number], checked?: boolean) => void;
+  usePriceRanges?: boolean; // Whether to use Amazon-style price ranges or slider
 }
 
 const ProductFilterSidebar: React.FC<FilterSidebarProps> = ({
@@ -32,8 +36,15 @@ const ProductFilterSidebar: React.FC<FilterSidebarProps> = ({
   categories,
   colors,
   priceRange,
-  onFilterChange
+  products = [],
+  onFilterChange,
+  usePriceRanges = true
 }) => {
+  // Generate Amazon-style price ranges
+  const amazonPriceRanges = useMemo(() => {
+    if (!usePriceRanges || products.length === 0) return [];
+    return generatePriceRanges(priceRange[0], priceRange[1], products);
+  }, [priceRange, products, usePriceRanges]);
   return (
     <div className="w-full md:w-64 p-4 bg-white shadow-sm rounded-lg">
       <Accordion type="multiple" defaultValue={["categories", "color", "price"]}>
@@ -127,26 +138,50 @@ const ProductFilterSidebar: React.FC<FilterSidebarProps> = ({
         <AccordionItem value="price">
           <AccordionTrigger>Price</AccordionTrigger>
           <AccordionContent>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-sm">
-                  ₹{filters.priceRange[0].toLocaleString("en-IN")}
-                </span>
-                <span className="text-sm">
-                  ₹{filters.priceRange[1].toLocaleString("en-IN")}
-                </span>
+            {usePriceRanges && amazonPriceRanges.length > 0 ? (
+              /* Amazon-style price range checkboxes */
+              <div className="space-y-2">
+                {amazonPriceRanges.map((range) => (
+                  <div key={range.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`price-range-${range.id}`}
+                      checked={filters.priceRanges?.includes(range.id) || false}
+                      onCheckedChange={(checked) =>
+                        onFilterChange('priceRanges', range.id, checked as boolean)
+                      }
+                    />
+                    <Label
+                      htmlFor={`price-range-${range.id}`}
+                      className="text-sm font-normal flex-1 cursor-pointer"
+                    >
+                      {range.label} ({range.count || 0})
+                    </Label>
+                  </div>
+                ))}
               </div>
-              <DualThumbSlider
-                value={filters.priceRange}
-                min={priceRange[0]}
-                max={priceRange[1]}
-                step={100}
-                onValueChange={(value) => 
-                  onFilterChange('priceRange', value as [number, number])
-                }
-                className="mt-6"
-              />
-            </div>
+            ) : (
+              /* Fallback to slider */
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-sm">
+                    ₹{filters.priceRange[0].toLocaleString("en-IN")}
+                  </span>
+                  <span className="text-sm">
+                    ₹{filters.priceRange[1].toLocaleString("en-IN")}
+                  </span>
+                </div>
+                <DualThumbSlider
+                  value={filters.priceRange}
+                  min={priceRange[0]}
+                  max={priceRange[1]}
+                  step={100}
+                  onValueChange={(value) => 
+                    onFilterChange('priceRange', value as [number, number])
+                  }
+                  className="mt-6"
+                />
+              </div>
+            )}
           </AccordionContent>
         </AccordionItem>
       </Accordion>
