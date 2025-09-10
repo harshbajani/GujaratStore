@@ -4,23 +4,29 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState } from "react";
-import { getPublicBlogs } from "@/lib/actions/blog.actions";
+import { useBlogsInfinite } from "@/hooks/useBlogsInfinite";
 import { BlogImage } from "@/components/BlogImage";
 import { Calendar, User, ArrowRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
+import { BlogSkeletonGrid, BlogLoadMoreSkeleton } from "@/components/BlogSkeletonLoader";
 
 const ClientBlogs = ({ initialBlog }: any) => {
-  const [blogs, setBlogs] = useState<TransformedBlog[]>(
-    Array.isArray(initialBlog?.data) ? initialBlog.data : []
-  );
-  const [filteredBlogs, setFilteredBlogs] = useState<TransformedBlog[]>(
-    Array.isArray(initialBlog?.data) ? initialBlog.data : []
-  );
   const [searchTerm, setSearchTerm] = useState("");
   const [blogRef, blogInView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
+  });
+
+  const {
+    blogs: filteredBlogs,
+    isLoading,
+    isLoadingMore,
+    error,
+    loadMoreRef,
+  } = useBlogsInfinite({
+    initialLimit: 12,
+    searchTerm,
   });
 
   const containerVariants = {
@@ -41,29 +47,28 @@ const ClientBlogs = ({ initialBlog }: any) => {
     },
   };
 
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      // Only fetch if we have no initial data
-      if (blogs.length > 0) return;
-      try {
-        const response = await getPublicBlogs();
-        setBlogs(response.data ?? []);
-        setFilteredBlogs(response.data ?? []);
-      } catch (err) {
-        console.error("Error fetching blogs:", err);
-      }
-    };
-    fetchBlogs();
-  }, [blogs.length]);
-
-  useEffect(() => {
-    const filtered = blogs.filter(
-      (blog) =>
-        blog.heading.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        blog.description.toLowerCase().includes(searchTerm.toLowerCase())
+  // Show loading state for initial load
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+        <BreadcrumbHeader subtitle="Blogs" title="Home" titleHref="/" />
+        <div className="py-16">
+          <BlogSkeletonGrid count={6} />
+        </div>
+      </div>
     );
-    setFilteredBlogs(filtered);
-  }, [searchTerm, blogs]);
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Error Loading Blogs</h2>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -127,6 +132,10 @@ const ClientBlogs = ({ initialBlog }: any) => {
             </div>
           )}
         </div>
+
+        {/* Infinite scroll sentinel */}
+        <div ref={loadMoreRef as unknown as React.RefObject<HTMLDivElement>} />
+        {isLoadingMore && <BlogLoadMoreSkeleton />}
       </motion.section>
     </div>
   );

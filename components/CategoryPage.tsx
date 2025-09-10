@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import Image from "next/image";
 import Link from "next/link";
-import { useCategoryProducts } from "@/hooks/useCategoryProducts";
+import { useCategoryProductsInfinite } from "@/hooks/useCategoryProductsInfinite";
 import {
   Select,
   SelectContent,
@@ -16,9 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DualThumbSlider } from "@/components/ui/dual-slider";
 import { Separator } from "@/components/ui/separator";
-import Loader from "@/components/Loader";
+import { generatePriceRanges } from "@/lib/utils/priceRangeUtils";
+import {
+  LoadMoreSkeleton,
+  ProductSkeletonGrid,
+} from "@/components/ProductSkeletonLoader";
 import {
   Tooltip,
   TooltipContent,
@@ -26,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
+import { useMemo } from "react";
 
 interface CategoryPageProps {
   categoryName: string;
@@ -34,13 +38,13 @@ interface CategoryPageProps {
 
 const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
   const {
-    loading,
+    products: sortedProducts,
+    isLoading: loading,
+    isLoadingMore,
     error,
-    sortedProducts,
     sortBy,
     setSortBy,
-    tempFilters,
-    currentPriceRange,
+    filters,
     secondaryCategories,
     availableColors,
     priceRange,
@@ -48,9 +52,11 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
     handleToggleWishlist,
     handleSecondaryCategoryChange,
     handleColorChange,
-    handlePriceRangeChange,
+    handlePriceRangeSelection,
     clearFilters,
-  } = useCategoryProducts(categoryName);
+    loadMoreRef,
+    allCategoryProducts,
+  } = useCategoryProductsInfinite({ categoryName, initialLimit: 10 });
 
   // Animation ref
   const [organicRef, organicInView] = useInView({
@@ -74,8 +80,28 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
   // Helper function to construct image URL from GridFS ID
   const getImageUrl = (imageId: string) => `/api/files/${imageId}`;
 
+  // Generate Amazon-style price ranges based on ALL category products, not filtered ones
+  const amazonPriceRanges = useMemo(() => {
+    if (allCategoryProducts.length === 0) return [];
+    return generatePriceRanges(
+      priceRange[0],
+      priceRange[1],
+      allCategoryProducts
+    );
+  }, [priceRange, allCategoryProducts]);
+
   if (loading) {
-    return <Loader />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <BreadcrumbHeader title="Home" subtitle={title} titleHref="/" />
+        <div className="container mx-auto px-4 flex flex-col md:flex-row">
+          <div className="w-full hidden md:block md:w-64 md:mr-8 py-[78px]" />
+          <div className="flex-1 min-h-screen">
+            <ProductSkeletonGrid count={8} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
@@ -101,31 +127,34 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
               <div className="mb-6">
                 <h3 className="text-sm font-medium mb-3">Categories</h3>
                 <div className="space-y-3">
-                  {secondaryCategories.map((category) => (
-                    <div
-                      key={category._id}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={category._id}
-                        checked={tempFilters.secondaryCategories.includes(
-                          category._id
-                        )}
-                        onCheckedChange={(checked) =>
-                          handleSecondaryCategoryChange(
-                            category._id,
-                            checked as boolean
-                          )
-                        }
-                      />
-                      <label
-                        htmlFor={category._id}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  {secondaryCategories.map((category) => {
+                    const isChecked = filters.secondaryCategories.includes(
+                      category._id
+                    );
+                    return (
+                      <div
+                        key={category._id}
+                        className="flex items-center space-x-2"
                       >
-                        {category.name} ({category.count})
-                      </label>
-                    </div>
-                  ))}
+                        <Checkbox
+                          id={category._id}
+                          checked={isChecked}
+                          onCheckedChange={(checked) => {
+                            handleSecondaryCategoryChange(
+                              category._id,
+                              checked as boolean
+                            );
+                          }}
+                        />
+                        <label
+                          htmlFor={category._id}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {category.name} ({category.count})
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -139,7 +168,7 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
                     <div key={color} className="flex items-center space-x-2">
                       <Checkbox
                         id={color}
-                        checked={tempFilters.colors.includes(color)}
+                        checked={filters.colors.includes(color)}
                         onCheckedChange={(checked) =>
                           handleColorChange(color, checked as boolean)
                         }
@@ -157,23 +186,42 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
 
               <Separator className="my-4" />
 
-              {/* Price Range */}
+              {/* Price Range - Amazon-style checkboxes */}
               <div className="mb-6">
                 <h3 className="text-sm font-medium mb-3">Price Range</h3>
-                <div className="space-y-4">
-                  <DualThumbSlider
-                    min={priceRange[0]}
-                    max={priceRange[1]}
-                    step={1}
-                    value={[currentPriceRange[0], currentPriceRange[1]]}
-                    onValueChange={handlePriceRangeChange}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-sm">
-                    <span>₹{currentPriceRange[0]}</span>
-                    <span>₹{currentPriceRange[1]}</span>
+                {amazonPriceRanges.length > 0 ? (
+                  <div className="space-y-2">
+                    {amazonPriceRanges.map((range) => (
+                      <div
+                        key={range.id}
+                        className="flex items-center space-x-2"
+                      >
+                        <Checkbox
+                          id={`price-range-${range.id}`}
+                          checked={
+                            filters.priceRanges?.includes(range.id) || false
+                          }
+                          onCheckedChange={(checked) =>
+                            handlePriceRangeSelection(
+                              range.id,
+                              checked as boolean
+                            )
+                          }
+                        />
+                        <label
+                          htmlFor={`price-range-${range.id}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {range.label} ({range.count || 0})
+                        </label>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="text-sm text-gray-500">
+                    No price ranges available
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -366,6 +414,12 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
               ))
             )}
           </motion.div>
+
+          {/* Infinite scroll sentinel */}
+          <div
+            ref={loadMoreRef as unknown as React.RefObject<HTMLDivElement>}
+          />
+          {isLoadingMore && <LoadMoreSkeleton />}
         </div>
       </div>
     </div>
