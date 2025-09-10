@@ -116,7 +116,7 @@ export const useCategoryProductsInfinite = ({
 
   const loadMetadata = useCallback(async () => {
     try {
-      const response = await fetch("/api/vendor/products?all=true");
+      const response = await fetch("/api/products?all=true");
       const result = await response.json();
 
       if (result.success && result.data) {
@@ -164,9 +164,8 @@ export const useCategoryProductsInfinite = ({
           params.append("maxPrice", filters.priceRange[1].toString());
       }
 
-      // For now, fetch all products and filter client-side (like the old implementation)
-      // This ensures we have data while we debug the server-side filtering
-      const response = await fetch("/api/vendor/products?all=true");
+      // Use public products API that doesn't require vendor authentication
+      const response = await fetch("/api/products?all=true");
       const result = await response.json();
 
       if (!result.success || !result.data) {
