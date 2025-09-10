@@ -97,8 +97,6 @@ export const useCategoryProductsInfinite = ({
       !isInitialized
     ) {
       const urlState = urlParamsToFilters(searchParams, priceRange);
-      console.log("Initializing from URL params:", urlState);
-
       setFilters(urlState.filters);
       setSortBy(urlState.sortBy);
       setCurrentPriceRange(urlState.filters.priceRange);
@@ -109,7 +107,6 @@ export const useCategoryProductsInfinite = ({
   // Sync URL when filters or sort changes (but only after initialization)
   useEffect(() => {
     if (isInitialized && priceRange[0] !== 0 && priceRange[1] !== 0) {
-      console.log("Syncing to URL:", { filters, sortBy });
       updateUrlWithFilters(filters, sortBy, pathname);
     }
   }, [filters, sortBy, pathname, isInitialized, priceRange]);
@@ -176,10 +173,6 @@ export const useCategoryProductsInfinite = ({
         };
       }
 
-      // Log for debugging
-      console.log(`Fetching products for category: ${categoryName}`);
-      console.log(`Total products available:`, result.data.length);
-
       // Filter products by category name (matching old logic)
       let filteredProducts = result.data.filter(
         (product: IProductResponse) =>
@@ -187,39 +180,20 @@ export const useCategoryProductsInfinite = ({
           categoryName.toLowerCase()
       );
 
-      console.log(
-        `Products after category filtering (${categoryName}):`,
-        filteredProducts.length
-      );
-
-      // Apply filters
-      console.log(`Applying filters:`, filters);
-      console.log(`Products before filtering:`, filteredProducts.length);
-
       if (filters.secondaryCategories.length > 0) {
-        console.log(
-          `Applying secondary category filter:`,
-          filters.secondaryCategories
-        );
         filteredProducts = filteredProducts.filter(
           (product: IProductResponse) =>
             filters.secondaryCategories.includes(
               product.secondaryCategory?._id || ""
             )
         );
-        console.log(
-          `Products after secondary category filter:`,
-          filteredProducts.length
-        );
       }
 
       if (filters.colors.length > 0) {
-        console.log(`Applying color filter:`, filters.colors);
         filteredProducts = filteredProducts.filter(
           (product: IProductResponse) =>
             filters.colors.includes(product.productColor?.toLowerCase() || "")
         );
-        console.log(`Products after color filter:`, filteredProducts.length);
       }
 
       // Apply price range filter (Amazon-style)
@@ -235,17 +209,13 @@ export const useCategoryProductsInfinite = ({
         const maxPrice = Math.max(
           ...allCategoryPrices.map((p: IProductResponse) => p.netPrice)
         );
-        console.log(`Price range for ${categoryName}:`, { minPrice, maxPrice });
 
         const availablePriceRanges = generatePriceRanges(
           minPrice,
           maxPrice,
           allCategoryPrices
         );
-        console.log(`Available price ranges:`, availablePriceRanges);
-        console.log(`Selected price ranges:`, filters.priceRanges);
 
-        const beforeCount = filteredProducts.length;
         filteredProducts = filteredProducts.filter(
           (product: IProductResponse) => {
             const matches = isProductInPriceRanges(
@@ -253,16 +223,9 @@ export const useCategoryProductsInfinite = ({
               filters.priceRanges,
               availablePriceRanges
             );
-            if (!matches) {
-              console.log(
-                `Product ${product.productName} (₹${product.netPrice}) excluded by price filter`
-              );
-            }
+
             return matches;
           }
-        );
-        console.log(
-          `Products after price range filter: ${beforeCount} -> ${filteredProducts.length}`
         );
       }
 
@@ -423,10 +386,6 @@ export const useCategoryProductsInfinite = ({
         const minPrice = Math.min(...prices);
         const maxPrice = Math.max(...prices);
         setPriceRange([minPrice, maxPrice]);
-        console.log(`Setting global price range for ${categoryName}:`, {
-          minPrice,
-          maxPrice,
-        });
 
         // Set initial filters if not already set
         if (currentPriceRange[0] === 0 && currentPriceRange[1] === 0) {
@@ -471,15 +430,11 @@ export const useCategoryProductsInfinite = ({
   // Handle filter changes
   const handleSecondaryCategoryChange = useCallback(
     (id: string, checked: boolean) => {
-      console.log(`Secondary category change: ${id}, checked: ${checked}`);
-      console.log(`Current secondary categories:`, filters.secondaryCategories);
-
       setFilters((prev) => {
         const newSecondaryCategories = checked
           ? [...prev.secondaryCategories, id]
           : prev.secondaryCategories.filter((catId) => catId !== id);
         const next = { ...prev, secondaryCategories: newSecondaryCategories };
-        console.log(`New secondary categories:`, next.secondaryCategories);
         return next;
       });
       // Do not call refresh() here; a useEffect below will react to state changes
@@ -523,13 +478,10 @@ export const useCategoryProductsInfinite = ({
 
   const handlePriceRangeSelection = useCallback(
     (rangeId: string, checked: boolean) => {
-      console.log(`Price range selection: ${rangeId}, checked: ${checked}`);
       setFilters((prev) => {
-        console.log(`Current price ranges:`, prev.priceRanges);
         const newPriceRanges = checked
           ? [...prev.priceRanges, rangeId]
           : prev.priceRanges.filter((id) => id !== rangeId);
-        console.log(`New price ranges:`, newPriceRanges);
         return { ...prev, priceRanges: newPriceRanges };
       });
       // Do not call refresh() here; a useEffect below will react to state changes
@@ -538,7 +490,6 @@ export const useCategoryProductsInfinite = ({
   );
 
   const handleSortChange = useCallback((newSortBy: string) => {
-    console.log("Setting sort to:", newSortBy);
     setSortBy(newSortBy);
   }, []);
 
@@ -605,7 +556,6 @@ export const useCategoryProductsInfinite = ({
   // Refresh when sort changes
   useEffect(() => {
     if (metadataLoaded && isInitialized) {
-      console.log("Refreshing due to sort change:", sortBy);
       refresh();
     }
   }, [sortBy, refresh, metadataLoaded, isInitialized]);
@@ -613,7 +563,6 @@ export const useCategoryProductsInfinite = ({
   // Refresh when non-slider filters change (after state is committed and initialized)
   useEffect(() => {
     if (metadataLoaded && isInitialized) {
-      console.log("Refreshing due to filter change");
       refresh();
     }
   }, [

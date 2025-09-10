@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface PriceRange {
   id: string;
   label: string;
@@ -43,7 +44,6 @@ export function generatePriceRanges(
 
   // Define different strategies based on price gap
   if (priceGap <= 500) {
-    console.log(`Using small price gap strategy (gap: ${priceGap})`);
     // Small price gap: ranges of 50-100
     const increment = priceGap <= 200 ? 50 : 100;
     let start = Math.floor(minPrice / increment) * increment;
@@ -71,7 +71,6 @@ export function generatePriceRanges(
       start = end;
     }
   } else if (priceGap <= 2000) {
-    console.log(`Using medium price gap strategy (gap: ${priceGap})`);
     // Medium price gap: ranges of 200-500
     const ranges = [
       { start: minPrice, end: 500 },
@@ -108,7 +107,6 @@ export function generatePriceRanges(
       }
     });
   } else if (priceGap <= 10000) {
-    console.log(`Using large price gap strategy (gap: ${priceGap})`);
     // Large price gap: ranges of 1000-2000
     const ranges = [
       { start: minPrice, end: 1000 },
@@ -145,7 +143,6 @@ export function generatePriceRanges(
       }
     });
   } else {
-    console.log(`Using very large price gap strategy (gap: ${priceGap})`);
     // Very large price gap: custom ranges
     const ranges = [
       { start: minPrice, end: 1000 },
@@ -209,14 +206,11 @@ export function isProductInPriceRanges(
   return selectedRanges.some((rangeId) => {
     const range = allRanges.find((r) => r.id === rangeId);
     if (!range) {
-      console.log(`Range ${rangeId} not found in available ranges`);
       return false;
     }
 
     const matches = productPrice >= range.min && productPrice <= range.max;
-    console.log(
-      `Checking product price ₹${productPrice} against range ${rangeId} (₹${range.min} - ₹${range.max}): ${matches}`
-    );
+
     return matches;
   });
 }
