@@ -471,17 +471,17 @@ const OrdersPage = () => {
         let badgeClass = "";
 
         switch (status.toLowerCase()) {
-          case "confirmed":
-            badgeClass = "bg-blue-100 text-blue-800";
-            break;
           case "processing":
             badgeClass = "bg-yellow-100 text-yellow-800";
             break;
-          case "shipped":
+          case "ready to ship":
             badgeClass = "bg-purple-100 text-purple-800";
             break;
           case "delivered":
             badgeClass = "bg-green-100 text-green-800";
+            break;
+          case "unconfirmed":
+            badgeClass = "bg-orange-100 text-orange-800";
             break;
           case "cancelled":
             badgeClass = "bg-red-100 text-red-800";
@@ -503,6 +503,22 @@ const OrdersPage = () => {
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("paymentOption")}</div>
       ),
+    },
+    {
+      accessorKey: "paymentStatus",
+      header: "Payment Status",
+      cell: ({ row }) => {
+        const paymentStatus = (row.getValue("paymentStatus") as string) || "pending";
+        const className =
+          paymentStatus === "paid"
+            ? "bg-green-100 text-green-800"
+            : paymentStatus === "failed"
+            ? "bg-red-100 text-red-800"
+            : paymentStatus === "refunded"
+            ? "bg-blue-100 text-blue-800"
+            : "bg-yellow-100 text-yellow-800"; // pending
+        return <Badge className={className}>{paymentStatus}</Badge>;
+      },
     },
     {
       id: "actions",
@@ -528,9 +544,8 @@ const OrdersPage = () => {
                 <SelectValue placeholder="Update Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
+                <SelectItem value="ready to ship">Ready to Ship</SelectItem>
                 <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
@@ -597,9 +612,9 @@ const OrdersPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="unconfirmed">Unconfirmed</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="ready to ship">Ready to Ship</SelectItem>
                   <SelectItem value="delivered">Delivered</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>

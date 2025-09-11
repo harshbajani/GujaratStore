@@ -5,6 +5,7 @@ import {
   sendAdminCancellationEmail,
   sendOrderCancellationEmail,
   sendVendorCancellationEmail,
+  sendOrderReadyToShipEmail,
 } from "@/lib/workflows/emails";
 import User from "@/lib/models/user.model";
 import Vendor from "@/lib/models/vendor.model";
@@ -77,10 +78,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     // Validate status value
     const validStatuses = [
-      "confirmed",
-      "unconfirmed",
-      "processing",
-      "shipped",
+      "unconfirmed", // For payment pending orders
+      "processing", // Default status after successful order/payment
+      "ready to ship", // When order is picked and ready
       "delivered",
       "cancelled",
       "returned",
@@ -148,7 +148,36 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         };
 
         // Get vendor details
-        const { vendorEmail } = await getVendorDetails();
+        const { vendorEmail, vendorName } = await getVendorDetails();
+
+        // Send status update email to customer (for specific status changes)
+        if (status === "ready to ship") {
+          // Send "ready to ship" notification to customer
+          await sendOrderReadyToShipEmail({
+            orderId: orderData.orderId,
+            userName: user.name,
+            userEmail: user.email,
+            email: user.email,
+            orderDate: orderData.createdAt,
+            items: orderData.items,
+            subtotal: orderData.subtotal,
+            deliveryCharges: orderData.deliveryCharges,
+            total: orderData.total,
+            createdAt: orderData.createdAt,
+            paymentOption: orderData.paymentOption,
+            address: orderData.address || {
+              name: "",
+              contact: "",
+              address_line_1: "",
+              address_line_2: "",
+              locality: "",
+              state: "",
+              pincode: "",
+              type: "",
+            },
+            discountAmount: orderData.discountAmount,
+          });
+        }
 
         // If it's an admin cancellation
         if (isAdminCancellation) {

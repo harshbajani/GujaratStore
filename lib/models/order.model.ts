@@ -49,15 +49,14 @@ const orderSchema = new Schema(
     status: {
       type: String,
       enum: [
-        "confirmed",
-        "unconfirmed",
-        "processing",
-        "shipped",
+        "unconfirmed", // For payment pending orders
+        "processing", // Default status after successful order/payment
+        "ready to ship", // When order is picked and ready
         "delivered",
         "cancelled",
         "returned",
       ],
-      default: "confirmed",
+      default: "processing",
     },
     userId: {
       type: Schema.Types.ObjectId,

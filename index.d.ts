@@ -536,10 +536,9 @@ declare interface IOrder {
   _id: string;
   orderId: string;
   status:
-    | "confirmed"
-    | "unconfirmed"
-    | "processing"
-    | "shipped"
+    | "unconfirmed" // For payment pending orders
+    | "processing" // Default status after successful order/payment
+    | "ready to ship" // When order is picked and ready
     | "delivered"
     | "cancelled"
     | "returned";
@@ -593,9 +592,9 @@ declare interface ISalesSummary {
 }
 
 declare interface IOrderStatusBreakdown {
-  confirmed: number;
+  unconfirmed: number;
   processing: number;
-  shipped: number;
+  "ready to ship": number;
   delivered: number;
   cancelled: number;
   returned: number;

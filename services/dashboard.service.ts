@@ -303,12 +303,12 @@ export class DashboardService {
     statusBreakdown: any[]
   ): IOrderStatusBreakdown {
     const breakdown: IOrderStatusBreakdown = {
-      confirmed: 0,
       processing: 0,
-      shipped: 0,
+      "ready to ship": 0,
       delivered: 0,
       cancelled: 0,
       returned: 0,
+      unconfirmed: 0,
     };
 
     statusBreakdown.forEach((entry) => {
