@@ -77,15 +77,11 @@ const ViewOrderPage = () => {
     let badgeClass = "";
     let icon = null;
     switch (status.toLowerCase()) {
-      case "confirmed":
-        badgeClass = "bg-blue-100 text-blue-800";
-        icon = <Package className="h-4 w-4 mr-1" />;
-        break;
       case "processing":
         badgeClass = "bg-yellow-100 text-yellow-800";
         icon = <Package className="h-4 w-4 mr-1" />;
         break;
-      case "shipped":
+      case "ready to ship":
         badgeClass = "bg-purple-100 text-purple-800";
         icon = <Truck className="h-4 w-4 mr-1" />;
         break;
@@ -273,16 +269,6 @@ const ViewOrderPage = () => {
                   <Button
                     size="sm"
                     variant={
-                      order.status === "confirmed" ? "default" : "outline"
-                    }
-                    className={order.status === "confirmed" ? "bg-brand" : ""}
-                    onClick={() => handleStatusChange("confirmed")}
-                  >
-                    Confirm
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={
                       order.status === "processing" ? "default" : "outline"
                     }
                     className={order.status === "processing" ? "bg-brand" : ""}
@@ -292,11 +278,11 @@ const ViewOrderPage = () => {
                   </Button>
                   <Button
                     size="sm"
-                    variant={order.status === "shipped" ? "default" : "outline"}
-                    className={order.status === "shipped" ? "bg-brand" : ""}
-                    onClick={() => handleStatusChange("shipped")}
+                    variant={order.status === "ready to ship" ? "default" : "outline"}
+                    className={order.status === "ready to ship" ? "bg-brand" : ""}
+                    onClick={() => handleStatusChange("ready to ship")}
                   >
-                    Shipped
+                    Ready to Ship
                   </Button>
                   <Button
                     size="sm"

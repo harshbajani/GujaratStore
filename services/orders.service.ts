@@ -99,8 +99,8 @@ export class OrdersService {
         // Update product quantities
         await this.updateProductQuantities(items);
 
-        // Update user cart and orders - only clear cart for confirmed orders
-        const shouldClearCart = orderData.status === "confirmed" || orderData.paymentOption === "cash-on-delivery";
+      // Update user cart and orders - only clear cart for processing orders (completed orders)
+      const shouldClearCart = orderData.status === "processing" || orderData.paymentOption === "cash-on-delivery";
         await this.updateUserData(orderData.userId as string, newOrder._id, shouldClearCart);
 
         // Also invalidate user caches so profile/cart reflect immediately

@@ -9,6 +9,7 @@ export {
   sendOrderCancellationEmail,
   sendVendorCancellationEmail,
   sendAdminCancellationEmail,
+  sendOrderReadyToShipEmail,
 } from "./order/orderEmails";
 
 // Payment-related emails

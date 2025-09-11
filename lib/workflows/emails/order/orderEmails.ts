@@ -339,3 +339,69 @@ export const sendAdminCancellationEmail = async (
     `Admin cancellation notification sent for order ${cancellationData.orderId}`
   );
 };
+
+/**
+ * Send order ready to ship email to customer
+ */
+export const sendOrderReadyToShipEmail = async (
+  orderData: OrderEmailData
+): Promise<void> => {
+  const formattedDate = formatOrderDate(orderData.createdAt);
+
+  const content = `
+    <tr>
+      <td style="padding: 30px;">
+        <h1 style="color: ${
+          EMAIL_CONFIG.BRAND_COLORS.SUCCESS
+        }; text-align: center; margin-top: 0;">
+          📦 Order Ready to Ship!
+        </h1>
+        
+        <p style="font-size: 16px; margin-bottom: 30px; text-align: center; color: #666;">
+          Great news! Your order has been picked from our store and is ready to ship.
+        </p>
+
+        ${generateOrderInfoHTML(orderData, formattedDate)}
+
+        <h2 style="color: ${
+          EMAIL_CONFIG.BRAND_COLORS.PRIMARY
+        }; border-bottom: 2px solid ${
+    EMAIL_CONFIG.BRAND_COLORS.SECONDARY
+  }; padding-bottom: 10px; margin-top: 30px;">
+          Order Items
+        </h2>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          ${generateOrderItemsHTML(orderData.items)}
+        </table>
+
+        ${generateOrderTotalsHTML(orderData)}
+
+        <div style="background-color: ${
+          EMAIL_CONFIG.BRAND_COLORS.SECONDARY
+        }; border-radius: 6px; padding: 20px; margin: 30px 0; text-align: center;">
+          <h3 style="margin: 0 0 10px; color: #333;">What's Next?</h3>
+          <p style="margin: 0; color: #666; font-size: 14px;">
+            Your order will be shipped soon and you'll receive tracking information once it's on the way.
+            Thank you for your patience!
+          </p>
+        </div>
+      </td>
+    </tr>
+    ${generateDeliveryAddressHTML(orderData.address)}
+  `;
+
+  const htmlTemplate = wrapEmailTemplate("Order Ready to Ship", content);
+
+  const mailOptions = {
+    from: `"${EMAIL_CONFIG.COMPANY_NAME}" <${EMAIL_CONFIG.FROM_EMAIL}>`,
+    to: orderData.userEmail,
+    subject: `Order Ready to Ship - ${orderData.orderId}`,
+    html: htmlTemplate,
+  };
+
+  await transporter.sendMail(mailOptions);
+  console.log(
+    `Order ready to ship email sent to ${orderData.userEmail} for order ${orderData.orderId}`
+  );
+};

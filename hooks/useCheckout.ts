@@ -812,7 +812,7 @@ export function useCheckout() {
         throw new Error(verifyData.error || "Payment verification failed");
       }
 
-      // Payment verified successfully, update the order to confirmed
+      // Payment verified successfully, update the order to processing
       console.log(
         "Payment verified successfully, updating order in database..."
       );
@@ -823,7 +823,7 @@ export function useCheckout() {
         payment_method: verifyData.data?.method || "card",
         payment_amount: verifyData.data?.amount || 0,
         verified_at: verifyData.data?.verifiedAt,
-      }, "confirmed", "paid");
+      }, "processing", "paid");
     } catch (error) {
       console.error("Payment verification error:", error);
       dispatch({ type: "SET_SUBMITTING", payload: false });
@@ -912,8 +912,8 @@ export function useCheckout() {
             userEmail: state.userData?.email,
           };
 
-          // Send confirmation email only for confirmed orders
-          if (orderStatus === "confirmed") {
+        // Send confirmation email only for processing orders (completed orders)
+        if (orderStatus === "processing") {
             try {
               // Send order confirmation email
               await fetch("/api/order-email", {
@@ -933,8 +933,8 @@ export function useCheckout() {
 
           // Only clear cart and proceed if payment is successful or COD
           const shouldClearCart = 
-            orderStatus === "confirmed" || 
-            (state.paymentOption === "cash-on-delivery" && orderStatus === "confirmed");
+            orderStatus === "processing" || 
+            (state.paymentOption === "cash-on-delivery" && orderStatus === "processing");
 
           if (shouldClearCart) {
             // Continue with order confirmation process
@@ -1006,9 +1006,9 @@ export function useCheckout() {
       const orderId = generateOrderId();
       initializeRazorpayPayment(orderId, state.checkoutData.total);
     } else {
-      // For COD, create order immediately
+      // For COD, create order immediately with processing status
       const orderId = generateOrderId();
-      createOrderWithPayment(orderId);
+      createOrderWithPayment(orderId, null, "processing", "pending");
     }
   };
 
