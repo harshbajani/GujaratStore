@@ -41,6 +41,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { withVendorProtection } from "../../HOC";
+import { PaymentInfoRow } from "@/components/PaymentInfo/PaymentInfoComponents";
+import { formatPaymentDate, formatPaymentAmount, getPaymentStatusBadge } from "@/lib/utils/paymentUtils";
 
 interface CancellationData {
   cancellationReason?: string;
@@ -498,26 +500,50 @@ const OrdersPage = () => {
       },
     },
     {
-      accessorKey: "paymentOption",
-      header: "Payment Method",
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("paymentOption")}</div>
-      ),
+      id: "paymentInfo",
+      header: "Payment Information",
+      cell: ({ row }) => {
+        const order = row.original;
+        return (
+          <PaymentInfoRow 
+            order={order} 
+            showPaymentId={true}
+            showProcessingTime={false}
+          />
+        );
+      },
     },
     {
-      accessorKey: "paymentStatus",
-      header: "Payment Status",
+      accessorKey: "paymentInfo.verified_at",
+      header: "Payment Date",
       cell: ({ row }) => {
-        const paymentStatus = (row.getValue("paymentStatus") as string) || "pending";
-        const className =
-          paymentStatus === "paid"
-            ? "bg-green-100 text-green-800"
-            : paymentStatus === "failed"
-            ? "bg-red-100 text-red-800"
-            : paymentStatus === "refunded"
-            ? "bg-blue-100 text-blue-800"
-            : "bg-yellow-100 text-yellow-800"; // pending
-        return <Badge className={className}>{paymentStatus}</Badge>;
+        const order = row.original;
+        const paymentDate = order.paymentInfo?.verified_at || 
+                           (order.paymentOption === "cash-on-delivery" ? order.createdAt : null);
+        
+        if (!paymentDate) {
+          return <div className="text-sm text-gray-500">--</div>;
+        }
+        
+        return (
+          <div className="text-sm">
+            {formatPaymentDate(paymentDate)}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "paymentInfo.payment_amount",
+      header: "Payment Amount",
+      cell: ({ row }) => {
+        const order = row.original;
+        const amount = order.paymentInfo?.payment_amount || order.total;
+        
+        return (
+          <div className="font-medium text-green-600">
+            {formatPaymentAmount(amount)}
+          </div>
+        );
       },
     },
     {
