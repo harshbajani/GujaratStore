@@ -53,32 +53,8 @@ export class OrdersService {
         };
       }
 
-      // Create order
-      const newOrder = new Order(orderData);
-      await newOrder.save();
-
-      // Update product quantities
-      await this.updateProductQuantities(items);
-
-      // Update user cart and orders
-      await this.updateUserData(orderData.userId as string, newOrder._id);
-
-      // Also invalidate user caches so profile/cart reflect immediately
-      try {
-        const userKeys = await CacheService.keys("users:*");
-        await Promise.all(userKeys.map((key) => CacheService.delete(key)));
-      } catch (e) {
-        console.error("Failed to invalidate user cache after order", e);
-      }
-
-      // Invalidate relevant caches
-      await this.invalidateOrderCaches();
-
-      return {
-        success: true,
-        message: "Order created successfully",
-        data: newOrder,
-      };
+      // Handle potential duplicate orderId with retry mechanism
+      return await this.createOrderWithRetry(orderData, items);
     } catch (error) {
       console.error("Create order error:", error);
       return {
@@ -87,6 +63,79 @@ export class OrdersService {
           error instanceof Error ? error.message : "Failed to create order",
       };
     }
+  }
+
+  // Helper method to handle order creation with retry logic for duplicate orderIds
+  private static async createOrderWithRetry(
+    orderData: Partial<IOrder>, 
+    items: OrderItem[], 
+    maxRetries: number = 3
+  ): Promise<ActionResponse<IOrder>> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Check if this is a retry due to duplicate orderId
+        if (attempt > 1) {
+          // Generate a new orderId for retry attempts
+          const { generateUniqueOrderId } = await import('@/lib/utils');
+          orderData.orderId = generateUniqueOrderId();
+          console.log(`Retry attempt ${attempt} with new orderId: ${orderData.orderId}`);
+        }
+
+        // Check if an order with this orderId already exists
+        const existingOrder = await Order.findOne({ orderId: orderData.orderId });
+        if (existingOrder) {
+          if (attempt < maxRetries) {
+            console.log(`Order with ID ${orderData.orderId} already exists, generating new ID...`);
+            continue; // This will trigger a retry with a new orderId
+          } else {
+            throw new Error(`Duplicate orderId after ${maxRetries} attempts`);
+          }
+        }
+
+        // Create order
+        const newOrder = new Order(orderData);
+        await newOrder.save();
+
+        // Update product quantities
+        await this.updateProductQuantities(items);
+
+      // Update user cart and orders - only clear cart for processing orders (completed orders)
+      const shouldClearCart = orderData.status === "processing" || orderData.paymentOption === "cash-on-delivery";
+        await this.updateUserData(orderData.userId as string, newOrder._id, shouldClearCart);
+
+        // Also invalidate user caches so profile/cart reflect immediately
+        try {
+          const userKeys = await CacheService.keys("users:*");
+          await Promise.all(userKeys.map((key) => CacheService.delete(key)));
+        } catch (e) {
+          console.error("Failed to invalidate user cache after order", e);
+        }
+
+        // Invalidate relevant caches
+        await this.invalidateOrderCaches();
+
+        return {
+          success: true,
+          message: "Order created successfully",
+          data: newOrder,
+        };
+      } catch (error: any) {
+        // Check if this is a duplicate key error
+        if (error.code === 11000 && error.keyPattern?.orderId && attempt < maxRetries) {
+          console.log(`Duplicate orderId detected on attempt ${attempt}, retrying...`);
+          continue; // Retry with a new orderId
+        }
+        
+        // If it's not a duplicate error or we've exhausted retries, throw the error
+        throw error;
+      }
+    }
+    
+    // If we get here, all retries failed
+    return {
+      success: false,
+      message: "Failed to create order after multiple attempts. Please try again.",
+    };
   }
   // Get order by custom orderId (for frontend display)
   static async getOrderByOrderId(
@@ -602,6 +651,46 @@ export class OrdersService {
     }
   }
 
+  static async updateOrderByOrderId(
+    orderId: string,
+    updateData: any
+  ): Promise<ActionResponse> {
+    try {
+      // Validate status if provided
+      if (updateData.status) {
+        const validStatus = this.validateOrderStatus(updateData.status);
+        if (!validStatus.success) {
+          return validStatus;
+        }
+      }
+
+      const updatedOrder = await Order.findOneAndUpdate(
+        { orderId },
+        updateData,
+        { new: true }
+      );
+
+      if (!updatedOrder) {
+        return { success: false, message: "Order not found" };
+      }
+
+      await this.invalidateOrderCaches();
+      return {
+        success: true,
+        message: "Order updated successfully",
+        data: updatedOrder,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to update order",
+      };
+    }
+  }
+
   static async deleteOrder(id: string): Promise<ActionResponse> {
     try {
       const order = await Order.findById(id);
@@ -624,6 +713,7 @@ export class OrdersService {
   private static validateOrderStatus(status: string): ActionResponse {
     const validStatuses = [
       "confirmed",
+      "unconfirmed",
       "processing",
       "shipped",
       "delivered",
@@ -711,15 +801,22 @@ export class OrdersService {
 
   private static async updateUserData(
     userId: string,
-    orderId: string
+    orderId: string,
+    clearCart: boolean = true
   ): Promise<void> {
     try {
+      const updateData: any = {
+        $push: { order: orderId },
+      };
+      
+      // Only clear cart if specified (for confirmed orders or COD)
+      if (clearCart) {
+        updateData.$set = { cart: [] };
+      }
+      
       await User.findByIdAndUpdate(
         userId,
-        {
-          $push: { order: orderId },
-          $set: { cart: [] },
-        },
+        updateData,
         { new: true }
       );
     } catch (error) {

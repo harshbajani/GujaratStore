@@ -3,7 +3,7 @@ import { connectToDB } from "@/lib/mongodb";
 import Vendor from "@/lib/models/vendor.model";
 import { VendorUpdateData } from "@/lib/actions/admin/vendor.actions";
 import { CacheService } from "./cache.service";
-import { sendOrderConfirmationEmail } from "@/lib/workflows/email";
+import { sendOrderConfirmationEmail } from "@/lib/workflows/emails";
 
 export class VendorService {
   private static readonly CACHE_PREFIX = "vendor:";
@@ -442,12 +442,16 @@ export const sendOrderEmails = async (orderData: OrderEmailData) => {
     // Send to user
     await sendOrderConfirmationEmail({
       ...orderData,
+      email: orderData.userEmail,
+      orderDate: orderData.createdAt,
       recipientType: "user",
     });
 
     // Send to admin
     await sendOrderConfirmationEmail({
       ...orderData,
+      email: process.env.ADMIN_USERNAME!,
+      orderDate: orderData.createdAt,
       recipientType: "admin",
       userEmail: process.env.ADMIN_USERNAME!,
     });
@@ -469,6 +473,8 @@ export const sendOrderEmails = async (orderData: OrderEmailData) => {
 
         await sendOrderConfirmationEmail({
           ...orderData,
+          email: vendorResponse.data.email,
+          orderDate: orderData.createdAt,
           items: vendorItems, // Only send vendor-specific items
           recipientType: "vendor",
           userEmail: vendorResponse.data.email,

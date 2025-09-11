@@ -8,9 +8,20 @@ export const parseStringify = (value: unknown) =>
   JSON.parse(JSON.stringify(value));
 
 export const generateOrderId = () => {
-  // Generates a random 6-digit number
-  const randomDigits = Math.floor(100000 + Math.random() * 900000);
-  return `TGS${randomDigits}`;
+  // Generate a more unique ID using timestamp + random
+  const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+  const randomDigits = Math.floor(1000 + Math.random() * 9000); // 4-digit random
+  return `TGS${timestamp}${randomDigits}`;
+};
+
+// Alternative function for even more uniqueness (UUID-like)
+export const generateUniqueOrderId = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = 'TGS';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 };
 
 // Format date helper
@@ -114,12 +125,25 @@ export const getOrderById = async (id: string) => {
   }
 };
 
-export const updateOrderStatus = async (id: string, status: string) => {
+export const updateOrderStatus = async (
+  id: string, 
+  status: string, 
+  additionalData?: {
+    cancellationReason?: string;
+    isAdminCancellation?: boolean;
+    isVendorCancellation?: boolean;
+  }
+) => {
   try {
+    const requestBody = {
+      status,
+      ...additionalData, // Spread additional data like cancellationReason, isAdminCancellation, etc.
+    };
+
     const response = await fetch(`/api/order/byId/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(requestBody),
     });
     if (!response.ok) {
       throw new Error("Failed to update order status");
