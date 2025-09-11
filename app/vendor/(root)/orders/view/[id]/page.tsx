@@ -39,6 +39,7 @@ import {
   useShippingAddress,
   useUserDetails,
 } from "@/hooks/useOrderHooks";
+import { PaymentInfoCard } from "@/components/PaymentInfo/PaymentInfoComponents";
 
 interface CancellationData {
   cancellationReason?: string;
@@ -302,7 +303,7 @@ const ViewOrderPage = () => {
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="font-medium mb-2">Payment Information</h3>
+                <h3 className="font-medium mb-2">Payment Summary</h3>
                 <p className="text-sm mb-1">
                   <span className="font-medium">Method:</span>{" "}
                   {order.paymentOption}
@@ -441,6 +442,11 @@ const ViewOrderPage = () => {
               <p>No shipping details available.</p>
             )}
           </CardContent>
+        </Card>
+
+        {/* Enhanced Payment Information Card */}
+        <Card className="col-span-1 lg:col-span-2">
+          <PaymentInfoCard order={order} showAdvancedDetails={true} />
         </Card>
       </div>
 
