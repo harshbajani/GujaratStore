@@ -11,6 +11,7 @@ interface AccordionSectionProps {
   onToggle?: (id: string) => void;
   expandedSection?: string | null;
   changeButtonText?: string;
+  defaultExpanded?: boolean;
 }
 
 const AccordionSection: React.FC<AccordionSectionProps> = ({
@@ -22,11 +23,17 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
   onToggle,
   expandedSection,
   changeButtonText = "CHANGE",
+  defaultExpanded = false,
 }) => {
-  const isExpanded = expandedSection === id;
+  const [localExpanded, setLocalExpanded] = React.useState(defaultExpanded);
+  const isExpanded = expandedSection !== null ? expandedSection === id : localExpanded;
 
   const handleToggle = () => {
-    onToggle?.(id);
+    if (onToggle) {
+      onToggle(id);
+    } else {
+      setLocalExpanded(!localExpanded);
+    }
   };
 
   return (

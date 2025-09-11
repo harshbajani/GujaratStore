@@ -537,6 +537,7 @@ declare interface IOrder {
   orderId: string;
   status:
     | "confirmed"
+    | "unconfirmed"
     | "processing"
     | "shipped"
     | "delivered"
@@ -551,6 +552,15 @@ declare interface IOrder {
   total: number;
   addressId: string;
   paymentOption: string;
+  paymentStatus?: "pending" | "paid" | "failed" | "refunded";
+  paymentInfo?: {
+    razorpay_payment_id?: string;
+    razorpay_order_id?: string;
+    payment_status?: string;
+    payment_method?: string;
+    payment_amount?: number;
+    verified_at?: string;
+  };
   createdAt: string;
   updatedAt: string;
   userName?: string;

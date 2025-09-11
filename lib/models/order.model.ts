@@ -50,6 +50,7 @@ const orderSchema = new Schema(
       type: String,
       enum: [
         "confirmed",
+        "unconfirmed",
         "processing",
         "shipped",
         "delivered",
@@ -77,6 +78,8 @@ const orderSchema = new Schema(
     },
     discountAmount: { type: Number, default: 0 },
     discountCode: { type: String },
+    rewardDiscountAmount: { type: Number, default: 0 },
+    pointsRedeemed: { type: Number, default: 0 },
     total: {
       type: Number,
       required: true,
@@ -88,6 +91,19 @@ const orderSchema = new Schema(
     paymentOption: {
       type: String,
       required: true,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "failed", "refunded"],
+      default: "pending",
+    },
+    paymentInfo: {
+      razorpay_payment_id: { type: String },
+      razorpay_order_id: { type: String },
+      payment_status: { type: String },
+      payment_method: { type: String },
+      payment_amount: { type: Number },
+      verified_at: { type: String },
     },
   },
   { timestamps: true } // Automatically manages createdAt and updatedAt fields

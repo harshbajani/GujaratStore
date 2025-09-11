@@ -14,8 +14,16 @@ export const POST = withAdminOrVendorAuth(async (request: Request) => {
     const result = await OrdersService.createOrder(orderData);
 
     if (!result.success) {
+      // Check if it's a duplicate order ID error
+      const isDuplicateError = result.message?.includes('duplicate') || 
+                               result.message?.includes('11000');
+      
+      const userFriendlyMessage = isDuplicateError 
+        ? "Order processing failed due to a technical issue. Please try again."
+        : result.message;
+
       return NextResponse.json(
-        { success: false, error: result.message },
+        { success: false, error: userFriendlyMessage },
         { status: 400 }
       );
     }
@@ -24,11 +32,27 @@ export const POST = withAdminOrVendorAuth(async (request: Request) => {
       { success: true, order: result.data },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Order API Error:", error);
+    
+    // Handle MongoDB duplicate key errors specifically
+    if (error.code === 11000 && error.keyPattern?.orderId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Order processing failed due to a technical issue. Please try again.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Generic error handling
+    const userFriendlyMessage = "An unexpected error occurred while processing your order. Please try again.";
+    
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "An error occurred",
+        error: userFriendlyMessage,
       },
       { status: 500 }
     );

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongodb";
 import User from "@/lib/models/user.model";
-import { sendWelcomeEmail } from "@/lib/workflows/email";
+import { sendWelcomeEmail } from "@/lib/workflows/emails";
 
 export async function POST(request: Request) {
   try {
