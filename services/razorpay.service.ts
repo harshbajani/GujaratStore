@@ -367,8 +367,40 @@ export class RazorpayService {
     try {
       console.log("Payment failed:", paymentData);
       
-      // You can implement custom logic here
-      // For example, notify user, retry payment, update order status, etc.
+      // Extract order ID from payment notes to identify our order
+      const orderId = paymentData.notes?.orderId;
+      
+      if (orderId) {
+        // Update order payment status to failed
+        try {
+          const updateResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_BASE_URL}/api/order/update/${orderId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              paymentStatus: 'failed',
+              paymentInfo: {
+                razorpay_payment_id: paymentData.id,
+                payment_status: paymentData.status,
+                payment_method: paymentData.method,
+                payment_amount: paymentData.amount,
+                error_code: paymentData.error_code,
+                error_description: paymentData.error_description,
+                verified_at: new Date().toISOString(),
+              }
+            })
+          });
+          
+          if (updateResponse.ok) {
+            console.log(`Order ${orderId} payment status updated to failed`);
+            
+            // Send payment failure email
+            const failureReason = this.getFailureReason(paymentData);
+            await this.sendPaymentFailureNotification(orderId, failureReason);
+          }
+        } catch (updateError) {
+          console.error('Failed to update order payment status:', updateError);
+        }
+      }
       
       return {
         success: true,
@@ -381,6 +413,73 @@ export class RazorpayService {
         success: false,
         message: "Failed to handle payment failed event",
       };
+    }
+  }
+  
+  /**
+   * Get user-friendly failure reason
+   */
+  private static getFailureReason(paymentData: any): string {
+    const errorCode = paymentData.error_code;
+    const errorDescription = paymentData.error_description;
+    
+    // Map common error codes to user-friendly messages
+    const errorMappings: { [key: string]: string } = {
+      'PAYMENT_FAILED': 'Payment was declined by your bank. Please check your card details and try again.',
+      'GATEWAY_ERROR': 'There was a technical issue with the payment gateway. Please try again.',
+      'CARD_EXPIRED': 'Your card has expired. Please use a different card.',
+      'INSUFFICIENT_FUNDS': 'Insufficient funds in your account. Please check your balance and try again.',
+      'INVALID_CARD': 'Invalid card details. Please check your card number, expiry date, and CVV.',
+      'AUTHENTICATION_FAILED': 'Card authentication failed. Please verify your card details.',
+      'TRANSACTION_TIMEOUT': 'Transaction timed out. Please try again.',
+      'INVALID_CVV': 'Invalid CVV number. Please check and try again.',
+      'CARD_BLOCKED': 'Your card is blocked. Please contact your bank.',
+      'NETWORK_ERROR': 'Network error occurred. Please check your internet connection and try again.',
+    };
+    
+    return errorMappings[errorCode] || errorDescription || 'Payment failed due to an unknown error. Please try again or contact support.';
+  }
+  
+  /**
+   * Send payment failure notification
+   */
+  private static async sendPaymentFailureNotification(orderId: string, failureReason: string): Promise<void> {
+    try {
+      // First get order details to prepare email data
+      const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_BASE_URL}/api/order/${orderId}`);
+      
+      if (!orderResponse.ok) {
+        throw new Error('Failed to fetch order details');
+      }
+      
+      const orderData = await orderResponse.json();
+      
+      if (orderData.success && orderData.order) {
+        const order = orderData.order;
+        
+        // Send payment failure email
+        await fetch(`${process.env.NEXT_PUBLIC_APP_BASE_URL}/api/payment-failure-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: order.orderId,
+            items: order.items,
+            subtotal: order.subtotal,
+            deliveryCharges: order.deliveryCharges,
+            discountAmount: order.discountAmount || 0,
+            total: order.total,
+            paymentOption: order.paymentOption,
+            createdAt: order.createdAt,
+            userName: 'Customer', // Will be populated from order details
+            userEmail: order.userEmail || 'customer@example.com', // Will be populated from order details
+            paymentFailureReason: failureReason,
+          })
+        });
+        
+        console.log(`Payment failure email sent for order ${orderId}`);
+      }
+    } catch (error) {
+      console.error('Failed to send payment failure notification:', error);
     }
   }
 

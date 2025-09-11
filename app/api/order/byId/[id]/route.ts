@@ -5,8 +5,9 @@ import {
   sendAdminCancellationEmail,
   sendOrderCancellationEmail,
   sendVendorCancellationEmail,
-} from "@/lib/workflows/email";
+} from "@/lib/workflows/emails";
 import User from "@/lib/models/user.model";
+import Vendor from "@/lib/models/vendor.model";
 
 export async function GET(request: Request, { params }: RouteParams) {
   try {
@@ -77,6 +78,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     // Validate status value
     const validStatuses = [
       "confirmed",
+      "unconfirmed",
       "processing",
       "shipped",
       "delivered",
@@ -111,18 +113,92 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           return NextResponse.json(result, { status: 200 });
         }
 
-        // If it's a vendor cancellation, use the vendor cancellation email
+        // Helper function to get vendor details from order items
+        const getVendorDetails = async () => {
+          try {
+            // Get unique vendor IDs from order items
+            const vendorIds = [
+              ...new Set(
+                orderData.items.map((item) => item.vendorId).filter(Boolean)
+              ),
+            ];
+
+            if (vendorIds.length > 0) {
+              // For now, get the first vendor (most orders will have items from one vendor)
+              const vendor = await Vendor.findById(vendorIds[0]);
+              if (vendor) {
+                return {
+                  vendorEmail: vendor.email,
+                  vendorName:
+                    vendor.name || vendor.store?.storeName || "Vendor",
+                };
+              }
+            }
+            return {
+              vendorEmail: "contact@thegujaratstore.com",
+              vendorName: "The Gujarat Store",
+            };
+          } catch (error) {
+            console.error("Error fetching vendor details:", error);
+            return {
+              vendorEmail: "contact@thegujaratstore.com",
+              vendorName: "The Gujarat Store",
+            };
+          }
+        };
+
+        // Get vendor details
+        const { vendorEmail } = await getVendorDetails();
+
+        // If it's an admin cancellation
         if (isAdminCancellation) {
           if (!cancellationReason) {
             console.error(
-              "Cancellation reason is required for vendor cancellations"
+              "Cancellation reason is required for admin cancellations"
             );
             return NextResponse.json(result, { status: 200 });
           }
+          
+          // Send cancellation email to customer with admin context
+          await sendOrderCancellationEmail({
+            orderId: orderData.orderId,
+            userName: user.name,
+            userEmail: user.email,
+            email: user.email,
+            orderDate: orderData.createdAt,
+            items: orderData.items,
+            subtotal: orderData.subtotal,
+            deliveryCharges: orderData.deliveryCharges,
+            total: orderData.total,
+            createdAt: orderData.createdAt,
+            paymentOption: orderData.paymentOption,
+            address: orderData.address || {
+              name: "",
+              contact: "",
+              address_line_1: "",
+              address_line_2: "",
+              locality: "",
+              state: "",
+              pincode: "",
+              type: "",
+            },
+            discountAmount: orderData.discountAmount,
+            cancellationReason: `${cancellationReason} (Cancelled by The Gujarat Store Team)`,
+            reason: cancellationReason,
+            customerName: user.name,
+            vendorEmail: vendorEmail,
+            paymentMethod: orderData.paymentOption,
+            orderTotal: orderData.total.toString(),
+            refundAmount: orderData.total.toString(),
+          });
+          
+          // Also send admin notification for internal tracking
           await sendAdminCancellationEmail({
             orderId: orderData.orderId,
             userName: user.name,
             userEmail: user.email,
+            email: user.email,
+            orderDate: orderData.createdAt,
             items: orderData.items,
             subtotal: orderData.subtotal,
             deliveryCharges: orderData.deliveryCharges,
@@ -141,6 +217,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
             },
             discountAmount: orderData.discountAmount,
             cancellationReason: cancellationReason,
+            reason: cancellationReason,
+            customerName: user.name,
+            vendorEmail: vendorEmail,
+            paymentMethod: orderData.paymentOption,
+            orderTotal: orderData.total.toString(),
+            refundAmount: orderData.total.toString(),
           });
         } else if (isVendorCancellation) {
           if (!cancellationReason) {
@@ -149,10 +231,47 @@ export async function PATCH(request: Request, { params }: RouteParams) {
             );
             return NextResponse.json(result, { status: 200 });
           }
+          
+          // Send cancellation email to customer with vendor context
+          await sendOrderCancellationEmail({
+            orderId: orderData.orderId,
+            userName: user.name,
+            userEmail: user.email,
+            email: user.email,
+            orderDate: orderData.createdAt,
+            items: orderData.items,
+            subtotal: orderData.subtotal,
+            deliveryCharges: orderData.deliveryCharges,
+            total: orderData.total,
+            createdAt: orderData.createdAt,
+            paymentOption: orderData.paymentOption,
+            address: orderData.address || {
+              name: "",
+              contact: "",
+              address_line_1: "",
+              address_line_2: "",
+              locality: "",
+              state: "",
+              pincode: "",
+              type: "",
+            },
+            discountAmount: orderData.discountAmount,
+            cancellationReason: `${cancellationReason} (Cancelled by Vendor)`,
+            reason: cancellationReason,
+            customerName: user.name,
+            vendorEmail: vendorEmail,
+            paymentMethod: orderData.paymentOption,
+            orderTotal: orderData.total.toString(),
+            refundAmount: orderData.total.toString(),
+          });
+          
+          // Also send vendor notification for internal tracking
           await sendVendorCancellationEmail({
             orderId: orderData.orderId,
             userName: user.name,
             userEmail: user.email,
+            email: user.email,
+            orderDate: orderData.createdAt,
             items: orderData.items,
             subtotal: orderData.subtotal,
             deliveryCharges: orderData.deliveryCharges,
@@ -171,6 +290,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
             },
             discountAmount: orderData.discountAmount,
             cancellationReason: cancellationReason,
+            reason: cancellationReason,
+            customerName: user.name,
+            vendorEmail: vendorEmail,
+            paymentMethod: orderData.paymentOption,
+            orderTotal: orderData.total.toString(),
+            refundAmount: orderData.total.toString(),
           });
         } else {
           // For user cancellations, use the regular cancellation email
@@ -178,6 +303,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
             orderId: orderData.orderId,
             userName: user.name,
             userEmail: user.email,
+            email: user.email,
+            orderDate: orderData.createdAt,
             items: orderData.items,
             subtotal: orderData.subtotal,
             deliveryCharges: orderData.deliveryCharges,
@@ -195,6 +322,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
               type: "",
             },
             discountAmount: orderData.discountAmount,
+            cancellationReason:
+              cancellationReason || "User requested cancellation",
+            reason: cancellationReason || "User requested cancellation",
+            customerName: user.name,
+            vendorEmail: vendorEmail,
+            paymentMethod: orderData.paymentOption,
+            orderTotal: orderData.total.toString(),
+            refundAmount: orderData.total.toString(),
           });
         }
       } catch (emailError) {

@@ -191,8 +191,7 @@ const CheckoutPage = () => {
               id="deliveryTo"
               title="DELIVERY TO"
               index={1}
-              expandedSection={state.expandedSection}
-              onToggle={toggleSection}
+              expandedSection="deliveryTo"
             >
               <p className="font-medium">{state.userData?.name}</p>
               <p className="text-gray-600">{state.userData?.phone}</p>
@@ -203,8 +202,7 @@ const CheckoutPage = () => {
               id="deliveryAddress"
               title="DELIVERY ADDRESS"
               index={2}
-              expandedSection={state.expandedSection}
-              onToggle={toggleSection}
+              expandedSection="deliveryAddress"
             >
               {state.userData?.addresses &&
               state.userData.addresses.length > 0 ? (
@@ -279,8 +277,7 @@ const CheckoutPage = () => {
               id="orderSummary"
               title="ORDER SUMMARY"
               index={3}
-              expandedSection={state.expandedSection}
-              onToggle={toggleSection}
+              expandedSection="orderSummary"
               showItemCount={state.checkoutData.items.length}
             >
               {state.checkoutData.items.map((item) => (
@@ -342,8 +339,7 @@ const CheckoutPage = () => {
               id="paymentOptions"
               title="PAYMENT OPTIONS"
               index={4}
-              expandedSection={state.expandedSection}
-              onToggle={toggleSection}
+              expandedSection="paymentOptions"
               changeButtonText={undefined}
             >
               <RadioGroup
@@ -353,16 +349,6 @@ const CheckoutPage = () => {
                 }
                 className="space-y-3"
               >
-                <div className="flex items-center space-x-2 p-2 border rounded-md">
-                  <RadioGroupItem
-                    value="cash-on-delivery"
-                    id="cash-on-delivery"
-                    className="text-red-600 border-red-600"
-                  />
-                  <Label htmlFor="cash-on-delivery">
-                    Cash on Delivery (COD)
-                  </Label>
-                </div>
                 <div className="flex items-center space-x-2 p-2 border rounded-md">
                   <RadioGroupItem
                     value="razorpay"
@@ -376,6 +362,16 @@ const CheckoutPage = () => {
                     </span>
                   </Label>
                 </div>
+                <div className="flex items-center space-x-2 p-2 border rounded-md">
+                  <RadioGroupItem
+                    value="cash-on-delivery"
+                    id="cash-on-delivery"
+                    className="text-red-600 border-red-600"
+                  />
+                  <Label htmlFor="cash-on-delivery">
+                    Cash on Delivery (COD)
+                  </Label>
+                </div>
               </RadioGroup>
             </AccordionSection>
 
@@ -384,8 +380,7 @@ const CheckoutPage = () => {
               id="discount"
               title="DISCOUNT & REWARDS"
               index={5}
-              expandedSection={state.expandedSection}
-              onToggle={toggleSection}
+              expandedSection="discount"
             >
               <DiscountSection
                 onApplyDiscount={handleApplyDiscount}
