@@ -5,7 +5,7 @@ export async function GET() {
   try {
     // Validate Razorpay configuration
     const configValidation = RazorpayService.validateConfiguration();
-    
+
     if (!configValidation.success) {
       return NextResponse.json(
         {
@@ -49,7 +49,10 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to get Razorpay configuration",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to get Razorpay configuration",
       },
       { status: 500 }
     );
