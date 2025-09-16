@@ -602,14 +602,20 @@ export function useCheckout() {
         );
       }
 
+      // Fetch Razorpay theme configuration
+      const configResponse = await fetch("/api/razorpay/config");
+      const configData = await configResponse.json();
+      const theme = configData.success ? configData.data.theme : null;
+
       // Initialize Razorpay checkout
       const options = {
         key: razorpayData.data.keyId,
         amount: razorpayData.data.amount,
         currency: razorpayData.data.currency,
-        name: "Gujarat Store",
+        name: "The Gujarat Store",
         description: `Order ${orderId}`,
         order_id: razorpayData.data.razorpayOrderId,
+        theme: theme, // Apply theme configuration
         handler: async (response: {
           razorpay_payment_id: string;
           razorpay_order_id: string;
@@ -618,8 +624,8 @@ export function useCheckout() {
           await handleRazorpaySuccess(response, orderId);
         },
         // Handle explicit payment failure callback
-        "failure": async (response: any) => {
-          console.error('Razorpay payment failed:', response);
+        failure: async (response: any) => {
+          console.error("Razorpay payment failed:", response);
           const failureReason = getRazorpayErrorMessage(response.error);
           await handlePaymentFailure(orderId, failureReason);
           dispatch({ type: "SET_SUBMITTING", payload: false });
@@ -633,35 +639,40 @@ export function useCheckout() {
           email: state.userData?.email,
           contact: state.userData?.phone || "",
         },
-        theme: {
-          color: "#DC2626", // Red theme color
-        },
         modal: {
           // Handle payment failure scenarios
           ondismiss: async () => {
             // Payment was cancelled/dismissed by user
-            await handlePaymentFailure(orderId, "Payment was cancelled by user. You can retry the payment anytime by returning to your cart.");
+            await handlePaymentFailure(
+              orderId,
+              "Payment was cancelled by user. You can retry the payment anytime by returning to your cart."
+            );
             dispatch({ type: "SET_SUBMITTING", payload: false });
             toast.error("Payment Cancelled", {
-              description: "Payment was cancelled. Your cart items are preserved.",
+              description:
+                "Payment was cancelled. Your cart items are preserved.",
               duration: 5000,
             });
           },
           // Handle payment error (network issues, gateway errors, etc.)
           onerror: async (error: any) => {
-            console.error('Razorpay payment error:', error);
+            console.error("Razorpay payment error:", error);
             const errorMessage = getRazorpayErrorMessage(error);
             await handlePaymentFailure(orderId, errorMessage);
             dispatch({ type: "SET_SUBMITTING", payload: false });
             toast.error("Payment Error", {
-              description: "Payment failed due to technical issues. Please try again.",
+              description:
+                "Payment failed due to technical issues. Please try again.",
               duration: 5000,
             });
           },
           // Handle payment timeout
           timeout: 300, // 5 minutes timeout
           ontimeout: async () => {
-            await handlePaymentFailure(orderId, "Payment timed out due to network issues. Please check your internet connection and try again.");
+            await handlePaymentFailure(
+              orderId,
+              "Payment timed out due to network issues. Please check your internet connection and try again."
+            );
             dispatch({ type: "SET_SUBMITTING", payload: false });
             toast.error("Payment Timeout", {
               description: "Payment timed out. Please try again.",
@@ -690,7 +701,10 @@ export function useCheckout() {
       }
     } catch (error) {
       console.error("Razorpay initialization error:", error);
-      await handlePaymentFailure(orderId, error instanceof Error ? error.message : "Payment initialization failed");
+      await handlePaymentFailure(
+        orderId,
+        error instanceof Error ? error.message : "Payment initialization failed"
+      );
       dispatch({ type: "SET_SUBMITTING", payload: false });
       toast.error("Payment Error", {
         description:
@@ -705,27 +719,41 @@ export function useCheckout() {
   // Get user-friendly error message for Razorpay errors
   const getRazorpayErrorMessage = (error: any): string => {
     const errorCode = error?.code || error?.error_code;
-    const errorDescription = error?.description || error?.error_description || error?.message;
-    
+    const errorDescription =
+      error?.description || error?.error_description || error?.message;
+
     // Map common error codes to user-friendly messages
     const errorMappings: { [key: string]: string } = {
-      'PAYMENT_FAILED': 'Payment was declined by your bank. Please check your card details and try again.',
-      'GATEWAY_ERROR': 'There was a technical issue with the payment gateway. Please try again.',
-      'CARD_EXPIRED': 'Your card has expired. Please use a different card.',
-      'INSUFFICIENT_FUNDS': 'Insufficient funds in your account. Please check your balance and try again.',
-      'INVALID_CARD': 'Invalid card details. Please check your card number, expiry date, and CVV.',
-      'AUTHENTICATION_FAILED': 'Card authentication failed. Please verify your card details.',
-      'TRANSACTION_TIMEOUT': 'Transaction timed out. Please try again.',
-      'INVALID_CVV': 'Invalid CVV number. Please check and try again.',
-      'CARD_BLOCKED': 'Your card is blocked. Please contact your bank.',
-      'NETWORK_ERROR': 'Network error occurred. Please check your internet connection and try again.',
+      PAYMENT_FAILED:
+        "Payment was declined by your bank. Please check your card details and try again.",
+      GATEWAY_ERROR:
+        "There was a technical issue with the payment gateway. Please try again.",
+      CARD_EXPIRED: "Your card has expired. Please use a different card.",
+      INSUFFICIENT_FUNDS:
+        "Insufficient funds in your account. Please check your balance and try again.",
+      INVALID_CARD:
+        "Invalid card details. Please check your card number, expiry date, and CVV.",
+      AUTHENTICATION_FAILED:
+        "Card authentication failed. Please verify your card details.",
+      TRANSACTION_TIMEOUT: "Transaction timed out. Please try again.",
+      INVALID_CVV: "Invalid CVV number. Please check and try again.",
+      CARD_BLOCKED: "Your card is blocked. Please contact your bank.",
+      NETWORK_ERROR:
+        "Network error occurred. Please check your internet connection and try again.",
     };
-    
-    return errorMappings[errorCode] || errorDescription || 'Payment failed due to technical issues. Please try again or contact support.';
+
+    return (
+      errorMappings[errorCode] ||
+      errorDescription ||
+      "Payment failed due to technical issues. Please try again or contact support."
+    );
   };
 
   // Handle payment failure
-  const handlePaymentFailure = async (orderId: string, failureReason: string) => {
+  const handlePaymentFailure = async (
+    orderId: string,
+    failureReason: string
+  ) => {
     try {
       // Get the selected address details
       const selectedAddressDetails = state.userData?.addresses.find(
@@ -764,10 +792,7 @@ export function useCheckout() {
         });
         console.log("Payment failure email sent successfully");
       } catch (emailError) {
-        console.error(
-          "Failed to send payment failure email:",
-          emailError
-        );
+        console.error("Failed to send payment failure email:", emailError);
         // Don't block the process if email fails
       }
     } catch (error) {
@@ -808,7 +833,10 @@ export function useCheckout() {
 
       if (!verifyData.success) {
         // Payment verification failed, send failure email
-        await handlePaymentFailure(orderId, verifyData.error || "Payment verification failed");
+        await handlePaymentFailure(
+          orderId,
+          verifyData.error || "Payment verification failed"
+        );
         throw new Error(verifyData.error || "Payment verification failed");
       }
 
@@ -816,14 +844,19 @@ export function useCheckout() {
       console.log(
         "Payment verified successfully, updating order in database..."
       );
-      await createOrderWithPayment(orderId, {
-        razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_order_id: response.razorpay_order_id,
-        payment_status: "paid",
-        payment_method: verifyData.data?.method || "card",
-        payment_amount: verifyData.data?.amount || 0,
-        verified_at: verifyData.data?.verifiedAt,
-      }, "processing", "paid");
+      await createOrderWithPayment(
+        orderId,
+        {
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_order_id: response.razorpay_order_id,
+          payment_status: "paid",
+          payment_method: verifyData.data?.method || "card",
+          payment_amount: verifyData.data?.amount || 0,
+          verified_at: verifyData.data?.verifiedAt,
+        },
+        "processing",
+        "paid"
+      );
     } catch (error) {
       console.error("Payment verification error:", error);
       dispatch({ type: "SET_SUBMITTING", payload: false });
@@ -842,15 +875,15 @@ export function useCheckout() {
 
   // Create order with payment information
   const createOrderWithPayment = async (
-    orderId: string, 
-    paymentInfo?: any, 
+    orderId: string,
+    paymentInfo?: any,
     orderStatus: string = "confirmed",
     paymentStatus: "pending" | "paid" | "failed" | "refunded" = "pending"
   ) => {
     const isUpdate = createdOrders.has(orderId);
     let endpoint = "/api/order";
     let method = "POST";
-    
+
     const orderPayload = {
       orderId,
       status: orderStatus,
@@ -875,7 +908,7 @@ export function useCheckout() {
       method = "PATCH";
     } else {
       // Mark this order as created
-      setCreatedOrders(prev => new Set(prev).add(orderId));
+      setCreatedOrders((prev) => new Set(prev).add(orderId));
     }
 
     fetch(endpoint, {
@@ -912,8 +945,8 @@ export function useCheckout() {
             userEmail: state.userData?.email,
           };
 
-        // Send confirmation email only for processing orders (completed orders)
-        if (orderStatus === "processing") {
+          // Send confirmation email only for processing orders (completed orders)
+          if (orderStatus === "processing") {
             try {
               // Send order confirmation email
               await fetch("/api/order-email", {
@@ -932,9 +965,10 @@ export function useCheckout() {
           }
 
           // Only clear cart and proceed if payment is successful or COD
-          const shouldClearCart = 
-            orderStatus === "processing" || 
-            (state.paymentOption === "cash-on-delivery" && orderStatus === "processing");
+          const shouldClearCart =
+            orderStatus === "processing" ||
+            (state.paymentOption === "cash-on-delivery" &&
+              orderStatus === "processing");
 
           if (shouldClearCart) {
             // Continue with order confirmation process
@@ -954,17 +988,21 @@ export function useCheckout() {
           } else {
             // Order created but payment pending - don't clear cart
             dispatch({ type: "SET_SUBMITTING", payload: false });
-            console.log("Order created with unconfirmed status - cart preserved");
+            console.log(
+              "Order created with unconfirmed status - cart preserved"
+            );
           }
         } else {
           // Handle specific error cases
           const errorMessage = data.error || "Failed to process order";
-          const isRetryableError = errorMessage.includes("technical issue") || 
-                                 errorMessage.includes("try again");
-          
+          const isRetryableError =
+            errorMessage.includes("technical issue") ||
+            errorMessage.includes("try again");
+
           if (isRetryableError) {
             toast.error("Order Processing Issue", {
-              description: "There was a technical issue. Please try placing your order again.",
+              description:
+                "There was a technical issue. Please try placing your order again.",
               duration: 7000,
             });
           } else {

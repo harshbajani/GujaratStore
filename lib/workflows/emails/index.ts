@@ -16,4 +16,4 @@ export {
 export { sendPaymentFailureEmail } from "./payment/paymentEmails";
 
 // User-related emails
-export { sendWelcomeEmail } from "./user/userEmails";
+export { sendWelcomeEmail, sendTemporaryPasswordEmail } from "./user/userEmails";

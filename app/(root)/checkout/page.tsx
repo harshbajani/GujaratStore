@@ -166,9 +166,9 @@ const CheckoutPage = () => {
   // Show guest checkout form
   if (!session && showGuestForm) {
     return (
-      <div className=" py-16 bg-gray-50">
+      <div className="bg-gray-50">
         <BreadcrumbHeader title="Home" subtitle="Checkout" titleHref="/" />
-        <div className="dynamic-container mx-auto px-4 py-8 min-h-screen">
+        <div className="dynamic-container mx-auto px-4 py-8">
           <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
             <h2 className="text-2xl font-bold mb-4">Guest Checkout</h2>
             <GuestCheckoutForm onSuccess={handleGuestCheckoutSuccess} />

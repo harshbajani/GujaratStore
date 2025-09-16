@@ -7,7 +7,7 @@ import { OrderEmailData } from "./types";
 export const generateEmailHeader = (): string => {
   return `
     <tr>
-      <td style="text-align: center; padding: 20px 0; background-color: ${EMAIL_CONFIG.BRAND_COLORS.SECONDARY};">
+      <td style="text-align: center; padding: 20px 0; background-color: ${EMAIL_CONFIG.BRAND_COLORS.SECONDARY}; color: white;">
         <img
           src="${EMAIL_CONFIG.LOGO_URL}"
           alt="${EMAIL_CONFIG.COMPANY_NAME} Logo"

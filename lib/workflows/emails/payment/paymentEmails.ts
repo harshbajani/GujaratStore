@@ -5,7 +5,9 @@ import { wrapEmailTemplate } from "../shared/templates";
 /**
  * Send payment failure email to customer
  */
-export const sendPaymentFailureEmail = async (failureData: PaymentFailureEmailData): Promise<void> => {
+export const sendPaymentFailureEmail = async (
+  failureData: PaymentFailureEmailData
+): Promise<void> => {
   const content = `
     <tr>
       <td style="padding: 30px;">
@@ -51,9 +53,9 @@ export const sendPaymentFailureEmail = async (failureData: PaymentFailureEmailDa
           </p>
         </div>
 
-        <div style="background-color: ${EMAIL_CONFIG.BRAND_COLORS.SECONDARY}; border-radius: 6px; padding: 20px; margin: 30px 0; text-align: center;">
-          <h3 style="margin: 0 0 15px; color: #333;">Ready to try again?</h3>
-          <p style="margin: 0 0 20px; color: #666; font-size: 14px;">
+        <div style="background-color: ${EMAIL_CONFIG.BRAND_COLORS.SECONDARY}; color: white; border-radius: 6px; padding: 20px; margin: 30px 0; text-align: center;">
+          <h3 style="margin: 0 0 15px; color: white;">Ready to try again?</h3>
+          <p style="margin: 0 0 20px; color: white; font-size: 14px;">
             Your items are still reserved in your cart. You can complete your purchase anytime.
           </p>
           <a href="${EMAIL_CONFIG.APP_BASE_URL}/cart" 
@@ -85,7 +87,9 @@ export const sendPaymentFailureEmail = async (failureData: PaymentFailureEmailDa
   };
 
   await transporter.sendMail(mailOptions);
-  console.log(`Payment failure email sent to ${failureData.userEmail} for order ${failureData.orderId}`);
+  console.log(
+    `Payment failure email sent to ${failureData.userEmail} for order ${failureData.orderId}`
+  );
 
   // Also notify admin about the payment failure
   await notifyAdminOfPaymentFailure(failureData);
@@ -94,7 +98,9 @@ export const sendPaymentFailureEmail = async (failureData: PaymentFailureEmailDa
 /**
  * Notify admin about payment failure for tracking and analytics
  */
-const notifyAdminOfPaymentFailure = async (failureData: PaymentFailureEmailData): Promise<void> => {
+const notifyAdminOfPaymentFailure = async (
+  failureData: PaymentFailureEmailData
+): Promise<void> => {
   const adminContent = `
     <tr>
       <td style="padding: 30px;">
@@ -110,7 +116,9 @@ const notifyAdminOfPaymentFailure = async (failureData: PaymentFailureEmailData)
           <tr>
             <td style="padding-bottom: 8px;">
               <strong style="color: #333;">Order ID:</strong> 
-              <span style="color: ${EMAIL_CONFIG.BRAND_COLORS.PRIMARY};">${failureData.orderId}</span>
+              <span style="color: ${EMAIL_CONFIG.BRAND_COLORS.PRIMARY};">${
+    failureData.orderId
+  }</span>
             </td>
           </tr>
           <tr>
@@ -171,7 +179,15 @@ const notifyAdminOfPaymentFailure = async (failureData: PaymentFailureEmailData)
     </tr>
   `;
 
-  const adminHtmlTemplate = wrapEmailTemplate("Payment Failure Alert", adminContent);
-  await notifyAdmin("Payment Failure Alert - Order " + failureData.orderId, adminHtmlTemplate);
-  console.log(`Admin payment failure notification sent for order ${failureData.orderId}`);
+  const adminHtmlTemplate = wrapEmailTemplate(
+    "Payment Failure Alert",
+    adminContent
+  );
+  await notifyAdmin(
+    "Payment Failure Alert - Order " + failureData.orderId,
+    adminHtmlTemplate
+  );
+  console.log(
+    `Admin payment failure notification sent for order ${failureData.orderId}`
+  );
 };

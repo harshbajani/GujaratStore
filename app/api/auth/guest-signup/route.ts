@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongodb";
 import User from "@/lib/models/user.model";
-import { sendWelcomeEmail } from "@/lib/workflows/emails";
+import {
+  sendWelcomeEmail,
+  sendTemporaryPasswordEmail,
+} from "@/lib/workflows/emails";
 
 export async function POST(request: Request) {
   try {
@@ -31,12 +34,27 @@ export async function POST(request: Request) {
       isVerified: true, // Auto-verify guest users
     });
 
-    // Send welcome email with credentials
-    await sendWelcomeEmail({
-      email,
-      name,
-      password,
-    });
+    // Send both welcome email and temporary password email
+    try {
+      await Promise.all([
+        sendWelcomeEmail({
+          email,
+          name,
+          password,
+        }),
+        sendTemporaryPasswordEmail({
+          email,
+          name,
+          password,
+        }),
+      ]);
+      console.log(
+        `Both welcome and temporary password emails sent to ${email}`
+      );
+    } catch (emailError) {
+      console.error("Failed to send emails:", emailError);
+      // Don't fail the user creation if emails fail
+    }
 
     return NextResponse.json({
       success: true,
