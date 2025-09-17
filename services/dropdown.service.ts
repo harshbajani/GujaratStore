@@ -3,6 +3,7 @@ import { AttributeService } from "./attribute.service";
 import { ParentCategoryService } from "./parentCategory.service";
 import { PrimaryCategoryService } from "./primaryCategory.service";
 import { SecondaryCategoryService } from "./secondaryCategory.service";
+import { connectToDB } from "@/lib/mongodb";
 
 interface DropdownData {
   parentCategories: IParentCategory[];
@@ -17,6 +18,7 @@ export class DropdownService {
 
   static async getAllDropdownData(): Promise<ActionResponse<DropdownData>> {
     try {
+      await connectToDB();
       // Check cache first
       const cached = await CacheService.get<DropdownData>(this.CACHE_KEY);
       if (cached) {
@@ -54,9 +56,13 @@ export class DropdownService {
       }
 
       const dropdownData: DropdownData = {
-        parentCategories: (parentCategoriesResponse.data as IParentCategory[]) || [],
-        primaryCategories: (primaryCategoriesResponse.data as IPrimaryCategory[]) || [],
-        secondaryCategories: (secondaryCategoriesResponse.data as SecondaryCategoryWithPopulatedFields[]) || [],
+        parentCategories:
+          (parentCategoriesResponse.data as IParentCategory[]) || [],
+        primaryCategories:
+          (primaryCategoriesResponse.data as IPrimaryCategory[]) || [],
+        secondaryCategories:
+          (secondaryCategoriesResponse.data as SecondaryCategoryWithPopulatedFields[]) ||
+          [],
         attributes: (attributesResponse.data as IAttribute[]) || [],
       };
 
