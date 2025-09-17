@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Size from "@/lib/models/size.model";
+import { connectToDB } from "@/lib/mongodb";
 import { CacheService } from "./cache.service";
 import { Types } from "mongoose";
 
@@ -24,6 +25,7 @@ export class SizeService {
 
   static async createSize(data: Partial<ISize>): Promise<SizeResponse> {
     try {
+      await connectToDB();
       const existingSize = await Size.findOne({ label: data.label });
       if (existingSize) {
         return {
@@ -52,6 +54,7 @@ export class SizeService {
     params: PaginationParams = {}
   ): Promise<PaginatedResponse<ISize>> {
     try {
+      await connectToDB();
       const {
         page = 1,
         limit = 10,
@@ -127,6 +130,7 @@ export class SizeService {
 
   static async getAllSizesLegacy(): Promise<SizeResponse> {
     try {
+      await connectToDB();
       const cacheKey = await this.getCacheKey("all");
       const cached = await CacheService.get<ISize[]>(cacheKey);
 
@@ -154,6 +158,7 @@ export class SizeService {
 
   static async getSizeById(id: string): Promise<SizeResponse> {
     try {
+      await connectToDB();
       const cacheKey = await this.getCacheKey(id);
       const cached = await CacheService.get<ISize>(cacheKey);
 
@@ -191,6 +196,7 @@ export class SizeService {
     data: Partial<ISize>
   ): Promise<SizeResponse> {
     try {
+      await connectToDB();
       const size = await Size.findByIdAndUpdate(
         id,
         { ...data },
@@ -218,6 +224,7 @@ export class SizeService {
 
   static async deleteSize(id: string): Promise<SizeResponse> {
     try {
+      await connectToDB();
       const size = await Size.findByIdAndDelete(id).lean();
 
       if (!size) {
