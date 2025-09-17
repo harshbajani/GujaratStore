@@ -39,7 +39,7 @@ export const NavLinks = [
   },
   {
     route: "/farsan",
-    label: "Farsan",
+    label: "Farsan & Mukhvas",
   },
   {
     route: "/organic",
