@@ -6,6 +6,10 @@ import Products from "@/lib/models/product.model";
 
 export const dynamic = "force-dynamic";
 
+interface RouteParams {
+  params: Promise<{ slug: string }>;
+}
+
 export async function generateMetadata({
   params,
 }: RouteParams): Promise<Metadata> {
@@ -31,8 +35,9 @@ export async function generateMetadata({
 
     if (!product) {
       return {
-        title: "Product Not Found",
-        description: "The requested product could not be found.",
+        title: "Food Product Not Found",
+        description:
+          "The requested food item could not be found. Explore our delicious collection instead!",
       };
     }
 
@@ -43,11 +48,14 @@ export async function generateMetadata({
 
     const description =
       product.metaDescription ||
-      `Buy ${product.productName} from ${
+      `Enjoy ${product.productName} from ${
         product.brands?.name
       }. ${product.productDescription
         ?.replace(/<[^>]*>/g, "")
-        .substring(0, 100)}... Shop now at best prices.`;
+        .substring(
+          0,
+          100
+        )}... Fresh, tasty, and ready to delight your taste buds.`;
 
     // Keywords from product meta or generate from product data
     let keywords = product.metaKeywords || "";
@@ -59,14 +67,21 @@ export async function generateMetadata({
         product.primaryCategory?.name,
         product.secondaryCategory?.name,
         product.productColor,
-        "furnishings",
-        "furniture",
-        "home decor",
+        "food",
+        "groceries",
+        "snacks",
+        "beverages",
+        "healthy food",
+        "pantry essentials",
+        "organic",
       ].filter(Boolean);
       keywords = keywordArray.join(", ");
     }
 
     const productImage = `/api/files/${product.productCoverImage}`;
+
+    // Determine base category path (fallback to "food" if parent category missing)
+    const categoryPath = product.parentCategory?.name?.toLowerCase() || "food";
 
     return {
       title,
@@ -84,7 +99,7 @@ export async function generateMetadata({
           },
         ],
         type: "website",
-        url: `/${product.parentCategory?.name?.toLowerCase()}/${slug}`,
+        url: `/${categoryPath}/${slug}`,
       },
       twitter: {
         card: "summary_large_image",
@@ -93,9 +108,9 @@ export async function generateMetadata({
         images: [productImage],
       },
       alternates: {
-        canonical: `/${product.parentCategory?.name?.toLowerCase()}/${slug}`,
+        canonical: `/${categoryPath}/${slug}`,
       },
-      // Additional structured data for e-commerce
+      // Additional structured data for e-commerce (still relevant for food products)
       other: {
         "product:price:amount": product.netPrice.toString(),
         "product:price:currency": "INR",
@@ -106,17 +121,18 @@ export async function generateMetadata({
       },
     };
   } catch (error) {
-    console.error("Error generating metadata for product:", error);
+    console.error("Error generating metadata for food product:", error);
 
     // Fallback metadata
     return {
-      title: "Product Details",
-      description: "View product details and specifications.",
+      title: "Food Product Details",
+      description:
+        "View details, ingredients, pricing, and more for this delicious food item.",
     };
   }
 }
 
-const FurnishingDetailPage = () => {
+const FoodDetailPage = () => {
   return (
     <>
       <ProductsDetailPage />
@@ -125,4 +141,4 @@ const FurnishingDetailPage = () => {
   );
 };
 
-export default FurnishingDetailPage;
+export default FoodDetailPage;
