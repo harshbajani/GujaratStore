@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState } from "react";
@@ -21,15 +22,11 @@ import Loader from "@/components/Loader";
 import { useToast } from "@/hooks/use-toast";
 import { RegionDropdown } from "react-country-region-selector";
 import { createVendor } from "@/lib/actions/admin/vendor.actions";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { vendorAddSchema } from "@/lib/validations";
 import { Switch } from "@/components/ui/switch";
+import BankDetailsFields from "@/lib/forms/admin/BankDetailsFields";
+import IdentityVerificationFields from "@/lib/forms/admin/IdentityVerificationFields";
+import BusinessVerificationFields from "@/lib/forms/admin/BusinessVerificationFields";
 
 type VendorAddFormValues = z.infer<typeof vendorAddSchema>;
 
@@ -69,14 +66,113 @@ const AddVendorAdminForm = () => {
         accountNumber: "",
         accountType: "savings",
       },
+      vendorIdentity: {
+        aadharCardNumber: "",
+        aadharCardDoc: "",
+        panCard: "",
+        panCardDoc: "",
+      },
+      businessIdentity: {
+        MSMECertificate: "",
+        UdhyamAadhar: "",
+        Fassai: "",
+        CorporationCertificate: "",
+        OtherDocuments: "",
+      },
     },
   });
+
+  // Upload file helper function
+  const uploadFile = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        `File upload failed: ${errorData.message || response.statusText}`
+      );
+    }
+
+    const result = await response.json();
+    return result.fileId;
+  };
 
   const onSubmit = async (data: VendorAddFormValues) => {
     setLoading(true);
     try {
+      // Handle file uploads for identity verification
+      const processedData = { ...data };
+
+      if (data.vendorIdentity) {
+        const identityData: any = {
+          aadharCardNumber: data.vendorIdentity.aadharCardNumber || "",
+          panCard: data.vendorIdentity.panCard || "",
+        };
+
+        // Handle file uploads
+        if (
+          data.vendorIdentity.aadharCardDoc &&
+          typeof data.vendorIdentity.aadharCardDoc === "object"
+        ) {
+          identityData.aadharCardDoc = await uploadFile(
+            data.vendorIdentity.aadharCardDoc as File
+          );
+        } else {
+          identityData.aadharCardDoc = data.vendorIdentity.aadharCardDoc || "";
+        }
+
+        if (
+          data.vendorIdentity.panCardDoc &&
+          typeof data.vendorIdentity.panCardDoc === "object"
+        ) {
+          identityData.panCardDoc = await uploadFile(
+            data.vendorIdentity.panCardDoc as File
+          );
+        } else {
+          identityData.panCardDoc = data.vendorIdentity.panCardDoc || "";
+        }
+
+        processedData.vendorIdentity = identityData;
+      }
+
+      // Handle file uploads for business verification
+      if (data.businessIdentity) {
+        const businessData: any = {};
+
+        // Upload files if they are File objects, otherwise keep as strings
+        const fileFields = [
+          "MSMECertificate",
+          "UdhyamAadhar",
+          "Fassai",
+          "CorporationCertificate",
+          "OtherDocuments",
+        ];
+
+        for (const field of fileFields) {
+          const value =
+            data.businessIdentity[field as keyof typeof data.businessIdentity];
+          if (value && typeof value === "object") {
+            businessData[field] = await uploadFile(value as File);
+          } else {
+            businessData[field] = value || "";
+          }
+        }
+
+        processedData.businessIdentity = businessData;
+      }
+
       // Append verification flags since vendor is created by admin
-      const payload = { ...data, isVerified: true, emailVerified: true };
+      const payload = {
+        ...processedData,
+        isVerified: true,
+        emailVerified: true,
+      } as Parameters<typeof createVendor>[0];
 
       const result = await createVendor(payload);
       if (result.success) {
@@ -351,110 +447,23 @@ const AddVendorAdminForm = () => {
 
               {/* Bank Detail Section */}
               <div className="border rounded-lg p-6 bg-muted/20 mt-8">
-                <h3 className="text-lg font-medium mb-4">Bank Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="bankDetails.bankName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bank Name*</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter bank name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="bankDetails.bankCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bank Code*</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter bank code" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="bankDetails.ifscCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>IFSC Code*</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., SBIN0001234" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="bankDetails.accountHolderName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Account Holder Name*</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Enter account holder name"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="bankDetails.accountNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Account Number*</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Enter account number"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="bankDetails.accountType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Account Type*</FormLabel>
-                        <div className="relative">
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select account type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="savings">
-                                Savings Account
-                              </SelectItem>
-                              <SelectItem value="current">
-                                Current Account
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <BankDetailsFields form={form} namePrefix="bankDetails" />
+              </div>
+
+              {/* Identity Verification Section */}
+              <div className="border rounded-lg p-6 bg-muted/20 mt-8">
+                <IdentityVerificationFields
+                  form={form}
+                  namePrefix="vendorIdentity"
+                />
+              </div>
+
+              {/* Business Verification Section */}
+              <div className="border rounded-lg p-6 bg-muted/20 mt-8">
+                <BusinessVerificationFields
+                  form={form}
+                  namePrefix="businessIdentity"
+                />
               </div>
 
               <FormField
