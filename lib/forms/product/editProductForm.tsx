@@ -1,12 +1,6 @@
 "use client";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ComboBox } from "@/components/ui/combobox";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -581,7 +575,11 @@ const EditProductsForm = () => {
               <FormItem>
                 <FormLabel>Product SKU</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter product SKU" {...field} />
+                  <Input
+                    placeholder="Enter product SKU"
+                    {...field}
+                    className="uppercase"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -596,18 +594,18 @@ const EditProductsForm = () => {
               <FormItem>
                 <FormLabel>Brand</FormLabel>
                 <FormControl>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Brand" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {brands.map((category) => (
-                        <SelectItem key={category._id} value={category._id!}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <ComboBox
+                    options={brands.map((brand) => ({
+                      value: brand._id!,
+                      label: brand.name,
+                    }))}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Search and select brand..."
+                    searchPlaceholder="Search brands..."
+                    emptyText="No brands found."
+                    clearable
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -620,18 +618,18 @@ const EditProductsForm = () => {
               <FormItem>
                 <FormLabel>Parent Category</FormLabel>
                 <FormControl>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select parent category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {parentCategories.map((category) => (
-                        <SelectItem key={category._id} value={category._id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <ComboBox
+                    options={parentCategories.map((category) => ({
+                      value: category._id,
+                      label: category.name,
+                    }))}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Search and select parent category..."
+                    searchPlaceholder="Search parent categories..."
+                    emptyText="No parent categories found."
+                    clearable
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -644,18 +642,18 @@ const EditProductsForm = () => {
               <FormItem>
                 <FormLabel>Primary Category</FormLabel>
                 <FormControl>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select primary category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {primaryCategory.map((category) => (
-                        <SelectItem key={category._id} value={category._id!}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <ComboBox
+                    options={primaryCategory.map((category) => ({
+                      value: category._id!,
+                      label: category.name,
+                    }))}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Search and select primary category..."
+                    searchPlaceholder="Search primary categories..."
+                    emptyText="No primary categories found."
+                    clearable
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -670,21 +668,18 @@ const EditProductsForm = () => {
               <FormItem>
                 <FormLabel>Secondary Category</FormLabel>
                 <FormControl>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select secondary category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {secondaryCategory.map((category) => (
-                        <SelectItem
-                          key={category._id || category.id}
-                          value={category._id || category.id!}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <ComboBox
+                    options={secondaryCategory.map((category) => ({
+                      value: category._id || category.id!,
+                      label: category.name,
+                    }))}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Search and select secondary category..."
+                    searchPlaceholder="Search secondary categories..."
+                    emptyText="No secondary categories found."
+                    clearable
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
