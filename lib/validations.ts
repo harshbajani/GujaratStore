@@ -399,6 +399,37 @@ export const vendorAddSchema = z
         required_error: "Account type is required",
       }),
     }),
+    // Optional identity verification fields
+    vendorIdentity: z
+      .object({
+        aadharCardNumber: z
+          .string()
+          .min(12, "Aadhar number must be 12 digits")
+          .max(12, "Aadhar number must be 12 digits")
+          .optional(),
+        aadharCardDoc: z
+          .union([z.string(), z.instanceof(File)])
+          .optional(),
+        panCard: z
+          .string()
+          .min(10, "PAN number must be 10 characters")
+          .max(10, "PAN number must be 10 characters")
+          .optional(),
+        panCardDoc: z
+          .union([z.string(), z.instanceof(File)])
+          .optional(),
+      })
+      .optional(),
+    // Optional business verification fields
+    businessIdentity: z
+      .object({
+        MSMECertificate: z.union([z.string(), z.instanceof(File)]).optional(),
+        UdhyamAadhar: z.union([z.string(), z.instanceof(File)]).optional(),
+        Fassai: z.union([z.string(), z.instanceof(File)]).optional(),
+        CorporationCertificate: z.union([z.string(), z.instanceof(File)]).optional(),
+        OtherDocuments: z.union([z.string(), z.instanceof(File)]).optional(),
+      })
+      .optional(),
   })
   // Optionally, you could set additional fields here (e.g. isVerified) on the backend
   .strict();
@@ -455,6 +486,37 @@ export const vendorAdminSchema = z.object({
       required_error: "Account type is required",
     }),
   }),
+  // Optional identity verification fields
+  vendorIdentity: z
+    .object({
+      aadharCardNumber: z
+        .string()
+        .min(12, "Aadhar number must be 12 digits")
+        .max(12, "Aadhar number must be 12 digits")
+        .optional(),
+      aadharCardDoc: z
+        .union([z.string(), z.instanceof(File)])
+        .optional(),
+      panCard: z
+        .string()
+        .min(10, "PAN number must be 10 characters")
+        .max(10, "PAN number must be 10 characters")
+        .optional(),
+      panCardDoc: z
+        .union([z.string(), z.instanceof(File)])
+        .optional(),
+    })
+    .optional(),
+  // Optional business verification fields
+  businessIdentity: z
+    .object({
+      MSMECertificate: z.union([z.string(), z.instanceof(File)]).optional(),
+      UdhyamAadhar: z.union([z.string(), z.instanceof(File)]).optional(),
+      Fassai: z.union([z.string(), z.instanceof(File)]).optional(),
+      CorporationCertificate: z.union([z.string(), z.instanceof(File)]).optional(),
+      OtherDocuments: z.union([z.string(), z.instanceof(File)]).optional(),
+    })
+    .optional(),
 });
 
 export const vendorIdentityFormSchema = z.object({
