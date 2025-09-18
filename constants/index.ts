@@ -38,6 +38,10 @@ export const NavLinks = [
     label: "Home Decor",
   },
   {
+    route: "/food",
+    label: "Food & Bevrages",
+  },
+  {
     route: "/farsan",
     label: "Farsan & Mukhvas",
   },
