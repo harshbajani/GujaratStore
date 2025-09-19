@@ -164,137 +164,269 @@ export const brandSchema = z.object({
 });
 
 // Define the Zod schema for product validation
-export const productSchema = z.object({
-  productName: z.string().min(1, "Product name is required"),
-  vendorId: z.string().min(24, "Invalid VendorId"),
-  slug: z.string().min(1, "Slug is required"),
-  parentCategory: z.string().length(24, "Invalid parent category ID"),
-  primaryCategory: z.string().length(24, "Invalid primary category ID"),
-  secondaryCategory: z.string().length(24, "Invalid secondary category ID"),
-  attributes: z
-    .array(
-      z.object({
-        attributeId: z.union([
-          z.string(),
-          z
-            .object({
-              _id: z.string(),
-            })
-            .transform((obj) => obj._id),
-        ]),
-        value: z.string().min(1, "Value is required"),
-        _id: z.string().optional(),
-      })
-    )
-    .nonempty("At least one attribute is required"),
-  brands: z.string().length(24, "Invalid brand ID"),
-  productSize: z.array(z.string().optional()),
-  productSKU: z.string().min(1, "Product SKU is required"),
-  productColor: z.string().optional(),
-  productDescription: z.string().min(1, "Product description is required"),
-  productImages: z
-    .array(z.union([z.string(), z.instanceof(File)]))
-    .min(1, "At least one product image is required"),
-  productCoverImage: z
-    .union([z.string(), z.instanceof(File)])
-    .refine(
-      (val) => val !== null && val !== undefined && val !== "",
-      "Cover image is required"
-    ),
-  mrp: z.number().positive("MRP must be a positive number"),
-  landingPrice: z.number().positive("Base price must be a positive number"),
-  discountType: z.enum(["percentage", "amount"]),
-  gstType: z.enum(["exclusive", "inclusive"]).default("exclusive"),
-  gender: z.enum(["male", "female", "unisex", "not-applicable"]).optional(),
-  discountValue: z
-    .number()
-    .nonnegative("Discount value must be a non-negative number"),
-  gstRate: z.number().nonnegative("GST rate must be a non-negative number"),
-  gstAmount: z.number().nonnegative("GST amount must be a non-negative number"),
-  netPrice: z.number().nonnegative("Net price must be a non-negative number"),
-  deliveryCharges: z
-    .number()
-    .nonnegative("Delivery charges must be a non-negative number"),
-  deliveryDays: z
-    .number()
-    .nonnegative("Delivery date must be a non-negative number"),
-  productQuantity: z.coerce
-    .number()
-    .positive("Product quantity must be a positive number"),
-  productStatus: z.boolean().default(true),
-  productWarranty: z.string().optional(),
-  productReturnPolicy: z.string().optional(),
-  productRating: z.number().optional(),
-  productReviews: z.array(z.string()).optional(),
-  metaTitle: z.string().optional(),
-  metaKeywords: z.string().optional(),
-  metaDescription: z.string().optional(),
-});
+export const productSchema = z
+  .object({
+    productName: z.string().min(1, "Product name is required"),
+    vendorId: z.string().min(24, "Invalid VendorId"),
+    slug: z.string().min(1, "Slug is required"),
+    parentCategory: z.string().length(24, "Invalid parent category ID"),
+    primaryCategory: z.string().length(24, "Invalid primary category ID"),
+    secondaryCategory: z.string().length(24, "Invalid secondary category ID"),
+    attributes: z
+      .array(
+        z.object({
+          attributeId: z.union([
+            z.string(),
+            z
+              .object({
+                _id: z.string(),
+              })
+              .transform((obj) => obj._id),
+          ]),
+          value: z.string().min(1, "Value is required"),
+          _id: z.string().optional(),
+        })
+      )
+      .nonempty("At least one attribute is required"),
+    brands: z.string().length(24, "Invalid brand ID"),
+    productSize: z
+      .array(
+        z.object({
+          sizeId: z.string().min(1, "Size is required"),
+          mrp: z.number().positive("MRP must be a positive number"),
+          landingPrice: z
+            .number()
+            .positive("Landing price must be a positive number"),
+          discountType: z.enum(["percentage", "amount"]),
+          discountValue: z
+            .number()
+            .nonnegative("Discount value must be non-negative"),
+          gstType: z.enum(["inclusive", "exclusive"]).optional(),
+          gstRate: z
+            .number()
+            .nonnegative("GST rate must be non-negative")
+            .optional(),
+          gstAmount: z.number().nonnegative("GST amount must be non-negative"),
+          netPrice: z.number().positive("Net price must be a positive number"),
+          deliveryCharges: z
+            .number()
+            .nonnegative("Delivery charges must be non-negative"),
+          deliveryDays: z
+            .number()
+            .nonnegative("Delivery days must be non-negative"),
+          quantity: z.number().nonnegative("Quantity must be non-negative"),
+        })
+      )
+      .default([]),
+    productSKU: z.string().min(1, "Product SKU is required"),
+    productColor: z.string().optional(),
+    productDescription: z.string().min(1, "Product description is required"),
+    productImages: z
+      .array(z.union([z.string(), z.instanceof(File)]))
+      .min(1, "At least one product image is required"),
+    productCoverImage: z
+      .union([z.string(), z.instanceof(File)])
+      .refine(
+        (val) => val !== null && val !== undefined && val !== "",
+        "Cover image is required"
+      ),
+    // Root-level pricing fields - optional when using size-based pricing
+    mrp: z.number().positive("MRP must be a positive number").optional(),
+    landingPrice: z
+      .number()
+      .positive("Base price must be a positive number")
+      .optional(),
+    discountType: z.enum(["percentage", "amount"]).default("percentage"),
+    gstType: z.enum(["exclusive", "inclusive"]).default("exclusive"),
+    gender: z.enum(["male", "female", "unisex", "not-applicable"]).optional(),
+    discountValue: z
+      .number()
+      .nonnegative("Discount value must be a non-negative number")
+      .default(0),
+    gstRate: z
+      .number()
+      .nonnegative("GST rate must be a non-negative number")
+      .default(0),
+    gstAmount: z
+      .number()
+      .nonnegative("GST amount must be a non-negative number")
+      .default(0),
+    netPrice: z
+      .number()
+      .nonnegative("Net price must be a non-negative number")
+      .default(0),
+    deliveryCharges: z
+      .number()
+      .nonnegative("Delivery charges must be a non-negative number")
+      .default(0),
+    deliveryDays: z
+      .number()
+      .nonnegative("Delivery date must be a non-negative number")
+      .default(0),
+    productQuantity: z.coerce
+      .number()
+      .positive("Product quantity must be a positive number"),
+    productStatus: z.boolean().default(true),
+    productWarranty: z.string().optional(),
+    productReturnPolicy: z.string().optional(),
+    productRating: z.number().optional(),
+    productReviews: z.array(z.string()).optional(),
+    metaTitle: z.string().optional(),
+    metaKeywords: z.string().optional(),
+    metaDescription: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      // Custom validation: Either use standard pricing OR size-based pricing
+      const hasSizeBasedPricing =
+        data.productSize && data.productSize.length > 0;
+      const hasStandardPricing =
+        data.mrp && data.mrp > 0 && data.landingPrice && data.landingPrice > 0;
 
-export const adminProductSchema = z.object({
-  productName: z.string().min(1, "Product name is required"),
-  parentCategory: z.string().length(24, "Invalid parent category ID"),
-  primaryCategory: z.string().length(24, "Invalid primary category ID"),
-  secondaryCategory: z.string().length(24, "Invalid secondary category ID"),
-  attributes: z
-    .array(
-      z.object({
-        attributeId: z.union([
-          z.string(),
-          z
-            .object({
-              _id: z.string(),
-            })
-            .transform((obj) => obj._id),
-        ]),
-        value: z.string().min(1, "Value is required"),
-        _id: z.string().optional(),
-      })
-    )
-    .nonempty("At least one attribute is required"),
-  brands: z.string().length(24, "Invalid brand ID"),
-  productSize: z.array(z.string().optional()),
-  productSKU: z.string().min(1, "Product SKU is required"),
-  productColor: z.string().optional(),
-  productDescription: z.string().min(1, "Product description is required"),
-  productImages: z
-    .array(z.union([z.string(), z.instanceof(File)]))
-    .min(1, "At least one product image is required"),
-  productCoverImage: z
-    .union([z.string(), z.instanceof(File)])
-    .refine(
-      (val) => val !== null && val !== undefined && val !== "",
-      "Cover image is required"
-    ),
-  mrp: z.number().positive("MRP must be a positive number"),
-  landingPrice: z.number().positive("Base price must be a positive number"),
-  discountType: z.enum(["percentage", "amount"]),
-  gstType: z.enum(["exclusive", "inclusive"]).default("exclusive"),
-  gender: z.enum(["male", "female", "unisex", "not-applicable"]).optional(),
-  discountValue: z
-    .number()
-    .nonnegative("Discount value must be a non-negative number"),
-  gstRate: z.number().nonnegative("GST rate must be a non-negative number"),
-  gstAmount: z.number().nonnegative("GST amount must be a non-negative number"),
-  netPrice: z.number().nonnegative("Net price must be a non-negative number"),
-  deliveryCharges: z
-    .number()
-    .nonnegative("Delivery charges must be a non-negative number"),
-  deliveryDays: z
-    .number()
-    .nonnegative("Delivery date must be a non-negative number"),
-  productQuantity: z.coerce
-    .number()
-    .positive("Product quantity must be a positive number"),
-  productStatus: z.boolean().default(true),
-  productWarranty: z.string().optional(),
-  productReturnPolicy: z.string().optional(),
-  productRating: z.number().optional(),
-  productReviews: z.array(z.string()).optional(),
-  metaTitle: z.string().optional(),
-  metaKeywords: z.string().optional(),
-  metaDescription: z.string().optional(),
-});
+      // At least one pricing method must be used
+      if (!hasSizeBasedPricing && !hasStandardPricing) {
+        return false;
+      }
+
+      return true;
+    },
+    {
+      message:
+        "Either standard pricing (MRP and Landing Price) or size-based pricing must be provided",
+      path: ["mrp"], // This will show the error on the MRP field
+    }
+  );
+
+export const adminProductSchema = z
+  .object({
+    productName: z.string().min(1, "Product name is required"),
+    parentCategory: z.string().length(24, "Invalid parent category ID"),
+    primaryCategory: z.string().length(24, "Invalid primary category ID"),
+    secondaryCategory: z.string().length(24, "Invalid secondary category ID"),
+    attributes: z
+      .array(
+        z.object({
+          attributeId: z.union([
+            z.string(),
+            z
+              .object({
+                _id: z.string(),
+              })
+              .transform((obj) => obj._id),
+          ]),
+          value: z.string().min(1, "Value is required"),
+          _id: z.string().optional(),
+        })
+      )
+      .nonempty("At least one attribute is required"),
+    brands: z.string().length(24, "Invalid brand ID"),
+    productSize: z
+      .array(
+        z.object({
+          sizeId: z.string().min(1, "Size is required"),
+          mrp: z.number().positive("MRP must be a positive number"),
+          landingPrice: z
+            .number()
+            .positive("Landing price must be a positive number"),
+          discountType: z.enum(["percentage", "amount"]),
+          discountValue: z
+            .number()
+            .nonnegative("Discount value must be non-negative"),
+          gstType: z.enum(["inclusive", "exclusive"]).optional(),
+          gstRate: z
+            .number()
+            .nonnegative("GST rate must be non-negative")
+            .optional(),
+          gstAmount: z.number().nonnegative("GST amount must be non-negative"),
+          netPrice: z.number().positive("Net price must be a positive number"),
+          deliveryCharges: z
+            .number()
+            .nonnegative("Delivery charges must be non-negative"),
+          deliveryDays: z
+            .number()
+            .nonnegative("Delivery days must be non-negative"),
+          quantity: z.number().nonnegative("Quantity must be non-negative"),
+        })
+      )
+      .default([]),
+    productSKU: z.string().min(1, "Product SKU is required"),
+    productColor: z.string().optional(),
+    productDescription: z.string().min(1, "Product description is required"),
+    productImages: z
+      .array(z.union([z.string(), z.instanceof(File)]))
+      .min(1, "At least one product image is required"),
+    productCoverImage: z
+      .union([z.string(), z.instanceof(File)])
+      .refine(
+        (val) => val !== null && val !== undefined && val !== "",
+        "Cover image is required"
+      ),
+    // Root-level pricing fields - optional when using size-based pricing
+    mrp: z.number().positive("MRP must be a positive number").optional(),
+    landingPrice: z
+      .number()
+      .positive("Base price must be a positive number")
+      .optional(),
+    discountType: z.enum(["percentage", "amount"]).default("percentage"),
+    gstType: z.enum(["exclusive", "inclusive"]).default("exclusive"),
+    gender: z.enum(["male", "female", "unisex", "not-applicable"]).optional(),
+    discountValue: z
+      .number()
+      .nonnegative("Discount value must be a non-negative number")
+      .default(0),
+    gstRate: z
+      .number()
+      .nonnegative("GST rate must be a non-negative number")
+      .default(0),
+    gstAmount: z
+      .number()
+      .nonnegative("GST amount must be a non-negative number")
+      .default(0),
+    netPrice: z
+      .number()
+      .nonnegative("Net price must be a non-negative number")
+      .default(0),
+    deliveryCharges: z
+      .number()
+      .nonnegative("Delivery charges must be a non-negative number")
+      .default(0),
+    deliveryDays: z
+      .number()
+      .nonnegative("Delivery date must be a non-negative number")
+      .default(0),
+    productQuantity: z.coerce
+      .number()
+      .positive("Product quantity must be a positive number"),
+    productStatus: z.boolean().default(true),
+    productWarranty: z.string().optional(),
+    productReturnPolicy: z.string().optional(),
+    productRating: z.number().optional(),
+    productReviews: z.array(z.string()).optional(),
+    metaTitle: z.string().optional(),
+    metaKeywords: z.string().optional(),
+    metaDescription: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      // Custom validation: Either use standard pricing OR size-based pricing
+      const hasSizeBasedPricing =
+        data.productSize && data.productSize.length > 0;
+      const hasStandardPricing =
+        data.mrp && data.mrp > 0 && data.landingPrice && data.landingPrice > 0;
+
+      // At least one pricing method must be used
+      if (!hasSizeBasedPricing && !hasStandardPricing) {
+        return false;
+      }
+
+      return true;
+    },
+    {
+      message:
+        "Either standard pricing (MRP and Landing Price) or size-based pricing must be provided",
+      path: ["mrp"], // This will show the error on the MRP field
+    }
+  );
 
 export const discountFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -407,17 +539,13 @@ export const vendorAddSchema = z
           .min(12, "Aadhar number must be 12 digits")
           .max(12, "Aadhar number must be 12 digits")
           .optional(),
-        aadharCardDoc: z
-          .union([z.string(), z.instanceof(File)])
-          .optional(),
+        aadharCardDoc: z.union([z.string(), z.instanceof(File)]).optional(),
         panCard: z
           .string()
           .min(10, "PAN number must be 10 characters")
           .max(10, "PAN number must be 10 characters")
           .optional(),
-        panCardDoc: z
-          .union([z.string(), z.instanceof(File)])
-          .optional(),
+        panCardDoc: z.union([z.string(), z.instanceof(File)]).optional(),
       })
       .optional(),
     // Optional business verification fields
@@ -426,7 +554,9 @@ export const vendorAddSchema = z
         MSMECertificate: z.union([z.string(), z.instanceof(File)]).optional(),
         UdhyamAadhar: z.union([z.string(), z.instanceof(File)]).optional(),
         Fassai: z.union([z.string(), z.instanceof(File)]).optional(),
-        CorporationCertificate: z.union([z.string(), z.instanceof(File)]).optional(),
+        CorporationCertificate: z
+          .union([z.string(), z.instanceof(File)])
+          .optional(),
         OtherDocuments: z.union([z.string(), z.instanceof(File)]).optional(),
       })
       .optional(),
@@ -494,17 +624,13 @@ export const vendorAdminSchema = z.object({
         .min(12, "Aadhar number must be 12 digits")
         .max(12, "Aadhar number must be 12 digits")
         .optional(),
-      aadharCardDoc: z
-        .union([z.string(), z.instanceof(File)])
-        .optional(),
+      aadharCardDoc: z.union([z.string(), z.instanceof(File)]).optional(),
       panCard: z
         .string()
         .min(10, "PAN number must be 10 characters")
         .max(10, "PAN number must be 10 characters")
         .optional(),
-      panCardDoc: z
-        .union([z.string(), z.instanceof(File)])
-        .optional(),
+      panCardDoc: z.union([z.string(), z.instanceof(File)]).optional(),
     })
     .optional(),
   // Optional business verification fields
@@ -513,7 +639,9 @@ export const vendorAdminSchema = z.object({
       MSMECertificate: z.union([z.string(), z.instanceof(File)]).optional(),
       UdhyamAadhar: z.union([z.string(), z.instanceof(File)]).optional(),
       Fassai: z.union([z.string(), z.instanceof(File)]).optional(),
-      CorporationCertificate: z.union([z.string(), z.instanceof(File)]).optional(),
+      CorporationCertificate: z
+        .union([z.string(), z.instanceof(File)])
+        .optional(),
       OtherDocuments: z.union([z.string(), z.instanceof(File)]).optional(),
     })
     .optional(),

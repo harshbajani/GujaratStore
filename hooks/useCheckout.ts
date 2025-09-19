@@ -888,7 +888,18 @@ export function useCheckout() {
       orderId,
       status: orderStatus,
       userId: state.userData!._id,
-      items: state.checkoutData!.items,
+      items: state.checkoutData!.items.map((item) => ({
+        productId: item.productId,
+        productName: item.productName,
+        coverImage: item.coverImage,
+        price: item.price,
+        quantity: item.quantity,
+        deliveryDate: item.deliveryDate,
+        selectedSize: item.selectedSize 
+          ? (typeof item.selectedSize === 'string' ? item.selectedSize : item.selectedSize.label) 
+          : undefined,
+        vendorId: item.vendorId,
+      })),
       subtotal: state.checkoutData!.subtotal,
       deliveryCharges: state.checkoutData!.deliveryCharges,
       discountAmount: state.checkoutData!.discountAmount || 0,
@@ -928,10 +939,15 @@ export function useCheckout() {
             throw new Error("Selected address not found");
           }
 
-          // Prepare email data
+          // Prepare email data with properly formatted items
           const emailData = {
             orderId,
-            items: state.checkoutData?.items,
+            items: state.checkoutData?.items.map((item) => ({
+              ...item,
+              selectedSize: item.selectedSize 
+                ? (typeof item.selectedSize === 'string' ? item.selectedSize : item.selectedSize.label) 
+                : undefined,
+            })),
             subtotal: state.checkoutData?.subtotal,
             deliveryCharges: state.checkoutData?.deliveryCharges,
             discountAmount: state.checkoutData?.discountAmount || 0,
@@ -1030,6 +1046,17 @@ export function useCheckout() {
     if (!state.selectedAddress || !state.checkoutData || !state.userData) {
       toast.error("Oops!", {
         description: "Please select a delivery address",
+        duration: 5000,
+      });
+      return;
+    }
+
+    // Validate that all items have vendorId (this should rarely happen now)
+    const itemsWithoutVendor = state.checkoutData.items.filter(item => !item.vendorId);
+    if (itemsWithoutVendor.length > 0) {
+      console.warn('Checkout items without vendorId:', itemsWithoutVendor);
+      toast.error("Product Information Missing", {
+        description: "Some products are missing vendor information. Please refresh the page and try again.",
         duration: 5000,
       });
       return;

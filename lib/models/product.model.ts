@@ -52,8 +52,65 @@ const productSchema = new Schema({
   },
   productSize: [
     {
-      type: Schema.Types.ObjectId,
-      ref: "Size",
+      sizeId: {
+        type: Schema.Types.ObjectId,
+        ref: "Size",
+        required: true,
+      },
+      mrp: {
+        type: Number,
+        required: true,
+      },
+      landingPrice: {
+        type: Number,
+        required: true,
+      },
+      discountType: {
+        type: String,
+        enum: ["percentage", "amount"],
+        required: true,
+        default: "percentage",
+      },
+      discountValue: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      gstType: {
+        type: String,
+        enum: ["inclusive", "exclusive"],
+        required: true,
+        default: "exclusive",
+      },
+      gstRate: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      gstAmount: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      netPrice: {
+        type: Number,
+        required: true,
+      },
+      deliveryCharges: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      deliveryDays: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      quantity: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
     },
   ],
   productSKU: { type: String, required: true },
