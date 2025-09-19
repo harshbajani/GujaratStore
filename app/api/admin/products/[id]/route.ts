@@ -10,7 +10,7 @@ const populateConfig = [
   { path: "secondaryCategory", select: "name" },
   { path: "brands", select: "name" },
   { path: "attributes.attributeId", select: "name" },
-  { path: "productSize", select: "label" },
+  { path: "productSize.sizeId", select: "label value" }, // Updated to populate sizeId within productSize array
 ];
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -52,7 +52,7 @@ export async function PUT(request: Request) {
       .populate({ path: "secondaryCategory", select: "name _id" })
       .populate({ path: "brands", select: "name _id" })
       .populate({ path: "attributes.attributeId", select: "value" })
-      .populate({ path: "productSize", select: "label" });
+      .populate({ path: "productSize.sizeId", select: "label value" }); // Updated to populate sizeId
 
     if (!updatedProduct) {
       return NextResponse.json(

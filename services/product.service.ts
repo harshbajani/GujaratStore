@@ -14,6 +14,7 @@ export class ProductService {
     return {
       ...product,
       _id: product._id.toString(),
+      vendorId: product.vendorId, // Ensure vendorId is included
       productImages: product.productImages,
       productCoverImage: product.productCoverImage,
     };

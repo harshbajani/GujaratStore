@@ -18,9 +18,21 @@ export const POST = withAdminOrVendorAuth(async (request: Request) => {
       const isDuplicateError = result.message?.includes('duplicate') || 
                                result.message?.includes('11000');
       
-      const userFriendlyMessage = isDuplicateError 
-        ? "Order processing failed due to a technical issue. Please try again."
-        : result.message;
+      // Check for validation errors and make them user-friendly
+      let userFriendlyMessage;
+      if (isDuplicateError) {
+        userFriendlyMessage = "Order processing failed due to a technical issue. Please try again.";
+      } else if (result.message?.includes('vendorId') && result.message?.includes('required')) {
+        userFriendlyMessage = "There was an issue with product information. Please refresh and try again.";
+      } else if (result.message?.includes('selectedSize') && result.message?.includes('Cast to string failed')) {
+        userFriendlyMessage = "There was an issue with size selection. Please check your selections and try again.";
+      } else if (result.message?.includes('validation failed')) {
+        userFriendlyMessage = "Please check that all required fields are filled and try again.";
+      } else if (result.message?.includes('stock') || result.message?.includes('quantity')) {
+        userFriendlyMessage = "Some items in your cart are out of stock. Please review your cart and try again.";
+      } else {
+        userFriendlyMessage = "Unable to process your order. Please try again or contact support if the issue persists.";
+      }
 
       return NextResponse.json(
         { success: false, error: userFriendlyMessage },

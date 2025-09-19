@@ -14,13 +14,21 @@ import { toast } from "sonner";
 
 interface CartItem extends IProductResponse {
   cartQuantity: number;
+  selectedSize?: {
+    sizeId: string;
+    label: string;
+    mrp: number;
+    netPrice: number;
+    discountValue: number;
+    quantity: number;
+  };
 }
 
 interface CartContextType {
   cartItems: CartItem[];
   cartCount: number;
   loading: boolean;
-  addToCart: (productId: string) => Promise<void>;
+  addToCart: (productId: string, selectedSize?: { sizeId: string; label: string; mrp: number; netPrice: number; discountValue: number; quantity: number; }) => Promise<void>;
   removeFromCart: (productId: string) => Promise<void>;
   updateQuantity: (productId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -41,11 +49,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Calculate cart totals
   const cartCount = cartItems.length;
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.netPrice * item.cartQuantity,
+    (sum, item) => {
+      const price = item.selectedSize ? item.selectedSize.netPrice : item.netPrice;
+      return sum + price * item.cartQuantity;
+    },
     0
   );
   const deliveryCharges = cartItems.reduce(
-    (sum, item) => sum + (item.deliveryCharges || 0),
+    (sum, item) => {
+      // Use size-specific delivery charges if available
+      if (item.selectedSize && item.productSize) {
+        const sizeData = item.productSize.find(size => {
+          const sizeId = typeof size.sizeId === 'object' ? (size.sizeId as any)._id : size.sizeId;
+          return sizeId === item.selectedSize?.sizeId;
+        });
+        if (sizeData) {
+          return sum + (sizeData.deliveryCharges || 0);
+        }
+      }
+      return sum + (item.deliveryCharges || 0);
+    },
     0
   );
   const total = subtotal + deliveryCharges;
@@ -125,7 +148,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [session?.user?.email, guestCart]);
 
   const addToCart = useCallback(
-    async (productId: string) => {
+    async (productId: string, selectedSize?: { sizeId: string; label: string; mrp: number; netPrice: number; discountValue: number; quantity: number; }) => {
       try {
         // Check if item already exists
         const existingItem = cartItems.find((item) => item._id === productId);
@@ -150,6 +173,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           cartQuantity: 1,
           deliveryCharges: calculateDeliveryCharges(productData.data),
           inCart: true,
+          selectedSize: selectedSize,
         };
 
         setCartItems((prev) => [...prev, newItem]);
@@ -161,7 +185,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ productId }),
+            body: JSON.stringify({ productId, selectedSize }),
           });
 
           if (!response.ok) {

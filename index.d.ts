@@ -301,6 +301,30 @@ declare interface ISizes {
   isActive: boolean;
 }
 
+declare interface IProductSizePrice {
+  sizeId: string;
+  mrp: number;
+  landingPrice: number;
+  discountType: "percentage" | "amount";
+  discountValue: number;
+  gstType?: "inclusive" | "exclusive";
+  gstRate?: number;
+  gstAmount?: number;
+  netPrice: number;
+  deliveryCharges: number;
+  deliveryDays: number;
+  quantity: number;
+}
+
+declare interface IProductSizePriceWithDetails extends IProductSizePrice {
+  size: {
+    _id: string;
+    label: string;
+    value: string;
+    isActive: boolean;
+  };
+}
+
 declare interface ISize {
   _id?: string;
   id?: string;
@@ -329,7 +353,7 @@ declare interface IProduct {
   brands: string; // MongoDB ObjectId as string
   productSKU: string;
   productColor?: string;
-  productSize?: string[];
+  productSize?: IProductSizePrice[];
   productDescription: string;
   productImages: (string | File)[];
   productCoverImage: string | File;
@@ -366,7 +390,7 @@ declare interface IAdminProduct {
   brands: string; // MongoDB ObjectId as string
   productSKU: string;
   productColor?: string;
-  productSize?: string[];
+  productSize?: IProductSizePrice[];
   productDescription: string;
   productImages: (string | File)[];
   productCoverImage: string | File;
@@ -439,11 +463,7 @@ declare interface IProductResponse {
     name: string;
   };
   productSKU: string;
-  productSize?: {
-    _id: string;
-    label: string;
-    isActive: boolean;
-  }[];
+  productSize?: IProductSizePriceWithDetails[];
   productColor?: string;
   productDescription: string;
   productImages: (string | File)[];
@@ -488,11 +508,18 @@ declare interface IProductReview {
 declare interface CheckoutItem {
   productId: string;
   productName: string;
-  selectedSize?: string;
+  selectedSize?: {
+    sizeId: string;
+    label: string;
+    mrp: number;
+    netPrice: number;
+    discountValue: number;
+  };
   quantity: number;
   price: number;
   coverImage: string;
   deliveryDate: string;
+  vendorId: string;
 }
 
 declare interface CheckoutData {
@@ -512,7 +539,13 @@ declare interface OrderItem {
   quantity: number;
   price: number;
   deliveryDate: string;
-  selectedSize?: string;
+  selectedSize?: {
+    sizeId: string;
+    label: string;
+    mrp: number;
+    netPrice: number;
+    discountValue: number;
+  };
   vendorId?: string;
 }
 

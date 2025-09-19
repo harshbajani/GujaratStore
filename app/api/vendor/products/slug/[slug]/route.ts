@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         { path: "secondaryCategory", select: "name" },
         { path: "brands", select: "name" },
         { path: "attributes.attributeId", select: "name" },
-        { path: "productSize", select: "label" },
+        { path: "productSize.sizeId", select: "label value" }, // Updated to populate sizeId within productSize array
       ])
       .lean();
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -20,19 +21,14 @@ import { toast } from "sonner";
 
 const CartPage = () => {
   const router = useRouter();
-  const {
-    cartItems,
-    loading,
-    subtotal,
-    deliveryCharges,
-    total,
-    updateQuantity,
-    removeFromCart,
-  } = useCart();
+  const { cartItems, loading, updateQuantity, removeFromCart } = useCart();
 
   const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>(
     {}
   );
+  const [itemPrices, setItemPrices] = useState<
+    Record<string, { price: number; mrp: number; discountValue: number }>
+  >({});
 
   // Helper for formatted delivery date
   const formattedDeliveryDate = (deliveryDays: number) => {
@@ -54,6 +50,57 @@ const CartPage = () => {
       ...prev,
       [productId]: sizeId,
     }));
+
+    // Find the item and update its pricing based on selected size
+    const item = cartItems.find((item) => item._id === productId);
+    if (item && item.productSize) {
+      const selectedSizeData = item.productSize.find((size) =>
+        typeof size.sizeId === "object"
+          ? (size.sizeId as any)?._id === sizeId
+          : size.sizeId === sizeId
+      );
+      if (selectedSizeData) {
+        setItemPrices((prev) => ({
+          ...prev,
+          [productId]: {
+            price: selectedSizeData.netPrice,
+            mrp: selectedSizeData.mrp,
+            discountValue: selectedSizeData.discountValue,
+          },
+        }));
+      }
+    }
+  };
+
+  // Calculate updated subtotal based on selected sizes
+  const calculateUpdatedSubtotal = () => {
+    return cartItems.reduce((sum, item) => {
+      const currentPrice = itemPrices[item._id!] || {
+        price: item.netPrice,
+        mrp: item.mrp,
+        discountValue: item.discountValue,
+      };
+      return sum + currentPrice.price * item.cartQuantity;
+    }, 0);
+  };
+
+  // Calculate updated delivery charges based on selected sizes
+  const calculateUpdatedDeliveryCharges = () => {
+    return cartItems.reduce((sum, item) => {
+      const selectedSizeId = selectedSizes[item._id!];
+      if (selectedSizeId && item.productSize) {
+        const selectedSizeData = item.productSize.find((size) =>
+          typeof size.sizeId === "object"
+            ? (size.sizeId as any)?._id === selectedSizeId
+            : size.sizeId === selectedSizeId
+        );
+        if (selectedSizeData && selectedSizeData.deliveryCharges) {
+          return sum + selectedSizeData.deliveryCharges;
+        }
+      }
+      // Fallback to item's default delivery charges
+      return sum + (item.deliveryCharges || 0);
+    }, 0);
   };
 
   const handleCheckout = () => {
@@ -69,29 +116,64 @@ const CartPage = () => {
       return;
     }
 
-    // Prepare checkout data with size labels
+    // Check if any items are missing vendorId (this should rarely happen now)
+    const itemsWithoutVendor = cartItems.filter(item => !item.vendorId);
+    if (itemsWithoutVendor.length > 0) {
+      console.warn('Items without vendorId:', itemsWithoutVendor);
+      toast.error("Product Information Missing", {
+        description: "Some products are missing vendor information. Please refresh the page and try again.",
+        duration: 5000,
+      });
+      return;
+    }
+
+    // Prepare checkout data with size labels and proper pricing
     const checkoutData: CheckoutData = {
       items: cartItems.map((item) => {
-        // Find the selected size object to get its label
+        // Find the selected size object to get its label and pricing
         const selectedSizeId = selectedSizes[item._id!];
-        const selectedSize = item.productSize?.find(
-          (size) => size._id === selectedSizeId
+        const selectedSizeData = item.productSize?.find((size) =>
+          typeof size.sizeId === "object"
+            ? (size.sizeId as any)?._id === selectedSizeId
+            : size.sizeId === selectedSizeId
         );
+
+        const currentPrice = itemPrices[item._id!] || {
+          price: item.netPrice,
+          mrp: item.mrp,
+          discountValue: item.discountValue,
+        };
 
         return {
           productId: item._id!,
           productName: item.productName,
-          selectedSize: selectedSize ? selectedSize.label : undefined,
+          selectedSize: selectedSizeData
+            ? {
+                sizeId:
+                  typeof selectedSizeData.sizeId === "object"
+                    ? (selectedSizeData.sizeId as any)._id
+                    : selectedSizeData.sizeId,
+                label:
+                  (typeof selectedSizeData.sizeId === "object"
+                    ? (selectedSizeData.sizeId as any).label
+                    : null) ||
+                  selectedSizeData.size?.label ||
+                  "Unknown Size",
+                mrp: selectedSizeData.mrp,
+                netPrice: selectedSizeData.netPrice,
+                discountValue: selectedSizeData.discountValue,
+              }
+            : undefined,
           quantity: item.cartQuantity,
-          price: item.netPrice,
+          price: currentPrice.price,
           coverImage: item.productCoverImage as string,
           deliveryDate: formattedDeliveryDate(item.deliveryDays),
           vendorId: item.vendorId,
         };
       }),
-      subtotal,
-      deliveryCharges,
-      total,
+      subtotal: calculateUpdatedSubtotal(),
+      deliveryCharges: calculateUpdatedDeliveryCharges(),
+      total: calculateUpdatedSubtotal() + calculateUpdatedDeliveryCharges(),
       discountAmount: 0,
       discountCode: "",
     };
@@ -172,11 +254,26 @@ const CartPage = () => {
                               <SelectValue placeholder="Select Size" />
                             </SelectTrigger>
                             <SelectContent>
-                              {item.productSize?.map((size) => (
-                                <SelectItem key={size._id} value={size._id!}>
-                                  {size.label}
-                                </SelectItem>
-                              ))}
+                              {item.productSize?.map((sizePrice, index) => {
+                                const sizeId =
+                                  typeof sizePrice.sizeId === "object"
+                                    ? (sizePrice.sizeId as any)._id
+                                    : sizePrice.sizeId;
+                                const sizeLabel =
+                                  (typeof sizePrice.sizeId === "object"
+                                    ? (sizePrice.sizeId as any).label
+                                    : null) ||
+                                  sizePrice.size?.label ||
+                                  "Unknown Size";
+                                return (
+                                  <SelectItem
+                                    key={sizeId || `size-${index}`}
+                                    value={sizeId}
+                                  >
+                                    {sizeLabel}
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectContent>
                           </Select>
                         )}
@@ -187,30 +284,41 @@ const CartPage = () => {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-sm sm:text-base">
-                        ₹
-                        {(item.netPrice * item.cartQuantity).toLocaleString(
-                          "en-IN"
-                        )}
-                      </p>
-                      {item.mrp > item.netPrice && (
-                        <div>
-                          <p className="text-xs text-gray-500 line-through">
-                            ₹
-                            {(item.mrp * item.cartQuantity).toLocaleString(
-                              "en-IN"
+                      {(() => {
+                        const currentPrice = itemPrices[item._id!] || {
+                          price: item.netPrice,
+                          mrp: item.mrp,
+                          discountValue: item.discountValue,
+                        };
+                        return (
+                          <>
+                            <p className="font-semibold text-sm sm:text-base">
+                              ₹
+                              {(
+                                currentPrice.price * item.cartQuantity
+                              ).toLocaleString("en-IN")}
+                            </p>
+                            {currentPrice.mrp > currentPrice.price && (
+                              <div>
+                                <p className="text-xs text-gray-500 line-through">
+                                  ₹
+                                  {(
+                                    currentPrice.mrp * item.cartQuantity
+                                  ).toLocaleString("en-IN")}
+                                </p>
+                                <p className="text-green-500 text-xs">
+                                  {currentPrice.discountValue}
+                                  {item.discountType === "percentage" ? (
+                                    <span>% off</span>
+                                  ) : (
+                                    <span>rs off</span>
+                                  )}
+                                </p>
+                              </div>
                             )}
-                          </p>
-                          <p className="text-green-500 text-xs">
-                            {item.discountValue}
-                            {item.discountType === "percentage" ? (
-                              <span>% off</span>
-                            ) : (
-                              <span>rs off</span>
-                            )}
-                          </p>
-                        </div>
-                      )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}
@@ -226,16 +334,33 @@ const CartPage = () => {
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm sm:text-base">
                     <span>Subtotal</span>
-                    <span>₹{subtotal.toLocaleString("en-IN")}</span>
+                    <span>
+                      ₹{calculateUpdatedSubtotal().toLocaleString("en-IN")}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm sm:text-base">
                     <span>Delivery Charges</span>
-                    <span>₹{deliveryCharges.toLocaleString("en-IN")}</span>
+                    {calculateUpdatedDeliveryCharges() > 0 ? (
+                      <span>
+                        ₹
+                        {calculateUpdatedDeliveryCharges().toLocaleString(
+                          "en-IN"
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-green-500">Free</span>
+                    )}
                   </div>
                   <div className="border-t pt-2 mt-2">
                     <div className="flex justify-between font-bold text-sm sm:text-base">
                       <span>Total</span>
-                      <span>₹{total.toLocaleString("en-IN")}</span>
+                      <span>
+                        ₹
+                        {(
+                          calculateUpdatedSubtotal() +
+                          calculateUpdatedDeliveryCharges()
+                        ).toLocaleString("en-IN")}
+                      </span>
                     </div>
                   </div>
                 </div>

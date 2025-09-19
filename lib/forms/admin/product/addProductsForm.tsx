@@ -20,7 +20,6 @@ import { adminProductSchema } from "@/lib/validations";
 import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
-import PriceCalculator from "@/components/PriceCalculator";
 import { Switch } from "@/components/ui/switch";
 import { getAllBrands } from "@/lib/actions/brand.actions";
 import Image from "next/image";
@@ -29,9 +28,9 @@ import { toast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { getAllSizes } from "@/lib/actions/size.actions";
-import { MultiSelect } from "@/components/ui/multi-select";
 import slugify from "slugify";
 import Loader from "@/components/Loader";
+import SizePricing from "@/components/SizePricing";
 
 const AddProductsForm = () => {
   const generateSlug = (name: string) => {
@@ -578,28 +577,6 @@ const AddProductsForm = () => {
           />
           <FormField
             control={form.control}
-            name="productSize"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Product Size</FormLabel>
-                <FormControl>
-                  <MultiSelect
-                    options={sizes.map((size) => ({
-                      value: size._id || "",
-                      label: size.label,
-                    }))}
-                    onValueChange={(values) => {
-                      field.onChange(values); // Update the form state
-                    }}
-                    defaultValue={Array.isArray(field.value) ? field.value : []} // Ensure this is set correctly
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
             name="gender"
             render={({ field }) => (
               <FormItem>
@@ -670,7 +647,13 @@ const AddProductsForm = () => {
           })}
         </div>
 
-        <PriceCalculator control={form.control} />
+        {/* Pricing Configuration */}
+        <SizePricing
+          control={form.control}
+          sizes={sizes}
+          setValue={form.setValue}
+        />
+
         <div className="grid grid-cols-2 gap-6">
           {/* Cover Image Field */}
           <FormField

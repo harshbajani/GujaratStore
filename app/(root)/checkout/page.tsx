@@ -35,7 +35,6 @@ const CheckoutPage = () => {
     removeItem,
     handleApplyDiscount,
     confirmOrder,
-    toggleSection,
     getReferralDiscountDetails,
     handleRedeemRewardPoints,
   } = useCheckout();
@@ -292,7 +291,14 @@ const CheckoutPage = () => {
                   <div className="flex-1">
                     <h3 className="font-semibold">{item.productName}</h3>
                     <div className="text-sm text-gray-600 mt-1">
-                      {item.selectedSize && <p>Size: {item.selectedSize}</p>}
+                      {item.selectedSize && (
+                        <p>
+                          Size:{" "}
+                          {typeof item.selectedSize === "string"
+                            ? item.selectedSize
+                            : item.selectedSize.label}
+                        </p>
+                      )}
                       <div className="flex items-center gap-4 mt-2">
                         <div className="flex items-center gap-2">
                           <button
@@ -326,6 +332,16 @@ const CheckoutPage = () => {
                     <p className="font-semibold">
                       ₹{(item.price * item.quantity).toLocaleString("en-IN")}
                     </p>
+                    {item.selectedSize &&
+                      typeof item.selectedSize === "object" &&
+                      item.selectedSize.mrp > item.selectedSize.netPrice && (
+                        <p className="text-xs text-gray-500 line-through">
+                          ₹
+                          {(
+                            item.selectedSize.mrp * item.quantity
+                          ).toLocaleString("en-IN")}
+                        </p>
+                      )}
                     <p className="text-sm text-gray-600">
                       Delivery: {item.deliveryDate}
                     </p>
