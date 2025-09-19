@@ -1,4 +1,5 @@
 "use client";
+
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
@@ -18,7 +19,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { NavLinks, UserNavLinks } from "@/constants";
+import { UserNavLinks } from "@/constants";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { signOut as nextAuthSignOut, useSession } from "next-auth/react";
@@ -39,7 +40,7 @@ type SearchResult = {
   };
 };
 
-const Header = () => {
+const FlipkartHomeHeader = () => {
   const [isOpen, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -99,7 +100,6 @@ const Header = () => {
   };
 
   // Add cleanup effect for search timeout
-  // Remove the cart change event listener since we now use centralized context
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
@@ -143,8 +143,8 @@ const Header = () => {
   // * signOut function
   const handleSignOut = async () => {
     try {
-      await nextAuthSignOut({ redirect: false }); // * First, call the client-side NextAuth signOut
-      const response = await serverSignOut(); // * Then call your server action
+      await nextAuthSignOut({ redirect: false });
+      const response = await serverSignOut();
       if (response.success) {
         toast({ title: "Success", description: "Signed out successfully" });
         router.push("/sign-in");
@@ -191,7 +191,7 @@ const Header = () => {
   };
 
   return (
-    <nav className="sticky top-0 w-full z-50">
+    <nav className="w-full z-50">
       <div className="bg-brand">
         {/* Desktop Header */}
         <div className="h-[72px] w-full max-w-6xl mx-auto hidden md:flex flex-row items-center justify-between px-4">
@@ -297,7 +297,6 @@ const Header = () => {
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            {/* Mobile Header - Sheet Content */}
             <SheetContent
               ref={sheetContentRef}
               side="left"
@@ -343,26 +342,6 @@ const Header = () => {
                 </div>
               </div>
 
-              {/* Mobile navigation will be handled by mobile-responsive navigation menu */}
-              <div>
-                <div className="border-t px-4 py-3">
-                  <p className="text-sm text-gray-500 mb-4">
-                    Browse Categories
-                  </p>
-                  {/* Basic fallback links for mobile */}
-                  {NavLinks.map((link) => (
-                    <Link
-                      prefetch
-                      key={link.route}
-                      href={link.route}
-                      className="block py-2 text-gray-600 hover:text-brand transition-colors"
-                      onClick={() => setOpen(false)}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
               <div className="px-4 py-3">{renderAuthButtons()}</div>
             </SheetContent>
           </Sheet>
@@ -428,12 +407,10 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Navigation Links - Desktop and Mobile */}
-      <div className="hidden md:block">
-        <HoverNavigationMenu isHomePage={false} />
-      </div>
+      {/* Navigation Menu - Home Page Style with Icons */}
+      <HoverNavigationMenu isHomePage={true} />
     </nav>
   );
 };
 
-export default Header;
+export default FlipkartHomeHeader;
