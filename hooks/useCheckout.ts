@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { generateOrderId } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
+import { calculateDeliveryCharges } from "@/lib/utils/deliveryCharges";
 
 // Define the shape of our checkout state
 interface CheckoutState {
@@ -358,13 +359,18 @@ export function useCheckout() {
       0
     );
 
+    // Calculate delivery charges based on free delivery threshold
+    const originalDeliveryCharges = state.checkoutData.deliveryCharges;
+    const finalDeliveryCharges = calculateDeliveryCharges(subtotal, originalDeliveryCharges);
+
     const newCheckoutData: CheckoutData = {
       ...state.checkoutData,
       items: updatedItems,
       subtotal,
+      deliveryCharges: finalDeliveryCharges,
       total:
         subtotal +
-        state.checkoutData.deliveryCharges -
+        finalDeliveryCharges -
         (state.checkoutData.discountAmount || 0) -
         state.rewardDiscountAmount,
     };
@@ -397,13 +403,18 @@ export function useCheckout() {
         0
       );
 
+      // Calculate delivery charges based on free delivery threshold
+      const originalDeliveryCharges = state.checkoutData.deliveryCharges;
+      const finalDeliveryCharges = calculateDeliveryCharges(subtotal, originalDeliveryCharges);
+
       const newCheckoutData: CheckoutData = {
         ...state.checkoutData,
         items: updatedItems,
         subtotal,
+        deliveryCharges: finalDeliveryCharges,
         total:
           subtotal +
-          state.checkoutData.deliveryCharges -
+          finalDeliveryCharges -
           (state.checkoutData.discountAmount || 0) -
           state.rewardDiscountAmount,
       };
