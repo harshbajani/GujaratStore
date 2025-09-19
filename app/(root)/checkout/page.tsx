@@ -22,7 +22,6 @@ import { RewardRedemptionComponent } from "@/components/RewardPointsSection";
 import GuestCheckoutForm from "@/components/GuestCheckoutForm";
 import { toast } from "sonner";
 import FreeDeliveryIndicator from "@/components/FreeDeliveryIndicator";
-import { calculateDeliveryCharges } from "@/lib/utils/deliveryCharges";
 
 type DeliveryAddress = z.infer<typeof AddressSchema>;
 
@@ -426,18 +425,24 @@ const CheckoutPage = () => {
           {/* Right Column - Price Details */}
           <div className="lg:col-span-1 space-y-4">
             {/* Free Delivery Indicator */}
-            <FreeDeliveryIndicator 
-              subtotal={state.checkoutData.subtotal} 
+            <FreeDeliveryIndicator
+              subtotal={state.checkoutData.subtotal}
               originalDeliveryCharges={(() => {
                 // Calculate original delivery charges from items
-                return state.checkoutData.items.reduce((sum, item) => {
-                  // This is a simplified calculation - in reality, you might need to 
-                  // fetch individual item delivery charges from the database
-                  return sum + (state.checkoutData.deliveryCharges / state.checkoutData.items.length);
-                }, 0);
-              })()} 
+                return (
+                  state.checkoutData?.items.reduce((sum) => {
+                    // This is a simplified calculation - in reality, you might need to
+                    // fetch individual item delivery charges from the database
+                    return (
+                      sum +
+                      (state.checkoutData?.deliveryCharges || 0) /
+                        (state.checkoutData?.items.length || 1)
+                    );
+                  }, 0) || 0
+                );
+              })()}
             />
-            
+
             <div className="bg-white p-6 rounded-md shadow-sm sticky top-4">
               <h2 className="text-xl font-bold mb-4">PRICE DETAILS</h2>
               <div className="space-y-3 mb-6">
