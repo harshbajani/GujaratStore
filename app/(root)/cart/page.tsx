@@ -18,6 +18,8 @@ import { useRouter } from "next/navigation";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
+import { calculateDeliveryCharges } from "@/lib/utils/deliveryCharges";
+import FreeDeliveryIndicator from "@/components/FreeDeliveryIndicator";
 
 const CartPage = () => {
   const router = useRouter();
@@ -128,6 +130,10 @@ const CartPage = () => {
     }
 
     // Prepare checkout data with size labels and proper pricing
+    const subtotal = calculateUpdatedSubtotal();
+    const originalDeliveryCharges = calculateUpdatedDeliveryCharges();
+    const finalDeliveryCharges = calculateDeliveryCharges(subtotal, originalDeliveryCharges);
+    
     const checkoutData: CheckoutData = {
       items: cartItems.map((item) => {
         // Find the selected size object to get its label and pricing
@@ -171,9 +177,9 @@ const CartPage = () => {
           vendorId: item.vendorId,
         };
       }),
-      subtotal: calculateUpdatedSubtotal(),
-      deliveryCharges: calculateUpdatedDeliveryCharges(),
-      total: calculateUpdatedSubtotal() + calculateUpdatedDeliveryCharges(),
+      subtotal,
+      deliveryCharges: finalDeliveryCharges,
+      total: subtotal + finalDeliveryCharges,
       discountAmount: 0,
       discountCode: "",
     };
@@ -328,7 +334,13 @@ const CartPage = () => {
 
           {/* Order Summary */}
           {cartItems.length > 0 && (
-            <div>
+            <div className="space-y-4">
+              {/* Free Delivery Indicator */}
+              <FreeDeliveryIndicator 
+                subtotal={calculateUpdatedSubtotal()} 
+                originalDeliveryCharges={calculateUpdatedDeliveryCharges()}
+              />
+              
               <div className="bg-white p-4 sm:p-6 rounded-lg shadow md:sticky md:top-4">
                 <h2 className="text-xl font-bold mb-4">Order Summary</h2>
                 <div className="space-y-2 mb-4">
@@ -340,26 +352,32 @@ const CartPage = () => {
                   </div>
                   <div className="flex justify-between text-sm sm:text-base">
                     <span>Delivery Charges</span>
-                    {calculateUpdatedDeliveryCharges() > 0 ? (
-                      <span>
-                        ₹
-                        {calculateUpdatedDeliveryCharges().toLocaleString(
-                          "en-IN"
-                        )}
-                      </span>
-                    ) : (
-                      <span className="text-green-500">Free</span>
-                    )}
+                    {(() => {
+                      const subtotal = calculateUpdatedSubtotal();
+                      const originalCharges = calculateUpdatedDeliveryCharges();
+                      const finalCharges = calculateDeliveryCharges(subtotal, originalCharges);
+                      
+                      return finalCharges > 0 ? (
+                        <span>
+                          ₹{finalCharges.toLocaleString("en-IN")}
+                        </span>
+                      ) : (
+                        <span className="text-green-500">
+                          {originalCharges > 0 ? "Free" : "Free"}
+                        </span>
+                      );
+                    })()} 
                   </div>
                   <div className="border-t pt-2 mt-2">
                     <div className="flex justify-between font-bold text-sm sm:text-base">
                       <span>Total</span>
                       <span>
-                        ₹
-                        {(
-                          calculateUpdatedSubtotal() +
-                          calculateUpdatedDeliveryCharges()
-                        ).toLocaleString("en-IN")}
+                        ₹{(() => {
+                          const subtotal = calculateUpdatedSubtotal();
+                          const originalCharges = calculateUpdatedDeliveryCharges();
+                          const finalCharges = calculateDeliveryCharges(subtotal, originalCharges);
+                          return (subtotal + finalCharges).toLocaleString("en-IN");
+                        })()}
                       </span>
                     </div>
                   </div>
