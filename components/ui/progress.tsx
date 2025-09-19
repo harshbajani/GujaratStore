@@ -1,5 +1,5 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 const Progress = React.forwardRef<
   HTMLDivElement,
@@ -14,11 +14,11 @@ const Progress = React.forwardRef<
     {...props}
   >
     <div
-      className="h-full w-full flex-1 bg-blue-600 transition-all"
+      className="h-full w-full flex-1 bg-brand transition-all"
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
   </div>
-))
-Progress.displayName = "Progress"
+));
+Progress.displayName = "Progress";
 
-export { Progress }
+export { Progress };

@@ -32,7 +32,7 @@ const FreeDeliveryIndicator: React.FC<FreeDeliveryIndicatorProps> = ({
       className={`border-2 ${
         deliveryInfo.isFree
           ? "border-green-200 bg-green-50"
-          : "border-blue-200 bg-blue-50"
+          : "border-brand bg-brand-100/30"
       } ${className}`}
     >
       <CardContent className="p-4">
@@ -40,14 +40,14 @@ const FreeDeliveryIndicator: React.FC<FreeDeliveryIndicatorProps> = ({
           {deliveryInfo.isFree ? (
             <Gift className="text-green-600" size={20} />
           ) : (
-            <Truck className="text-blue-600" size={20} />
+            <Truck className="text-brand" size={20} />
           )}
 
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <span
                 className={`font-medium ${
-                  deliveryInfo.isFree ? "text-green-800" : "text-blue-800"
+                  deliveryInfo.isFree ? "text-green-800" : "text-brand"
                 }`}
               >
                 {deliveryInfo.message}
@@ -81,7 +81,7 @@ const FreeDeliveryIndicator: React.FC<FreeDeliveryIndicatorProps> = ({
             delivery charges.
           </p>
         ) : (
-          <p className="text-sm text-blue-700">
+          <p className="text-sm text-brand">
             Add ₹{deliveryInfo.amountNeeded.toLocaleString("en-IN")} more to
             your cart to get free delivery!
           </p>
