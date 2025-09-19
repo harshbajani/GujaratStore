@@ -9,7 +9,7 @@ import { ProductService } from "@/services/product.service";
 
 // Commonly needed fields that we always want to retrieve
 const commonFields =
-  "productName vendorId parentCategory primaryCategory secondaryCategory brands productReviews productSize gender productQuantity attributes productStatus productSKU productColor productDescription productImages productCoverImage mrp basePrice discountType discountValue gstRate gstAmount netPrice deliveryCharges deliveryDate productWarranty productReturnPolicy metaTitle metaKeywords metaDescription";
+  "productName vendorId parentCategory primaryCategory secondaryCategory brands productReviews productSize gender productQuantity attributes productStatus productSKU productColor productDescription productImages productCoverImage mrp basePrice discountType discountValue gstRate gstAmount netPrice deliveryCharges deliveryDays productWarranty productReturnPolicy metaTitle metaKeywords metaDescription";
 
 // Populate configuration for reuse
 const populateConfig = [

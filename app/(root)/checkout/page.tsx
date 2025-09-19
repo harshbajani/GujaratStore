@@ -21,6 +21,7 @@ import { useCheckout } from "@/hooks/useCheckout"; // Adjust the import path as 
 import { RewardRedemptionComponent } from "@/components/RewardPointsSection";
 import GuestCheckoutForm from "@/components/GuestCheckoutForm";
 import { toast } from "sonner";
+import FreeDeliveryIndicator from "@/components/FreeDeliveryIndicator";
 
 type DeliveryAddress = z.infer<typeof AddressSchema>;
 
@@ -35,7 +36,6 @@ const CheckoutPage = () => {
     removeItem,
     handleApplyDiscount,
     confirmOrder,
-    toggleSection,
     getReferralDiscountDetails,
     handleRedeemRewardPoints,
   } = useCheckout();
@@ -292,7 +292,14 @@ const CheckoutPage = () => {
                   <div className="flex-1">
                     <h3 className="font-semibold">{item.productName}</h3>
                     <div className="text-sm text-gray-600 mt-1">
-                      {item.selectedSize && <p>Size: {item.selectedSize}</p>}
+                      {item.selectedSize && (
+                        <p>
+                          Size:{" "}
+                          {typeof item.selectedSize === "string"
+                            ? item.selectedSize
+                            : item.selectedSize.label}
+                        </p>
+                      )}
                       <div className="flex items-center gap-4 mt-2">
                         <div className="flex items-center gap-2">
                           <button
@@ -326,6 +333,16 @@ const CheckoutPage = () => {
                     <p className="font-semibold">
                       ₹{(item.price * item.quantity).toLocaleString("en-IN")}
                     </p>
+                    {item.selectedSize &&
+                      typeof item.selectedSize === "object" &&
+                      item.selectedSize.mrp > item.selectedSize.netPrice && (
+                        <p className="text-xs text-gray-500 line-through">
+                          ₹
+                          {(
+                            item.selectedSize.mrp * item.quantity
+                          ).toLocaleString("en-IN")}
+                        </p>
+                      )}
                     <p className="text-sm text-gray-600">
                       Delivery: {item.deliveryDate}
                     </p>
@@ -406,7 +423,26 @@ const CheckoutPage = () => {
           </div>
 
           {/* Right Column - Price Details */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-4">
+            {/* Free Delivery Indicator */}
+            <FreeDeliveryIndicator
+              subtotal={state.checkoutData.subtotal}
+              originalDeliveryCharges={(() => {
+                // Calculate original delivery charges from items
+                return (
+                  state.checkoutData?.items.reduce((sum) => {
+                    // This is a simplified calculation - in reality, you might need to
+                    // fetch individual item delivery charges from the database
+                    return (
+                      sum +
+                      (state.checkoutData?.deliveryCharges || 0) /
+                        (state.checkoutData?.items.length || 1)
+                    );
+                  }, 0) || 0
+                );
+              })()}
+            />
+
             <div className="bg-white p-6 rounded-md shadow-sm sticky top-4">
               <h2 className="text-xl font-bold mb-4">PRICE DETAILS</h2>
               <div className="space-y-3 mb-6">

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import {
   Breadcrumb,
@@ -20,13 +21,6 @@ import ProductGallery from "@/components/ProductGallery";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Check, Heart, ShoppingCart } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import QuantitySelector from "@/components/ui/quantity-selector";
 import Loader from "@/components/Loader";
 import ReviewSection from "@/components/Review";
@@ -34,6 +28,8 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import Link from "next/link";
 import { toast } from "sonner";
+import ProductSizeSelector from "@/components/ProductSizeSelector";
+import { useRouter } from "next/navigation";
 
 const ProductsDetailPage = () => {
   const params = useParams();
@@ -46,8 +42,12 @@ const ProductsDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSizeData, setSelectedSizeData] = useState<
+    IProductSizePriceWithDetails | any | null
+  >(null);
   const { cartItems, addToCart, removeFromCart } = useCart();
   const { wishlistItems, addToWishlist, removeFromWishlist } = useWishlist();
+  const router = useRouter();
 
   // Fetch product data and check cart/wishlist status
   useEffect(() => {
@@ -56,9 +56,9 @@ const ProductsDetailPage = () => {
 
     const fetchProductAndUserData = async () => {
       try {
-        // Always fetch product data
+        // Always fetch product data - use admin endpoint for public access
         const productResp = await fetch(
-          `/api/vendor/products/slug/${productSlug}`,
+          `/api/admin/products/slug/${productSlug}`,
           {
             signal: controller.signal,
           }
@@ -84,6 +84,29 @@ const ProductsDetailPage = () => {
         };
 
         setProduct(productWithStatus);
+
+        // Debug: Log the product data to see what we're getting
+        console.log('Product data received:', productWithStatus);
+        console.log('Product netPrice:', productWithStatus.netPrice);
+        console.log('Product mrp:', productWithStatus.mrp);
+        console.log('Product discountValue:', productWithStatus.discountValue);
+        console.log('Product basePrice:', productWithStatus.basePrice);
+        console.log('Product landingPrice:', productWithStatus.landingPrice);
+        console.log('Product price:', productWithStatus.price);
+        console.log('Product selling price:', productWithStatus.sellingPrice);
+        console.log('All product keys:', Object.keys(productWithStatus));
+        console.log('Price-related fields:');
+        Object.keys(productWithStatus).filter(key => key.toLowerCase().includes('price')).forEach(key => {
+          console.log(`  ${key}:`, productWithStatus[key]);
+        });
+
+        // Auto-select size if there's only one size available
+        if (
+          productWithStatus.productSize &&
+          productWithStatus.productSize.length === 1
+        ) {
+          setSelectedSizeData(productWithStatus.productSize[0]);
+        }
       } catch (err: unknown) {
         if (!isMounted) return;
         if (err instanceof Error && err.name === "AbortError") return;
@@ -124,9 +147,31 @@ const ProductsDetailPage = () => {
             duration: 5000,
           });
         } else {
-          await addToCart(product._id);
+          // Prepare size data if size is selected
+          let sizeForCart = undefined;
+          if (selectedSizeData) {
+            // For unpopulated sizes, create a fallback label
+            const sizeLabel =
+              selectedSizeData.sizeId?.label ||
+              selectedSizeData.size?.label ||
+              `Size ${selectedSizeData.netPrice} INR`;
+
+            sizeForCart = {
+              sizeId:
+                selectedSizeData.sizeId?._id ||
+                selectedSizeData.sizeId ||
+                selectedSizeData._id,
+              label: sizeLabel,
+              mrp: selectedSizeData.mrp,
+              netPrice: selectedSizeData.netPrice,
+              discountValue: selectedSizeData.discountValue,
+              quantity: selectedSizeData.quantity,
+            };
+          }
+
+          await addToCart(product._id, sizeForCart);
           setProduct((prev) => (prev ? { ...prev, inCart: true } : null));
-          toast.success("Sucess", {
+          toast.success("Success", {
             description: "Product added to cart",
             duration: 5000,
           });
@@ -139,7 +184,7 @@ const ProductsDetailPage = () => {
         });
       }
     },
-    [product?._id, cartItems, removeFromCart, addToCart]
+    [product?._id, cartItems, removeFromCart, addToCart, selectedSizeData]
   );
 
   const handleToggleWishlist = useCallback(
@@ -194,6 +239,91 @@ const ProductsDetailPage = () => {
       })
       .replace(/\//g, "/");
   }, [product?.deliveryDays]);
+
+  // Buy Now handler
+  const handleBuyNow = useCallback(async () => {
+    if (!product?._id) return;
+
+    // Check if size is required but not selected (only for products with valid size objects)
+    if (
+      product.productSize &&
+      product.productSize.length > 0 &&
+      !product.productSize.every((size) => typeof size === "string") &&
+      !selectedSizeData
+    ) {
+      toast.error("Please select a size", {
+        description: "Size selection is required for this product",
+        duration: 5000,
+      });
+      return;
+    }
+
+    try {
+      // Create checkout data for Buy Now
+      let checkoutItem: CheckoutItem;
+
+      if (selectedSizeData) {
+        // Use selected size pricing
+        checkoutItem = {
+          productId: product._id,
+          productName: product.productName,
+          selectedSize: {
+            sizeId:
+              selectedSizeData.sizeId?._id ||
+              selectedSizeData.sizeId ||
+              selectedSizeData._id,
+            label:
+              selectedSizeData.sizeId?.label ||
+              selectedSizeData.size?.label ||
+              `Size ${selectedSizeData.netPrice} INR`,
+            mrp: selectedSizeData.mrp,
+            netPrice: selectedSizeData.netPrice,
+            discountValue: selectedSizeData.discountValue,
+          },
+          quantity: quantity,
+          price: selectedSizeData.netPrice,
+          coverImage: product.productCoverImage as string,
+          deliveryDate: formattedDeliveryDate,
+          vendorId: product.vendorId,
+        };
+      } else {
+        // Use default product pricing
+        checkoutItem = {
+          productId: product._id,
+          productName: product.productName,
+          quantity: quantity,
+          price: product.netPrice || product.landingPrice || 0,
+          coverImage: product.productCoverImage as string,
+          deliveryDate: formattedDeliveryDate,
+          vendorId: product.vendorId,
+        };
+      }
+
+      const subtotal = checkoutItem.price * checkoutItem.quantity;
+      const deliveryCharges =
+        selectedSizeData?.deliveryCharges || product.deliveryCharges || 0;
+      const total = subtotal + deliveryCharges;
+
+      const checkoutData: CheckoutData = {
+        items: [checkoutItem],
+        subtotal,
+        deliveryCharges,
+        total,
+        discountAmount: 0,
+        discountCode: "",
+      };
+
+      // Store in sessionStorage and redirect to checkout
+      sessionStorage.setItem("checkoutData", JSON.stringify(checkoutData));
+      router.push("/checkout");
+    } catch (error) {
+      console.error("Error during Buy Now:", error);
+      toast.error("Oops!", {
+        description: "Failed to proceed to checkout",
+        duration: 5000,
+      });
+    }
+  }, [product, selectedSizeData, quantity, formattedDeliveryDate, router]);
 
   if (loading) {
     return <Loader />;
@@ -305,77 +435,169 @@ const ProductsDetailPage = () => {
               </span>
             </div>
             <div className="mb-4 flex items-center gap-4">
-              <span className="text-xl font-bold text-gray-900">
-                ₹{Math.floor(product.netPrice).toLocaleString("en-IN")}
-              </span>
-              {product.mrp > product.netPrice && (
-                <span className="text-md text-gray-500 line-through">
-                  ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
-                </span>
+              {selectedSizeData ? (
+                // Show selected size pricing
+                <>
+                  <span className="text-xl font-bold text-gray-900">
+                    ₹
+                    {selectedSizeData.netPrice &&
+                    !isNaN(selectedSizeData.netPrice)
+                      ? Math.floor(selectedSizeData.netPrice).toLocaleString(
+                          "en-IN"
+                        )
+                      : "0"}
+                  </span>
+                  {selectedSizeData.mrp &&
+                    selectedSizeData.netPrice &&
+                    selectedSizeData.mrp > selectedSizeData.netPrice && (
+                      <span className="text-md text-gray-500 line-through">
+                        ₹
+                        {Math.floor(selectedSizeData.mrp).toLocaleString(
+                          "en-IN"
+                        )}
+                      </span>
+                    )}
+                  <p className="text-brand">
+                    {selectedSizeData.discountValue || 0}
+                    {selectedSizeData.discountType === "percentage" ? (
+                      <span>% off</span>
+                    ) : (
+                      <span>rs off</span>
+                    )}
+                  </p>
+                </>
+              ) : (
+                // Show default product pricing
+                <>
+                  <span className="text-xl font-bold text-gray-900">
+                    ₹
+                    {(() => {
+                      // Try different price fields as fallbacks
+                      const price = product.netPrice || product.landingPrice || 0;
+                      return (price && !isNaN(price)
+                        ? Math.floor(price).toLocaleString("en-IN")
+                        : "0");
+                    })()}
+                  </span>
+                  {(() => {
+                    const price = product.netPrice || product.landingPrice || 0;
+                    return product.mrp && price && product.mrp > price && (
+                      <span className="text-md text-gray-500 line-through">
+                        ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
+                      </span>
+                    );
+                  })()}
+                  <p className="text-brand">
+                    {product.discountValue || 0}
+                    {product.discountType === "percentage" ? (
+                      <span>% off</span>
+                    ) : (
+                      <span>rs off</span>
+                    )}
+                  </p>
+                </>
               )}
-              <p className="text-brand">
-                {product.discountValue}
-                {product.discountType === "percentage" ? (
-                  <span>% off</span>
-                ) : (
-                  <span>rs off</span>
-                )}
-              </p>
               <p className="text-xs text-green-500">inclusive of all taxes*</p>
             </div>
             <div className="mb-6">
-              {/* Row for Size and Quantity on the same line */}
-              <div className="flex flex-wrap items-center gap-4">
-                {/* Size Select */}
-                <div className="flex items-center gap-2">
-                  <h1 className="font-semibold text-base md:text-lg">Size:</h1>
-                  <Select>
-                    {/* Remove the extra bottom margin from the trigger */}
-                    <SelectTrigger className="w-32">
-                      <SelectValue placeholder="Select Size" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {product.productSize?.map((size) => (
-                        <SelectItem key={size._id} value={size._id!}>
-                          {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Size Selector - Show ProductSizeSelector if product has valid sizes */}
+              {product.productSize &&
+                product.productSize.length > 0 &&
+                !product.productSize.every(
+                  (size) => typeof size === "string"
+                ) && (
+                  <div className="mb-6">
+                    {/* Error boundary for size selector */}
+                    {(() => {
+                      try {
+                        const sizeSelector = (
+                          <ProductSizeSelector
+                            productSizes={product.productSize}
+                            selectedSizeId={
+                              selectedSizeData?.sizeId?._id ||
+                              selectedSizeData?.sizeId
+                            }
+                            onSizeSelect={(sizePrice) => {
+                              setSelectedSizeData(sizePrice);
+                            }}
+                            className="mb-4"
+                          />
+                        );
+                        // If component returns null (for string arrays), don't render the wrapper
+                        return sizeSelector;
+                      } catch (error) {
+                        console.error(
+                          "Error rendering ProductSizeSelector:",
+                          error
+                        );
+                        return (
+                          <div className="mb-4 p-4 border border-red-200 rounded-md bg-red-50">
+                            <p className="text-red-600 text-sm">
+                              Error loading size options. Product sizes may not
+                              be properly configured.
+                            </p>
+                          </div>
+                        );
+                      }
+                    })()}
+                  </div>
+                )}
 
-                {/* Quantity Selector */}
-                <div className="flex items-center gap-2">
-                  <h1 className="font-semibold text-base md:text-lg">
-                    Quantity:
-                  </h1>
-                  <QuantitySelector
-                    quantity={quantity}
-                    setQuantity={setQuantity}
-                  />
-                </div>
+              {/* Quantity Selector */}
+              <div className="flex items-center gap-2">
+                <h1 className="font-semibold text-base md:text-lg">
+                  Quantity:
+                </h1>
+                <QuantitySelector
+                  quantity={quantity}
+                  setQuantity={setQuantity}
+                  max={selectedSizeData?.quantity || product.productQuantity}
+                />
               </div>
             </div>
             <div className="flex gap-4 mb-4">
               <Button
                 variant="secondary"
-                className="shadow-md flex items-center gap-2"
+                className="shadow-md flex items-center gap-2 flex-1"
                 onClick={handleToggleCart}
+                disabled={
+                  product.productSize &&
+                  product.productSize.length > 0 &&
+                  !product.productSize.every(
+                    (size) => typeof size === "string"
+                  ) &&
+                  !selectedSizeData
+                }
               >
                 <div
                   className={cn(
-                    product?.inCart ? "bg-secondary/90" : "bg-brand",
                     "p-2 rounded -ml-3 transition-all duration-300"
                   )}
                 >
                   {product?.inCart ? (
                     <Check className="size-5 text-green-500" />
                   ) : (
-                    <ShoppingCart className="size-5 text-white" />
+                    <ShoppingCart className="size-5 " />
                   )}
                 </div>
                 {product?.inCart ? "Remove from Cart" : "Add to Cart"}
               </Button>
+
+              <Button
+                className="primary-btn flex-1"
+                onClick={handleBuyNow}
+                disabled={
+                  product.productSize &&
+                  product.productSize.length > 0 &&
+                  !product.productSize.every(
+                    (size) => typeof size === "string"
+                  ) &&
+                  !selectedSizeData
+                }
+              >
+                Buy Now
+              </Button>
+
               <Button
                 variant="secondary"
                 className="aspect-square p-2 shadow-sm hover:shadow-md"

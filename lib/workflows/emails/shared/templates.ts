@@ -79,7 +79,11 @@ export const generateOrderItemsHTML = (
             <p style="margin: 0; font-weight: bold;">${item.productName}</p>
             ${
               item.selectedSize
-                ? `<p style="margin: 3px 0 0; color: #666; font-size: 14px;">Size: ${item.selectedSize}</p>`
+                ? `<p style="margin: 3px 0 0; color: #666; font-size: 14px;">Size: ${
+                    typeof item.selectedSize === 'string' 
+                      ? item.selectedSize 
+                      : (item.selectedSize as any)?.label || 'Unknown Size'
+                  }</p>`
                 : ""
             }
             <p style="margin: 3px 0 0; color: #666; font-size: 14px;">Quantity: ${

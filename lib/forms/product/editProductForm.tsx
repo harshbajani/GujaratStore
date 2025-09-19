@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { Input } from "@/components/ui/input";
 import { ComboBox } from "@/components/ui/combobox";
@@ -19,7 +20,6 @@ import { productSchema } from "@/lib/validations";
 import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
-import PriceCalculator from "@/components/PriceCalculator";
 import { Switch } from "@/components/ui/switch";
 import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,8 +27,8 @@ import { toast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { MultiSelect } from "@/components/ui/multi-select";
 import slugify from "slugify";
+import SizePricing from "@/components/SizePricing";
 import { getAllDropdownData } from "@/lib/actions/dropdown.actions";
 import { getAllBrandsLegacy } from "@/lib/actions/brand.actions";
 import { getAllSizesLegacy } from "@/lib/actions/size.actions";
@@ -242,8 +242,17 @@ const EditProductsForm = () => {
 
         if (data.success) {
           const product = data.data;
-          const productSizeIds = product.productSize
-            ? product.productSize.map((size: ISizes) => size._id)
+
+          // Handle productSize data - preserve the complete pricing objects
+          const productSizeData = product.productSize
+            ? product.productSize.map((sizePrice: any) => ({
+                ...sizePrice,
+                // Ensure sizeId is a string (handle both populated and unpopulated cases)
+                sizeId:
+                  typeof sizePrice.sizeId === "string"
+                    ? sizePrice.sizeId
+                    : sizePrice.sizeId?._id || sizePrice.sizeId,
+              }))
             : [];
 
           const currentVendorId = form.getValues("vendorId");
@@ -255,7 +264,7 @@ const EditProductsForm = () => {
             primaryCategory: product.primaryCategory?._id || "",
             secondaryCategory: product.secondaryCategory?._id || "",
             brands: product.brands?._id || "",
-            productSize: productSizeIds,
+            productSize: productSizeData, // Keep the complete size pricing data
             vendorId: currentVendorId || product.vendorId || "",
           });
 
@@ -718,31 +727,6 @@ const EditProductsForm = () => {
           />
           <FormField
             control={form.control}
-            name="productSize"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Product Size</FormLabel>
-                <FormControl>
-                  <MultiSelect
-                    {...field}
-                    options={sizes.map((size) => ({
-                      value: size._id || "",
-                      label: size.label,
-                      isActive: size.isActive,
-                    }))}
-                    onValueChange={(values) => {
-                      field.onChange(values);
-                      console.log("Selected values:", values);
-                    }}
-                    defaultValue={field.value}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
             name="gender"
             render={({ field }) => (
               <FormItem>
@@ -813,7 +797,13 @@ const EditProductsForm = () => {
           })}
         </div>
 
-        <PriceCalculator control={form.control} />
+        {/* Pricing Configuration */}
+        <SizePricing
+          control={form.control}
+          sizes={sizes}
+          setValue={form.setValue}
+        />
+
         <div className="grid grid-cols-2 gap-6">
           {/* Cover Image Field */}
           <FormField

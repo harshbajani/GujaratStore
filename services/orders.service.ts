@@ -57,10 +57,30 @@ export class OrdersService {
       return await this.createOrderWithRetry(orderData, items);
     } catch (error) {
       console.error("Create order error:", error);
+      
+      // Provide more specific error messages based on the error type
+      let errorMessage = "Failed to create order";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Order validation failed')) {
+          // Extract specific validation errors from MongoDB
+          if (error.message.includes('vendorId') && error.message.includes('required')) {
+            errorMessage = "Product vendor information is missing. Please refresh and try again.";
+          } else if (error.message.includes('selectedSize') && error.message.includes('Cast to string failed')) {
+            errorMessage = "Size selection format is invalid. Please reselect sizes and try again.";
+          } else {
+            errorMessage = "Order information is incomplete. Please check all fields and try again.";
+          }
+        } else if (error.message.includes('stock') || error.message.includes('quantity')) {
+          errorMessage = "Some products are out of stock. Please check your cart.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       return {
         success: false,
-        message:
-          error instanceof Error ? error.message : "Failed to create order",
+        message: errorMessage,
       };
     }
   }
