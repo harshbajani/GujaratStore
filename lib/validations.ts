@@ -133,11 +133,13 @@ export const inquirySchema = z.object({
 
 export const parentCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
+  slug: z.string().min(1, "Slug is required"),
   isActive: z.boolean().default(true),
 });
 
 export const primaryCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
+  slug: z.string().min(1, "Slug is required"),
   parentCategory: z.string().nonempty("Parent category is required"),
   description: z.string().optional(),
   metaTitle: z.string().optional(),

@@ -96,9 +96,9 @@ export class ProductService {
       const [products, totalCount] = await Promise.all([
         Products.find(query)
           .populate([
-            { path: "parentCategory", select: "name" },
-            { path: "primaryCategory", select: "name" },
-            { path: "secondaryCategory", select: "name" },
+            { path: "parentCategory", select: "name slug" },
+            { path: "primaryCategory", select: "name slug" },
+            { path: "secondaryCategory", select: "name slug" },
             { path: "brands", select: "name" },
             { path: "attributes.attributeId", select: "name" },
             { path: "productSize", select: "label" },
@@ -159,9 +159,9 @@ export class ProductService {
       const query = vendorId ? { vendorId } : {};
       const products = await Products.find(query)
         .populate([
-          { path: "parentCategory", select: "name" },
-          { path: "primaryCategory", select: "name" },
-          { path: "secondaryCategory", select: "name" },
+          { path: "parentCategory", select: "name slug" },
+          { path: "primaryCategory", select: "name slug" },
+          { path: "secondaryCategory", select: "name slug" },
           { path: "brands", select: "name" },
           { path: "attributes.attributeId", select: "name" },
           { path: "productSize", select: "label" },
@@ -203,9 +203,9 @@ export class ProductService {
 
       const product = await Products.findById(id)
         .populate([
-          { path: "parentCategory", select: "name" },
-          { path: "primaryCategory", select: "name" },
-          { path: "secondaryCategory", select: "name" },
+          { path: "parentCategory", select: "name slug" },
+          { path: "primaryCategory", select: "name slug" },
+          { path: "secondaryCategory", select: "name slug" },
           { path: "brands", select: "name" },
           { path: "attributes.attributeId", select: "name" },
           { path: "productSize", select: "label" },
@@ -245,9 +245,9 @@ export class ProductService {
         { new: true, runValidators: true }
       )
         .populate([
-          { path: "parentCategory", select: "name" },
-          { path: "primaryCategory", select: "name" },
-          { path: "secondaryCategory", select: "name" },
+          { path: "parentCategory", select: "name slug" },
+          { path: "primaryCategory", select: "name slug" },
+          { path: "secondaryCategory", select: "name slug" },
           { path: "brands", select: "name" },
           { path: "attributes.attributeId", select: "name" },
           { path: "productSize", select: "label" },
@@ -350,9 +350,9 @@ export class ProductService {
       const [products, totalCount] = await Promise.all([
         Products.find(query)
           .populate([
-            { path: "parentCategory", select: "name" },
-            { path: "primaryCategory", select: "name" },
-            { path: "secondaryCategory", select: "name" },
+            { path: "parentCategory", select: "name slug" },
+            { path: "primaryCategory", select: "name slug" },
+            { path: "secondaryCategory", select: "name slug" },
             { path: "brands", select: "name" },
             { path: "attributes.attributeId", select: "name" },
             { path: "productSize", select: "label" },
@@ -414,11 +414,11 @@ export class ProductService {
         brands: brandId,
         productStatus: true, // Only show active products
       };
-      
+
       const products = await Products.find(query)
         .populate([
-          { path: "parentCategory", select: "name" },
-          { path: "primaryCategory", select: "name" },
+          { path: "parentCategory", select: "name slug" },
+          { path: "primaryCategory", select: "name slug" },
           { path: "secondaryCategory", select: "name" },
           { path: "brands", select: "name" },
           { path: "attributes.attributeId", select: "name" },

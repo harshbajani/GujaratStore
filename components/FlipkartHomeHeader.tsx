@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
@@ -18,7 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { NavLinks, UserNavLinks } from "@/constants";
+import { UserNavLinks } from "@/constants";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { signOut as nextAuthSignOut, useSession } from "next-auth/react";
@@ -28,6 +30,13 @@ import SearchDropdown from "./SearchDropdown";
 import { useCart } from "@/context/CartContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import HoverNavigationMenu from "./HoverNavigationMenu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ParentCategories } from "@/constants";
 
 // Define the search result type
 type SearchResult = {
@@ -39,7 +48,7 @@ type SearchResult = {
   };
 };
 
-const Header = () => {
+const FlipkartHomeHeader = () => {
   const [isOpen, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -58,6 +67,42 @@ const Header = () => {
 
   const cartItemsCount = cartCount || 0;
   const isAuthenticated = status === "authenticated";
+
+  // Navigation data for mobile waterfall menu
+  interface NavigationCategory {
+    _id: string;
+    name: string;
+    primaryCategories: { _id: string; name: string }[];
+  }
+  const [navigationData, setNavigationData] = useState<NavigationCategory[]>(
+    []
+  );
+
+  useEffect(() => {
+    const fetchNav = async () => {
+      try {
+        const response = await fetch("/api/navigation/parent-categories");
+        const data = await response.json();
+        if (data.success) {
+          // Enforce ParentCategories order
+          const normalize = (s: string) =>
+            s.toLowerCase().replace(/[^a-z0-9]/g, "");
+          const order = ParentCategories.map((c) => normalize(c.label));
+          const sorted = [...data.data].sort((a: any, b: any) => {
+            const ai = order.indexOf(normalize(a.name));
+            const bi = order.indexOf(normalize(b.name));
+            const aval = ai === -1 ? Number.MAX_SAFE_INTEGER : ai;
+            const bval = bi === -1 ? Number.MAX_SAFE_INTEGER : bi;
+            return aval - bval;
+          });
+          setNavigationData(sorted);
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    fetchNav();
+  }, []);
 
   // * Search function with debouncing
   const handleSearch = (query: string) => {
@@ -99,7 +144,6 @@ const Header = () => {
   };
 
   // Add cleanup effect for search timeout
-  // Remove the cart change event listener since we now use centralized context
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
@@ -143,8 +187,8 @@ const Header = () => {
   // * signOut function
   const handleSignOut = async () => {
     try {
-      await nextAuthSignOut({ redirect: false }); // * First, call the client-side NextAuth signOut
-      const response = await serverSignOut(); // * Then call your server action
+      await nextAuthSignOut({ redirect: false });
+      const response = await serverSignOut();
       if (response.success) {
         toast({ title: "Success", description: "Signed out successfully" });
         router.push("/sign-in");
@@ -191,7 +235,7 @@ const Header = () => {
   };
 
   return (
-    <nav className="sticky top-0 w-full z-50">
+    <nav className="w-full z-50">
       <div className="bg-brand">
         {/* Desktop Header */}
         <div className="h-[72px] w-full max-w-6xl mx-auto hidden md:flex flex-row items-center justify-between px-4">
@@ -297,7 +341,6 @@ const Header = () => {
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            {/* Mobile Header - Sheet Content */}
             <SheetContent
               ref={sheetContentRef}
               side="left"
@@ -343,26 +386,43 @@ const Header = () => {
                 </div>
               </div>
 
-              {/* Mobile navigation will be handled by mobile-responsive navigation menu */}
-              <div>
-                <div className="border-t px-4 py-3">
-                  <p className="text-sm text-gray-500 mb-4">
-                    Browse Categories
-                  </p>
-                  {/* Basic fallback links for mobile */}
-                  {NavLinks.map((link) => (
-                    <Link
-                      prefetch
-                      key={link.route}
-                      href={link.route}
-                      className="block py-2 text-gray-600 hover:text-brand transition-colors"
-                      onClick={() => setOpen(false)}
-                    >
-                      {link.label}
-                    </Link>
+              {/* Waterfall mobile nav inside sheet */}
+              <div className="border-t px-4 py-3">
+                <p className="text-sm text-gray-500 mb-3">Browse Categories</p>
+                <Accordion type="single" collapsible className="w-full">
+                  {navigationData.map((parent) => (
+                    <AccordionItem key={parent._id} value={parent._id}>
+                      <AccordionTrigger className="text-left capitalize">
+                        {parent.name}
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="flex flex-col space-y-2">
+                          {parent.primaryCategories?.map((pc) => (
+                            <Link
+                              prefetch
+                              key={pc._id}
+                              href={`/product-category/${pc._id}`}
+                              className="text-sm text-gray-700 hover:text-brand"
+                              onClick={() => setOpen(false)}
+                            >
+                              {pc.name}
+                            </Link>
+                          ))}
+                          <Link
+                            prefetch
+                            href={`/category/${parent._id}`}
+                            className="text-sm text-brand hover:underline"
+                            onClick={() => setOpen(false)}
+                          >
+                            View all {parent.name.toLowerCase()} →
+                          </Link>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </div>
+                </Accordion>
               </div>
+
               <div className="px-4 py-3">{renderAuthButtons()}</div>
             </SheetContent>
           </Sheet>
@@ -428,12 +488,12 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Navigation Links - Desktop and Mobile */}
+      {/* Navigation Menu - Home Page Style with Icons (desktop only) */}
       <div className="hidden md:block">
-        <HoverNavigationMenu isHomePage={false} />
+        <HoverNavigationMenu isHomePage={true} />
       </div>
     </nav>
   );
 };
 
-export default Header;
+export default FlipkartHomeHeader;

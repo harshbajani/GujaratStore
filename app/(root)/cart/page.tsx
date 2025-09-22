@@ -119,11 +119,12 @@ const CartPage = () => {
     }
 
     // Check if any items are missing vendorId (this should rarely happen now)
-    const itemsWithoutVendor = cartItems.filter(item => !item.vendorId);
+    const itemsWithoutVendor = cartItems.filter((item) => !item.vendorId);
     if (itemsWithoutVendor.length > 0) {
-      console.warn('Items without vendorId:', itemsWithoutVendor);
+      console.warn("Items without vendorId:", itemsWithoutVendor);
       toast.error("Product Information Missing", {
-        description: "Some products are missing vendor information. Please refresh the page and try again.",
+        description:
+          "Some products are missing vendor information. Please refresh the page and try again.",
         duration: 5000,
       });
       return;
@@ -132,8 +133,11 @@ const CartPage = () => {
     // Prepare checkout data with size labels and proper pricing
     const subtotal = calculateUpdatedSubtotal();
     const originalDeliveryCharges = calculateUpdatedDeliveryCharges();
-    const finalDeliveryCharges = calculateDeliveryCharges(subtotal, originalDeliveryCharges);
-    
+    const finalDeliveryCharges = calculateDeliveryCharges(
+      subtotal,
+      originalDeliveryCharges
+    );
+
     const checkoutData: CheckoutData = {
       items: cartItems.map((item) => {
         // Find the selected size object to get its label and pricing
@@ -336,11 +340,11 @@ const CartPage = () => {
           {cartItems.length > 0 && (
             <div className="space-y-4">
               {/* Free Delivery Indicator */}
-              <FreeDeliveryIndicator 
-                subtotal={calculateUpdatedSubtotal()} 
+              <FreeDeliveryIndicator
+                subtotal={calculateUpdatedSubtotal()}
                 originalDeliveryCharges={calculateUpdatedDeliveryCharges()}
               />
-              
+
               <div className="bg-white p-4 sm:p-6 rounded-lg shadow md:sticky md:top-4">
                 <h2 className="text-xl font-bold mb-4">Order Summary</h2>
                 <div className="space-y-2 mb-4">
@@ -355,28 +359,36 @@ const CartPage = () => {
                     {(() => {
                       const subtotal = calculateUpdatedSubtotal();
                       const originalCharges = calculateUpdatedDeliveryCharges();
-                      const finalCharges = calculateDeliveryCharges(subtotal, originalCharges);
-                      
+                      const finalCharges = calculateDeliveryCharges(
+                        subtotal,
+                        originalCharges
+                      );
+
                       return finalCharges > 0 ? (
-                        <span>
-                          ₹{finalCharges.toLocaleString("en-IN")}
-                        </span>
+                        <span>₹{finalCharges.toLocaleString("en-IN")}</span>
                       ) : (
                         <span className="text-green-500">
                           {originalCharges > 0 ? "Free" : "Free"}
                         </span>
                       );
-                    })()} 
+                    })()}
                   </div>
                   <div className="border-t pt-2 mt-2">
                     <div className="flex justify-between font-bold text-sm sm:text-base">
                       <span>Total</span>
                       <span>
-                        ₹{(() => {
+                        ₹
+                        {(() => {
                           const subtotal = calculateUpdatedSubtotal();
-                          const originalCharges = calculateUpdatedDeliveryCharges();
-                          const finalCharges = calculateDeliveryCharges(subtotal, originalCharges);
-                          return (subtotal + finalCharges).toLocaleString("en-IN");
+                          const originalCharges =
+                            calculateUpdatedDeliveryCharges();
+                          const finalCharges = calculateDeliveryCharges(
+                            subtotal,
+                            originalCharges
+                          );
+                          return (subtotal + finalCharges).toLocaleString(
+                            "en-IN"
+                          );
                         })()}
                       </span>
                     </div>

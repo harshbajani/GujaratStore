@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     })
       .limit(limit)
       .select("_id productName productCoverImage parentCategory slug")
-      .populate({ path: "parentCategory", select: "name" })
+      .populate({ path: "parentCategory", select: "name slug" })
       .lean()
       .exec();
 

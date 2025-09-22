@@ -13,8 +13,8 @@ export async function GET() {
       productStatus: true, // Only active products
     })
       .populate([
-        { path: "parentCategory", select: "name" },
-        { path: "primaryCategory", select: "name" },
+        { path: "parentCategory", select: "name slug" },
+        { path: "primaryCategory", select: "name slug" },
         { path: "secondaryCategory", select: "name" },
         { path: "brands", select: "name" },
         { path: "productReviews", select: "rating" },

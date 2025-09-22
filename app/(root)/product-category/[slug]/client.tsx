@@ -1,13 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { cn, getProductRating } from "@/lib/utils";
-import { Check, Heart, ShoppingCart, Star } from "lucide-react";
-import { motion } from "framer-motion";
-import { useInView } from "react-intersection-observer";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCategoryProductsInfinite } from "@/hooks/useCategoryProductsInfinite";
+import { motion } from "framer-motion";
+import { Star, Heart, ShoppingCart, Check } from "lucide-react";
+import { cn, getProductRating } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -15,6 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useInView } from "react-intersection-observer";
+import { useProductCategoryProductsInfinite } from "@/hooks/useProductCategoryProductsInfinite";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { generatePriceRanges } from "@/lib/utils/priceRangeUtils";
@@ -22,21 +30,21 @@ import {
   LoadMoreSkeleton,
   ProductSkeletonGrid,
 } from "@/components/ProductSkeletonLoader";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useMemo } from "react";
-import BreadcrumbHeaderEnhanced from "./BreadcrumbHeaderEnhanced";
+import BreadcrumbHeaderEnhanced from "@/components/BreadcrumbHeaderEnhanced";
 
-interface CategoryPageProps {
-  categoryName: string;
-  title: string;
+interface ProductCategoryClientProps {
+  slug: string;
 }
 
-const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
+const ProductCategoryClient = ({ 
+  slug
+}: ProductCategoryClientProps) => {
+  // States for primary category info
+  const [primaryCategory, setPrimaryCategory] = useState<any>(null);
+  const [categoryLoading, setCategoryLoading] = useState(true);
+
+  // Use the infinite scroll hook for products
   const {
     products: sortedProducts,
     isLoading: loading,
@@ -56,9 +64,11 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
     clearFilters,
     loadMoreRef,
     allCategoryProducts,
-  } = useCategoryProductsInfinite({ categoryName, initialLimit: 10 });
+  } = useProductCategoryProductsInfinite({
+    primaryCategorySlug: slug,
+    initialLimit: 10,
+  });
 
-  // Animation ref
   const [organicRef, organicInView] = useInView({
     threshold: 0.1,
     triggerOnce: true,
@@ -90,16 +100,46 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
     );
   }, [priceRange, allCategoryProducts]);
 
+  // Fetch primary category name
+  useEffect(() => {
+    const fetchPrimaryCategoryName = async () => {
+        try {
+          setCategoryLoading(true);
+          const categoryResponse = await fetch(`/api/product-category/${slug}`);
+          const categoryData = await categoryResponse.json();
+
+          if (categoryData.success) {
+            setPrimaryCategory(categoryData.data);
+          }
+        } catch (error) {
+          console.error("Error fetching primary category:", error);
+        } finally {
+          setCategoryLoading(false);
+        }
+      };
+
+      fetchPrimaryCategoryName();
+  }, [slug]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <BreadcrumbHeaderEnhanced
           items={[
             { label: "Home", href: "/" },
-            { label: title, isCurrentPage: true },
+            ...(primaryCategory?.parentCategory
+              ? [
+                  {
+                    label: primaryCategory.parentCategory.name,
+                    href: `/category/${
+                      primaryCategory.parentCategory.slug ||
+                      primaryCategory.parentCategory._id
+                    }`,
+                  },
+                ]
+              : []),
+            { label: primaryCategory?.name || "Products", isCurrentPage: true },
           ]}
-          title={title}
-          subtitle={`Explore ${title} Collection`}
         />
         <div className="container mx-auto px-4 flex flex-col md:flex-row">
           <div className="w-full hidden md:block md:w-64 md:mr-8 py-[78px]" />
@@ -124,10 +164,19 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
       <BreadcrumbHeaderEnhanced
         items={[
           { label: "Home", href: "/" },
-          { label: title, isCurrentPage: true },
+          ...(primaryCategory?.parentCategory
+            ? [
+                {
+                  label: primaryCategory.parentCategory.name,
+                  href: `/category/${
+                    primaryCategory.parentCategory.slug ||
+                    primaryCategory.parentCategory.slug
+                  }`,
+                },
+              ]
+            : []),
+          { label: primaryCategory?.name || "Products", isCurrentPage: true },
         ]}
-        title={title}
-        subtitle={`Explore ${title} Collection`}
       />
 
       <div className="container mx-auto px-4 flex flex-col md:flex-row">
@@ -135,75 +184,94 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
         <div className="w-full hidden md:block md:w-64 md:mr-8 py-[78px]">
           <div className="sticky top-4">
             <div className="bg-white rounded-lg shadow-sm p-4">
-              <h2 className="text-lg font-semibold mb-4">Filters</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Filters</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="text-sm"
+                >
+                  Clear all
+                </Button>
+              </div>
 
               {/* Secondary Categories */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-3">Categories</h3>
-                <div className="space-y-3">
-                  {secondaryCategories.map((category) => {
-                    const isChecked = filters.secondaryCategories.includes(
-                      category._id
-                    );
-                    return (
-                      <div
-                        key={category._id}
-                        className="flex items-center space-x-2"
-                      >
-                        <Checkbox
-                          id={category._id}
-                          checked={isChecked}
-                          onCheckedChange={(checked) => {
-                            handleSecondaryCategoryChange(
-                              category._id,
-                              checked as boolean
-                            );
-                          }}
-                        />
-                        <label
-                          htmlFor={category._id}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          {category.name} ({category.count})
-                        </label>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <Separator className="my-4" />
+              {secondaryCategories.length > 0 && (
+                <>
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium mb-3">Categories</h3>
+                    <div className="space-y-3">
+                      {secondaryCategories.map((category) => {
+                        const isChecked = filters.secondaryCategories.includes(
+                          category._id
+                        );
+                        return (
+                          <div
+                            key={category._id}
+                            className="flex items-center space-x-2"
+                          >
+                            <Checkbox
+                              id={category._id}
+                              checked={isChecked}
+                              onCheckedChange={(checked) => {
+                                handleSecondaryCategoryChange(
+                                  category._id,
+                                  checked as boolean
+                                );
+                              }}
+                            />
+                            <label
+                              htmlFor={category._id}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              {category.name} ({category.count})
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <Separator className="my-4" />
+                </>
+              )}
 
               {/* Colors */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-3">Colors</h3>
-                <div className="space-y-3">
-                  {availableColors.map(({ color, count }) => (
-                    <div key={color} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={color}
-                        checked={filters.colors.includes(color)}
-                        onCheckedChange={(checked) =>
-                          handleColorChange(color, checked as boolean)
-                        }
-                      />
-                      <label
-                        htmlFor={color}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {color} ({count})
-                      </label>
+              {availableColors.length > 0 && (
+                <>
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium mb-3">Colors</h3>
+                    <div className="space-y-3">
+                      {availableColors.map(({ color, count }) => (
+                        <div
+                          key={color}
+                          className="flex items-center space-x-2"
+                        >
+                          <Checkbox
+                            id={color}
+                            checked={filters.colors.includes(color)}
+                            onCheckedChange={(checked) =>
+                              handleColorChange(color, checked as boolean)
+                            }
+                          />
+                          <label
+                            htmlFor={color}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {color} ({count})
+                          </label>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator className="my-4" />
+                  </div>
+                  <Separator className="my-4" />
+                </>
+              )}
 
               {/* Price Range - Amazon-style checkboxes */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-3">Price Range</h3>
-                {amazonPriceRanges.length > 0 ? (
+              {amazonPriceRanges.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium mb-3">Price Range</h3>
                   <div className="space-y-2">
                     {amazonPriceRanges.map((range) => (
                       <div
@@ -231,12 +299,8 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="text-sm text-gray-500">
-                    No price ranges available
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -293,10 +357,7 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
                 >
                   {/* Image Container */}
                   <div className="mb-4 h-48 w-full overflow-hidden rounded-lg">
-                    <Link
-                      prefetch
-                      href={`/${product.parentCategory?.name}/${product.slug}`}
-                    >
+                    <Link prefetch href={`/product/${product.slug}`}>
                       <Image
                         src={getImageUrl(product.productCoverImage.toString())}
                         alt={product.productName}
@@ -308,32 +369,32 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
                   </div>
 
                   {/* Product Info */}
-                  <Link
-                    prefetch
-                    href={`/${product.parentCategory?.name}/${product.slug}`}
-                  >
+                  <Link prefetch href={`/product/${product.slug}`}>
                     <div className="flex w-full flex-1 flex-col items-center">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger className="flex flex-col gap-1">
-                            <h2 className=" text-center text-sm font-semibold text-brand h-5 overflow-hidden">
+                            <h2 className="text-center text-sm font-semibold text-brand h-5 overflow-hidden">
                               {product.productName}
                             </h2>
-                            <Link
-                              href={`/brand/${product.brands._id}`}
-                              className="mb-2 text-sm text-muted-foreground hover:text-brand transition-colors cursor-pointer hover:underline duration-200"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                              }}
-                            >
-                              {product.brands.name}
-                            </Link>
+                            {product.brands && (
+                              <Link
+                                href={`/brand/${product.brands._id}`}
+                                className="mb-2 text-sm text-muted-foreground hover:text-brand transition-colors cursor-pointer hover:underline duration-200"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                              >
+                                {product.brands.name}
+                              </Link>
+                            )}
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs text-wrap">
                             {product.productName}
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
+
                       <div className="mb-2 flex items-center gap-2">
                         <span className="text-lg font-bold text-gray-900">
                           ₹
@@ -369,7 +430,7 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
                     </div>
                   </Link>
 
-                  {/* FIXED: Buttons Container - moved outside Link and added proper event handling */}
+                  {/* Buttons Container - moved outside Link and added proper event handling */}
                   <div className="flex w-full items-center justify-center gap-2">
                     <motion.div
                       whileHover={{ scale: 1.02 }}
@@ -384,7 +445,7 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
                           e.stopPropagation();
                           handleToggleCart(e, product);
                         }}
-                        type="button" // Explicitly set button type
+                        type="button"
                       >
                         <div
                           className={cn(
@@ -413,7 +474,7 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
                           e.stopPropagation();
                           handleToggleWishlist(e, product);
                         }}
-                        type="button" // Explicitly set button type
+                        type="button"
                       >
                         <Heart
                           className={cn(
@@ -440,4 +501,4 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
   );
 };
 
-export default CategoryPage;
+export default ProductCategoryClient;

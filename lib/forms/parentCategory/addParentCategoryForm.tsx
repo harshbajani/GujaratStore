@@ -17,8 +17,17 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { parentCategorySchema } from "@/lib/validations";
 import { createParentCategory } from "@/lib/actions/parentCategory.actions";
+import { useEffect } from "react";
+import slugify from "slugify";
 
 const AddParentCategoryForm = () => {
+  const generateSlug = (name: string) => {
+    return slugify(name, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+  };
   // * hooks
   const router = useRouter();
   const { toast } = useToast();
@@ -26,9 +35,11 @@ const AddParentCategoryForm = () => {
     resolver: zodResolver(parentCategorySchema),
     defaultValues: {
       name: "",
+      slug: "",
       isActive: true,
     },
   });
+  const parentCategoryName = form.watch("name");
   // * data submission
   const onSubmit = async (data: ParentCategoryFormData): Promise<void> => {
     try {
@@ -58,6 +69,13 @@ const AddParentCategoryForm = () => {
     }
   };
 
+  useEffect(() => {
+    if (parentCategoryName) {
+      const slug = generateSlug(parentCategoryName);
+      form.setValue("slug", slug);
+    }
+  }, [parentCategoryName, form]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -69,6 +87,25 @@ const AddParentCategoryForm = () => {
               <FormLabel>Name</FormLabel>
               <FormControl>
                 <Input placeholder="Enter category name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="slug"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Slug</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="product-slug"
+                  {...field}
+                  readOnly
+                  className="bg-gray-50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
