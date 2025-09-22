@@ -7,6 +7,12 @@ const primaryCategorySchema = new Schema({
     ref: "ParentCategory", // Reference to ParentCategory
     required: true,
   },
+  slug: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true,
+  },
   description: { type: String, default: "" },
   metaTitle: { type: String, default: "" },
   metaKeywords: { type: [String], default: [] },

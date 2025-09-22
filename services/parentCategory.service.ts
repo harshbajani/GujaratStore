@@ -288,6 +288,7 @@ export class ParentCategoryService {
       id: category._id.toString(),
       _id: category._id.toString(),
       name: category.name,
+      slug: category.slug,
       isActive: category.isActive,
     };
   }

@@ -18,8 +18,16 @@ import {
   Ruler,
   Store,
   GiftIcon,
+  Watch,
+  Home,
+  Shirt,
+  Coffee,
+  Hammer,
+  Leaf,
+  Palette,
 } from "lucide-react";
 import { FaFacebook, FaInstagram, FaLinkedin, FaTwitter } from "react-icons/fa";
+import { GiRobotGolem } from "react-icons/gi";
 export const NavLinks = [
   {
     route: "/clothing",
@@ -52,6 +60,50 @@ export const NavLinks = [
   {
     route: "/nuts-and-dry-fruit",
     label: "Dry Fruit and Nuts",
+  },
+];
+
+// New parent categories for the Flipkart-style home navbar
+export const ParentCategories = [
+  {
+    route: "/accessories",
+    label: "Accessories",
+    icon: Watch,
+  },
+  {
+    route: "/home-decor",
+    label: "Home Decor",
+    icon: Home,
+  },
+  {
+    route: "/toys-and-games",
+    label: "Toys & Games",
+    icon: GiRobotGolem,
+  },
+  {
+    route: "/fashion",
+    label: "Fashion",
+    icon: Shirt,
+  },
+  {
+    route: "/food-and-beverages",
+    label: "Food & Beverages",
+    icon: Coffee,
+  },
+  {
+    route: "/handicrafts",
+    label: "Handicrafts",
+    icon: Hammer,
+  },
+  {
+    route: "/organic",
+    label: "Organic",
+    icon: Leaf,
+  },
+  {
+    route: "/creative-corner",
+    label: "Creative Corner",
+    icon: Palette,
   },
 ];
 

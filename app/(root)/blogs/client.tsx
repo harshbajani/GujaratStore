@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useBlogsInfinite } from "@/hooks/useBlogsInfinite";
 import { BlogImage } from "@/components/BlogImage";
 import { Calendar, User, ArrowRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
-import { BlogSkeletonGrid, BlogLoadMoreSkeleton } from "@/components/BlogSkeletonLoader";
+import {
+  BlogSkeletonGrid,
+  BlogLoadMoreSkeleton,
+} from "@/components/BlogSkeletonLoader";
 
 const ClientBlogs = ({ initialBlog }: any) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -63,7 +66,9 @@ const ClientBlogs = ({ initialBlog }: any) => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Error Loading Blogs</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            Error Loading Blogs
+          </h2>
           <p className="text-gray-600">{error}</p>
         </div>
       </div>

@@ -10,8 +10,8 @@ const commonFields =
 
 // Populate configuration for reuse
 const populateConfig = [
-  { path: "parentCategory", select: "name" },
-  { path: "primaryCategory", select: "name" },
+  { path: "parentCategory", select: "name slug" },
+  { path: "primaryCategory", select: "name slug" },
   { path: "secondaryCategory", select: "name" },
   { path: "brands", select: "name" },
   { path: "attributes.attributeId", select: "name" },

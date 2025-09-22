@@ -168,11 +168,13 @@ declare interface AttributeResponse {
 declare interface ParentCategoryFormData {
   id: string;
   name: string;
+  slug: string;
   isActive: boolean;
 }
 
 declare interface IParentCategory {
   id: string;
+  slug: string;
   _id: string;
   name: string;
   isActive: boolean;
@@ -181,6 +183,7 @@ declare interface IParentCategory {
 declare interface IPrimaryCategory {
   _id?: string;
   name: string;
+  slug: string;
   parentCategory:
     | string
     | {
@@ -444,10 +447,12 @@ declare interface IProductResponse {
   parentCategory: {
     _id: string;
     name: string;
+    slug: string;
   };
   primaryCategory: {
     _id: string;
     name: string;
+    slug: string;
   };
   secondaryCategory: {
     _id: string;

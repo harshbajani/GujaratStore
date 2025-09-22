@@ -352,6 +352,7 @@ export class PrimaryCategoryService {
     return {
       _id: category._id.toString(),
       name: category.name,
+      slug: category.slug,
       parentCategory: {
         _id: category.parentCategory._id.toString(),
         name: category.parentCategory.name,
