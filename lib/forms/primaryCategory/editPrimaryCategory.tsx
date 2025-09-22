@@ -32,6 +32,8 @@ import { Switch } from "@/components/ui/switch";
 import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
+import slugify from "slugify";
+import Loader from "@/components/Loader";
 
 interface FormData extends Omit<IPrimaryCategory, "parentCategory"> {
   parentCategory: string;
@@ -45,10 +47,19 @@ const EditPrimaryCategoryForm = () => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
+  const generateSlug = (name: string) => {
+    return slugify(name, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+  };
+
   const form = useForm<FormData>({
     resolver: zodResolver(primaryCategorySchema),
     defaultValues: {
       name: "",
+      slug: "",
       parentCategory: "",
       description: "",
       metaTitle: "",
@@ -57,6 +68,7 @@ const EditPrimaryCategoryForm = () => {
       isActive: true,
     },
   });
+  const primaryCategoryName = form.watch("name");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,6 +87,7 @@ const EditPrimaryCategoryForm = () => {
           const category = categoryResponse.data as IPrimaryCategory;
           form.reset({
             name: category.name,
+            slug: category.slug || generateSlug(category.name),
             parentCategory:
               typeof category.parentCategory === "string"
                 ? category.parentCategory
@@ -131,8 +144,15 @@ const EditPrimaryCategoryForm = () => {
     }
   };
 
+  useEffect(() => {
+    if (primaryCategoryName) {
+      const slug = generateSlug(primaryCategoryName);
+      form.setValue("slug", slug);
+    }
+  }, [primaryCategoryName, form]);
+
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <Loader />;
   }
 
   return (
@@ -147,6 +167,25 @@ const EditPrimaryCategoryForm = () => {
                 <FormLabel>Name</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter category name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Slug</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="product-slug"
+                    {...field}
+                    readOnly
+                    className="bg-gray-50"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -32,12 +32,12 @@ interface FilterState {
 }
 
 interface UseProductCategoryProductsInfiniteProps {
-  primaryCategoryId: string;
+  primaryCategorySlug: string;
   initialLimit?: number;
 }
 
 export const useProductCategoryProductsInfinite = ({
-  primaryCategoryId,
+  primaryCategorySlug,
   initialLimit = 10,
 }: UseProductCategoryProductsInfiniteProps) => {
   const { cartItems = [], addToCart, removeFromCart } = useCart();
@@ -114,6 +114,17 @@ export const useProductCategoryProductsInfinite = ({
 
   const loadMetadata = useCallback(async () => {
     try {
+      // First get the primary category ID from slug
+      const categoryResponse = await fetch(`/api/product-category/${primaryCategorySlug}`);
+      const categoryData = await categoryResponse.json();
+      
+      if (!categoryData.success) {
+        console.error("Failed to fetch primary category:", categoryData.error);
+        return;
+      }
+      
+      const primaryCategoryId = categoryData.data._id;
+      
       const response = await fetch("/api/products?all=true");
       const result = await response.json();
 
@@ -129,26 +140,41 @@ export const useProductCategoryProductsInfinite = ({
     } catch (error) {
       console.error("Error loading metadata:", error);
     }
-  }, [primaryCategoryId]);
+  }, [primaryCategorySlug]);
 
   // Fetch function for infinite scroll
   const fetchProducts = useCallback(
     async (page: number): Promise<PaginatedResponse<IProductResponse>> => {
-      const response = await fetch("/api/products?all=true");
-      const result = await response.json();
+      try {
+        // First get the primary category ID from slug
+        const categoryResponse = await fetch(`/api/product-category/${primaryCategorySlug}`);
+        const categoryData = await categoryResponse.json();
+        
+        if (!categoryData.success) {
+          console.error("Failed to fetch primary category:", categoryData.error);
+          return {
+            success: false,
+            error: categoryData.error || "Failed to fetch primary category",
+          };
+        }
+        
+        const primaryCategoryId = categoryData.data._id;
+        
+        const response = await fetch("/api/products?all=true");
+        const result = await response.json();
 
-      if (!result.success || !result.data) {
-        console.error("Failed to fetch products:", result.error);
-        return {
-          success: false,
-          error: result.error || "Failed to fetch products",
-        };
-      }
+        if (!result.success || !result.data) {
+          console.error("Failed to fetch products:", result.error);
+          return {
+            success: false,
+            error: result.error || "Failed to fetch products",
+          };
+        }
 
-      // Filter products by primary category ID
-      let filteredProducts = result.data.filter((product: IProductResponse) => {
-        return product.primaryCategory?._id === primaryCategoryId;
-      });
+        // Filter products by primary category ID
+        let filteredProducts = result.data.filter((product: IProductResponse) => {
+          return product.primaryCategory?._id === primaryCategoryId;
+        });
 
       // Apply filters
       if (filters.secondaryCategories.length > 0) {
@@ -287,9 +313,16 @@ export const useProductCategoryProductsInfinite = ({
       }
 
       return data;
+    } catch (error) {
+      console.error("Error in fetchProducts:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch products",
+      };
+    }
     },
     [
-      primaryCategoryId,
+      primaryCategorySlug,
       initialLimit,
       sortBy,
       filters,

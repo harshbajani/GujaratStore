@@ -84,22 +84,6 @@ const ProductsDetailPage = () => {
         };
 
         setProduct(productWithStatus);
-
-        // Debug: Log the product data to see what we're getting
-        console.log('Product data received:', productWithStatus);
-        console.log('Product netPrice:', productWithStatus.netPrice);
-        console.log('Product mrp:', productWithStatus.mrp);
-        console.log('Product discountValue:', productWithStatus.discountValue);
-        console.log('Product basePrice:', productWithStatus.basePrice);
-        console.log('Product landingPrice:', productWithStatus.landingPrice);
-        console.log('Product price:', productWithStatus.price);
-        console.log('Product selling price:', productWithStatus.sellingPrice);
-        console.log('All product keys:', Object.keys(productWithStatus));
-        console.log('Price-related fields:');
-        Object.keys(productWithStatus).filter(key => key.toLowerCase().includes('price')).forEach(key => {
-          console.log(`  ${key}:`, productWithStatus[key]);
-        });
-
         // Auto-select size if there's only one size available
         if (
           productWithStatus.productSize &&
@@ -377,8 +361,23 @@ const ProductsDetailPage = () => {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbLink href={`/${product.parentCategory.name}`}>
+                  <BreadcrumbLink
+                    href={`/category/${
+                      product.parentCategory.slug || product.parentCategory.slug
+                    }`}
+                  >
                     {product.parentCategory.name}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink
+                    href={`/product-category/${
+                      product.primaryCategory.slug ||
+                      product.primaryCategory.slug
+                    }`}
+                  >
+                    {product.primaryCategory.name}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -473,18 +472,23 @@ const ProductsDetailPage = () => {
                     ₹
                     {(() => {
                       // Try different price fields as fallbacks
-                      const price = product.netPrice || product.landingPrice || 0;
-                      return (price && !isNaN(price)
+                      const price =
+                        product.netPrice || product.landingPrice || 0;
+                      return price && !isNaN(price)
                         ? Math.floor(price).toLocaleString("en-IN")
-                        : "0");
+                        : "0";
                     })()}
                   </span>
                   {(() => {
                     const price = product.netPrice || product.landingPrice || 0;
-                    return product.mrp && price && product.mrp > price && (
-                      <span className="text-md text-gray-500 line-through">
-                        ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
-                      </span>
+                    return (
+                      product.mrp &&
+                      price &&
+                      product.mrp > price && (
+                        <span className="text-md text-gray-500 line-through">
+                          ₹{Math.floor(product.mrp).toLocaleString("en-IN")}
+                        </span>
+                      )
                     );
                   })()}
                   <p className="text-brand">

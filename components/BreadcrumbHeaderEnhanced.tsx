@@ -8,16 +8,25 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
-const BreadcrumbHeader = ({
-  title,
-  subtitle,
-  titleHref,
-}: {
-  title: string;
-  subtitle: string;
-  titleHref: string;
-}) => {
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+  isCurrentPage?: boolean;
+}
+
+interface BreadcrumbHeaderEnhancedProps {
+  items: BreadcrumbItem[];
+  title?: string;
+  subtitle?: string;
+}
+
+const BreadcrumbHeaderEnhanced = ({
+  items,
+  title = "નમસ્તે જી",
+  subtitle = "Let's Discover The World Of Gujarat Art & Crafts",
+}: BreadcrumbHeaderEnhancedProps) => {
   return (
     <motion.div
       className="relative sm:h-[250px] h-[200px] w-full"
@@ -39,7 +48,7 @@ const BreadcrumbHeader = ({
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.5 }}
         >
-          નમસ્તે જી
+          {title}
         </motion.h1>
         <motion.p
           className="text-sm sm:text-base md:text-lg mb-5"
@@ -47,18 +56,36 @@ const BreadcrumbHeader = ({
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.7, duration: 0.5 }}
         >
-          Let&apos;s Discover The World Of Gujarat Art & Crafts
+          {subtitle}
         </motion.p>
         <div>
           <Breadcrumb>
             <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href={titleHref}>{title}</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{subtitle}</BreadcrumbPage>
-              </BreadcrumbItem>
+              {items.map((item, index) => {
+                const isLast = index === items.length - 1;
+
+                return (
+                  <div key={index} className="flex items-center">
+                    <BreadcrumbItem>
+                      {isLast || item.isCurrentPage || !item.href ? (
+                        <BreadcrumbPage className="capitalize truncate max-w-[150px] sm:max-w-xs overflow-hidden whitespace-nowrap">
+                          {item.label}
+                        </BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink asChild>
+                          <Link
+                            href={item.href}
+                            className="capitalize hover:text-brand transition-colors"
+                          >
+                            {item.label}
+                          </Link>
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                    {!isLast && <BreadcrumbSeparator />}
+                  </div>
+                );
+              })}
             </BreadcrumbList>
           </Breadcrumb>
         </div>
@@ -67,4 +94,4 @@ const BreadcrumbHeader = ({
   );
 };
 
-export default BreadcrumbHeader;
+export default BreadcrumbHeaderEnhanced;

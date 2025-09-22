@@ -22,6 +22,7 @@ import {
   updateParentCategory,
 } from "@/lib/actions/parentCategory.actions";
 import Loader from "@/components/Loader";
+import slugify from "slugify";
 
 interface EditParentCategoryFormProps {
   parentCategoryId: string;
@@ -30,6 +31,13 @@ interface EditParentCategoryFormProps {
 const EditParentCategoryForm = ({
   parentCategoryId,
 }: EditParentCategoryFormProps) => {
+  const generateSlug = (name: string) => {
+    return slugify(name, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+  };
   // * useStates and hooks
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -42,6 +50,7 @@ const EditParentCategoryForm = ({
       isActive: true,
     },
   });
+  const parentCategoryName = form.watch("name");
   // * fetching parent category
   useEffect(() => {
     const fetchParentCategory = async () => {
@@ -50,6 +59,9 @@ const EditParentCategoryForm = ({
         if (response.success && response.data) {
           form.reset({
             name: Array.isArray(response.data) ? "" : response.data.name,
+            slug: Array.isArray(response.data)
+              ? ""
+              : response.data.slug || generateSlug(response.data.name),
             isActive: Array.isArray(response.data)
               ? true
               : response.data.isActive,
@@ -97,6 +109,13 @@ const EditParentCategoryForm = ({
     }
   };
 
+  useEffect(() => {
+    if (parentCategoryName) {
+      const slug = generateSlug(parentCategoryName);
+      form.setValue("slug", slug);
+    }
+  }, [parentCategoryName, form]);
+
   if (loading) {
     return (
       <div>
@@ -116,6 +135,25 @@ const EditParentCategoryForm = ({
               <FormLabel>Name</FormLabel>
               <FormControl>
                 <Input placeholder="Enter parent category name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="slug"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Slug</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="product-slug"
+                  {...field}
+                  readOnly
+                  className="bg-gray-50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

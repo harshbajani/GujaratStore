@@ -28,12 +28,20 @@ import { Switch } from "@/components/ui/switch";
 import dynamic from "next/dynamic";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "quill/dist/quill.snow.css";
+import slugify from "slugify";
 
 interface FormData extends Omit<IPrimaryCategory, "parentCategory"> {
   parentCategory: string;
 }
 
 const AddPrimaryCategoryForm = () => {
+  const generateSlug = (name: string) => {
+    return slugify(name, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+  };
   // * useStates and hooks
   const [parentCategories, setParentCategories] = useState<IParentCategory[]>(
     []
@@ -44,6 +52,7 @@ const AddPrimaryCategoryForm = () => {
     resolver: zodResolver(primaryCategorySchema),
     defaultValues: {
       name: "",
+      slug: "",
       parentCategory: "",
       description: "",
       metaTitle: "",
@@ -52,6 +61,8 @@ const AddPrimaryCategoryForm = () => {
       isActive: true,
     },
   });
+  const primaryCategoryName = form.watch("name");
+
   // * fetch parent category
   useEffect(() => {
     const fetchData = async () => {
@@ -94,6 +105,13 @@ const AddPrimaryCategoryForm = () => {
     }
   };
 
+  useEffect(() => {
+    if (primaryCategoryName) {
+      const slug = generateSlug(primaryCategoryName);
+      form.setValue("slug", slug);
+    }
+  }, [primaryCategoryName, form]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -111,6 +129,26 @@ const AddPrimaryCategoryForm = () => {
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Slug</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="product-slug"
+                    {...field}
+                    readOnly
+                    className="bg-gray-50"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="parentCategory"

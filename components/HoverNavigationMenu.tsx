@@ -10,10 +10,12 @@ import { ChevronDown } from "lucide-react";
 interface NavigationCategory {
   _id: string;
   name: string;
+  slug: string;
   route: string;
   primaryCategories: {
     _id: string;
     name: string;
+    slug: string;
     parentCategory: {
       _id: string;
       name: string;
@@ -24,6 +26,7 @@ interface NavigationCategory {
 interface ParentCategoryWithIcon {
   _id: string;
   name: string;
+  slug: string;
   route: string;
   icon: React.ComponentType<{ className?: string }>;
 }
@@ -174,7 +177,8 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
               return {
                 _id: dbCategory._id,
                 name: dbCategory.name,
-                route: `/category/${dbCategory._id}`,
+                slug: dbCategory.slug,
+                route: `/category/${dbCategory.slug}`,
                 icon: constantCategory?.icon || getFallbackIcon(),
               };
             }
@@ -240,7 +244,7 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
                       onMouseEnter={() => handleMouseEnter(parentCategory._id)}
                       onMouseLeave={handleMouseLeave}
                     >
-                      <Link href={`/category/${parentCategory._id}`}>
+                      <Link href={`/category/${parentCategory.slug}`}>
                         <div
                           className={cn(
                             "flex flex-col items-center space-y-1 p-2 md:p-3 rounded-lg transition-all duration-200 min-w-max cursor-pointer",
@@ -271,7 +275,7 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
                     }
                     onMouseLeave={handleMouseLeave}
                   >
-                    <Link href={`/category/${navigationCategory._id}`}>
+                    <Link href={`/category/${navigationCategory.slug}`}>
                       <div className="flex items-center justify-center gap-2 text-neutral-600 hover:text-brand transition-colors font-medium px-4 py-2 cursor-pointer capitalize">
                         {navigationCategory.name}
                         <ChevronDown className="size-4 text-muted-foreground" />
@@ -346,7 +350,7 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
                         .map((primaryCategory) => (
                           <Link
                             key={primaryCategory._id}
-                            href={`/product-category/${primaryCategory._id}`}
+                            href={`/product-category/${primaryCategory.slug}`}
                             className="flex items-center p-2 rounded-md hover:bg-gray-50 transition-colors group"
                           >
                             <div className="text-sm text-gray-700 group-hover:text-brand font-medium">
@@ -360,7 +364,7 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
                       (isHomePage ? 8 : 20) &&
                       currentParentCategory && (
                         <Link
-                          href={`/category/${currentParentCategory._id}`}
+                          href={`/category/${currentParentCategory.slug}`}
                           className="text-brand hover:underline text-sm font-medium text-center p-2 border-t border-gray-100 mt-2"
                         >
                           View all {currentParentCategory.name.toLowerCase()} →

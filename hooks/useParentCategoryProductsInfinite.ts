@@ -32,12 +32,12 @@ interface FilterState {
 }
 
 interface UseParentCategoryProductsInfiniteProps {
-  parentCategoryId: string;
+  parentCategorySlug: string;
   initialLimit?: number;
 }
 
 export const useParentCategoryProductsInfinite = ({
-  parentCategoryId,
+  parentCategorySlug,
   initialLimit = 10,
 }: UseParentCategoryProductsInfiniteProps) => {
   const { cartItems = [], addToCart, removeFromCart } = useCart();
@@ -114,6 +114,17 @@ export const useParentCategoryProductsInfinite = ({
 
   const loadMetadata = useCallback(async () => {
     try {
+      // First get the parent category ID from slug
+      const categoryResponse = await fetch(`/api/category/${parentCategorySlug}`);
+      const categoryData = await categoryResponse.json();
+      
+      if (!categoryData.success) {
+        console.error("Failed to fetch parent category:", categoryData.error);
+        return;
+      }
+      
+      const parentCategoryId = categoryData.data._id;
+      
       const response = await fetch("/api/products?all=true");
       const result = await response.json();
 
@@ -133,30 +144,45 @@ export const useParentCategoryProductsInfinite = ({
     } catch (error) {
       console.error("Error loading metadata:", error);
     }
-  }, [parentCategoryId]);
+  }, [parentCategorySlug]);
 
   // Fetch function for infinite scroll
   const fetchProducts = useCallback(
     async (page: number): Promise<PaginatedResponse<IProductResponse>> => {
-      const response = await fetch("/api/products?all=true");
-      const result = await response.json();
+      try {
+        // First get the parent category ID from slug
+        const categoryResponse = await fetch(`/api/category/${parentCategorySlug}`);
+        const categoryData = await categoryResponse.json();
+        
+        if (!categoryData.success) {
+          console.error("Failed to fetch parent category:", categoryData.error);
+          return {
+            success: false,
+            error: categoryData.error || "Failed to fetch parent category",
+          };
+        }
+        
+        const parentCategoryId = categoryData.data._id;
+        
+        const response = await fetch("/api/products?all=true");
+        const result = await response.json();
 
-      if (!result.success || !result.data) {
-        console.error("Failed to fetch products:", result.error);
-        return {
-          success: false,
-          error: result.error || "Failed to fetch products",
-        };
-      }
+        if (!result.success || !result.data) {
+          console.error("Failed to fetch products:", result.error);
+          return {
+            success: false,
+            error: result.error || "Failed to fetch products",
+          };
+        }
 
-      // Filter products by parent category ID
-      let filteredProducts = result.data.filter((product: IProductResponse) => {
-        const productParentId =
-          typeof product.parentCategory === "object"
-            ? product.parentCategory._id
-            : product.parentCategory;
-        return productParentId === parentCategoryId;
-      });
+        // Filter products by parent category ID
+        let filteredProducts = result.data.filter((product: IProductResponse) => {
+          const productParentId =
+            typeof product.parentCategory === "object"
+              ? product.parentCategory._id
+              : product.parentCategory;
+          return productParentId === parentCategoryId;
+        });
 
       // Apply filters
       if (filters.secondaryCategories.length > 0) {
@@ -303,9 +329,16 @@ export const useParentCategoryProductsInfinite = ({
       }
 
       return data;
+    } catch (error) {
+      console.error("Error in fetchProducts:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch products",
+      };
+    }
     },
     [
-      parentCategoryId,
+      parentCategorySlug,
       initialLimit,
       sortBy,
       filters,

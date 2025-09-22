@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { cn, getProductRating } from "@/lib/utils";
+import { Check, Heart, ShoppingCart, Star } from "lucide-react";
+import { motion } from "framer-motion";
+import { useInView } from "react-intersection-observer";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Star, Heart, ShoppingCart, Check } from "lucide-react";
-import { cn, getProductRating } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useParentCategoryProductsInfinite } from "@/hooks/useParentCategoryProductsInfinite";
 import {
   Select,
   SelectContent,
@@ -15,15 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useInView } from "react-intersection-observer";
-import BreadcrumbHeader from "@/components/BreadcrumbHeader";
-import { useProductCategoryProductsInfinite } from "@/hooks/useProductCategoryProductsInfinite";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { generatePriceRanges } from "@/lib/utils/priceRangeUtils";
@@ -31,14 +24,28 @@ import {
   LoadMoreSkeleton,
   ProductSkeletonGrid,
 } from "@/components/ProductSkeletonLoader";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useMemo } from "react";
+import BreadcrumbHeaderEnhanced from "@/components/BreadcrumbHeaderEnhanced";
 
-const ProductCategoryPage = () => {
+interface ParentCategory {
+  _id: string;
+  name: string;
+}
+
+const ParentCategoryPage = () => {
   const params = useParams();
-  const primaryCategoryId = params.id as string;
+  const parentCategorySlug = params.slug as string;
 
-  // States for primary category info
-  const [primaryCategoryName, setPrimaryCategoryName] = useState<string>("");
+  // States for parent category info
+  const [parentCategory, setParentCategory] = useState<ParentCategory | null>(
+    null
+  );
   const [categoryLoading, setCategoryLoading] = useState(true);
 
   // Use the infinite scroll hook for products
@@ -61,11 +68,12 @@ const ProductCategoryPage = () => {
     clearFilters,
     loadMoreRef,
     allCategoryProducts,
-  } = useProductCategoryProductsInfinite({
-    primaryCategoryId,
+  } = useParentCategoryProductsInfinite({
+    parentCategorySlug,
     initialLimit: 10,
   });
 
+  // Animation ref
   const [organicRef, organicInView] = useInView({
     threshold: 0.1,
     triggerOnce: true,
@@ -97,32 +105,39 @@ const ProductCategoryPage = () => {
     );
   }, [priceRange, allCategoryProducts]);
 
-  // Fetch primary category name
+  // Fetch parent category name
   useEffect(() => {
-    const fetchPrimaryCategoryName = async () => {
+    const fetchParentCategoryName = async () => {
       try {
         setCategoryLoading(true);
-        // Get the first product to extract category name
-        if (sortedProducts.length > 0 && sortedProducts[0].primaryCategory) {
-          setPrimaryCategoryName(sortedProducts[0].primaryCategory.name);
+        const categoryResponse = await fetch(
+          `/api/category/${parentCategorySlug}`
+        );
+        const categoryData = await categoryResponse.json();
+
+        if (categoryData.success) {
+          setParentCategory(categoryData.data);
         }
       } catch (error) {
-        console.error("Error setting primary category name:", error);
+        console.error("Error fetching parent category:", error);
       } finally {
         setCategoryLoading(false);
       }
     };
 
-    fetchPrimaryCategoryName();
-  }, [sortedProducts]);
+    if (parentCategorySlug) {
+      fetchParentCategoryName();
+    }
+  }, [parentCategorySlug]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <BreadcrumbHeader
-          title="Home"
-          subtitle={primaryCategoryName || "Products"}
-          titleHref="/"
+        <BreadcrumbHeaderEnhanced
+          items={[
+            { label: "Home", href: "/" },
+            { label: parentCategory?.name || "Category", isCurrentPage: true },
+          ]}
         />
         <div className="container mx-auto px-4 flex flex-col md:flex-row">
           <div className="w-full hidden md:block md:w-64 md:mr-8 py-[78px]" />
@@ -144,10 +159,11 @@ const ProductCategoryPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BreadcrumbHeader
-        title="Home"
-        subtitle={primaryCategoryName || "Products"}
-        titleHref="/"
+      <BreadcrumbHeaderEnhanced
+        items={[
+          { label: "Home", href: "/" },
+          { label: parentCategory?.name || "Category", isCurrentPage: true },
+        ]}
       />
 
       <div className="container mx-auto px-4 flex flex-col md:flex-row">
@@ -365,7 +381,6 @@ const ProductCategoryPage = () => {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-
                       <div className="mb-2 flex items-center gap-2">
                         <span className="text-lg font-bold text-gray-900">
                           ₹
@@ -472,4 +487,4 @@ const ProductCategoryPage = () => {
   );
 };
 
-export default ProductCategoryPage;
+export default ParentCategoryPage;

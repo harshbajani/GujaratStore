@@ -18,13 +18,19 @@ export async function GET() {
     const navigationData = data.parentCategories.map((parentCategory) => ({
       _id: parentCategory._id,
       name: parentCategory.name,
-      route: `/parent-category/${parentCategory._id}`, // You can customize this route
+      slug: parentCategory.slug,
+      route: `/category/${parentCategory.slug}`,
       primaryCategories: data.primaryCategories.filter(
         (primaryCategory) =>
           (typeof primaryCategory.parentCategory === "object"
             ? primaryCategory.parentCategory._id
             : primaryCategory.parentCategory) === parentCategory._id
-      ),
+      ).map((primaryCategory) => ({
+        _id: primaryCategory._id,
+        name: primaryCategory.name,
+        slug: primaryCategory.slug,
+        parentCategory: primaryCategory.parentCategory
+      })),
     }));
 
     return NextResponse.json({

@@ -79,9 +79,9 @@ export async function GET(request: NextRequest) {
     const [products, totalCount] = await Promise.all([
       Products.find(query)
         .populate([
-          { path: "parentCategory", select: "name" },
-          { path: "primaryCategory", select: "name" },
-          { path: "secondaryCategory", select: "name" },
+          { path: "parentCategory", select: "name slug" },
+          { path: "primaryCategory", select: "name slug" },
+          { path: "secondaryCategory", select: "name slug" },
           { path: "brands", select: "name" },
           { path: "attributes.attributeId", select: "name" },
           { path: "productSize", select: "label" },

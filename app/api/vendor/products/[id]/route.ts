@@ -5,8 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Populate configuration for reuse
 const populateConfig = [
-  { path: "parentCategory", select: "name" },
-  { path: "primaryCategory", select: "name" },
+  { path: "parentCategory", select: "name slug" },
+  { path: "primaryCategory", select: "name slug" },
   { path: "secondaryCategory", select: "name" },
   { path: "brands", select: "name" },
   { path: "attributes.attributeId", select: "name" },
@@ -47,9 +47,9 @@ export async function PUT(request: Request) {
     const updatedProduct = await Products.findByIdAndUpdate(body._id, body, {
       new: true,
     })
-      .populate({ path: "parentCategory", select: "name _id" })
-      .populate({ path: "primaryCategory", select: "name _id" })
-      .populate({ path: "secondaryCategory", select: "name _id" })
+      .populate({ path: "parentCategory", select: "name slug _id" })
+      .populate({ path: "primaryCategory", select: "name slug _id" })
+      .populate({ path: "secondaryCategory", select: "name slug _id" })
       .populate({ path: "brands", select: "name _id" })
       .populate({ path: "attributes.attributeId", select: "value" })
       .populate({ path: "productSize.sizeId", select: "label value" }); // Updated to populate sizeId

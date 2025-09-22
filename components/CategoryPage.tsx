@@ -28,8 +28,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 import { useMemo } from "react";
+import BreadcrumbHeaderEnhanced from "./BreadcrumbHeaderEnhanced";
 
 interface CategoryPageProps {
   categoryName: string;
@@ -93,7 +93,14 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <BreadcrumbHeader title="Home" subtitle={title} titleHref="/" />
+        <BreadcrumbHeaderEnhanced
+          items={[
+            { label: "Home", href: "/" },
+            { label: title, isCurrentPage: true },
+          ]}
+          title={title}
+          subtitle={`Explore ${title} Collection`}
+        />
         <div className="container mx-auto px-4 flex flex-col md:flex-row">
           <div className="w-full hidden md:block md:w-64 md:mr-8 py-[78px]" />
           <div className="flex-1 min-h-screen">
@@ -114,7 +121,14 @@ const CategoryPage = ({ categoryName, title }: CategoryPageProps) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BreadcrumbHeader title="Home" subtitle={title} titleHref="/" />
+      <BreadcrumbHeaderEnhanced
+        items={[
+          { label: "Home", href: "/" },
+          { label: title, isCurrentPage: true },
+        ]}
+        title={title}
+        subtitle={`Explore ${title} Collection`}
+      />
 
       <div className="container mx-auto px-4 flex flex-col md:flex-row">
         {/* Filter Sidebar */}

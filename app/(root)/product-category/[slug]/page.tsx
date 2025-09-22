@@ -1,15 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { cn, getProductRating } from "@/lib/utils";
-import { Check, Heart, ShoppingCart, Star } from "lucide-react";
-import { motion } from "framer-motion";
-import { useInView } from "react-intersection-observer";
 import Image from "next/image";
 import Link from "next/link";
-import { useParentCategoryProductsInfinite } from "@/hooks/useParentCategoryProductsInfinite";
+import { motion } from "framer-motion";
+import { Star, Heart, ShoppingCart, Check } from "lucide-react";
+import { cn, getProductRating } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -17,6 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useInView } from "react-intersection-observer";
+import { useProductCategoryProductsInfinite } from "@/hooks/useProductCategoryProductsInfinite";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { generatePriceRanges } from "@/lib/utils/priceRangeUtils";
@@ -24,28 +31,15 @@ import {
   LoadMoreSkeleton,
   ProductSkeletonGrid,
 } from "@/components/ProductSkeletonLoader";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 import { useMemo } from "react";
+import BreadcrumbHeaderEnhanced from "@/components/BreadcrumbHeaderEnhanced";
 
-interface ParentCategory {
-  _id: string;
-  name: string;
-}
-
-const ParentCategoryPage = () => {
+const ProductCategoryPage = () => {
   const params = useParams();
-  const parentCategoryId = params.id as string;
+  const primaryCategorySlug = params.slug as string;
 
-  // States for parent category info
-  const [parentCategory, setParentCategory] = useState<ParentCategory | null>(
-    null
-  );
+  // States for primary category info
+  const [primaryCategory, setPrimaryCategory] = useState<any>(null);
   const [categoryLoading, setCategoryLoading] = useState(true);
 
   // Use the infinite scroll hook for products
@@ -68,12 +62,11 @@ const ParentCategoryPage = () => {
     clearFilters,
     loadMoreRef,
     allCategoryProducts,
-  } = useParentCategoryProductsInfinite({
-    parentCategoryId,
+  } = useProductCategoryProductsInfinite({
+    primaryCategorySlug,
     initialLimit: 10,
   });
 
-  // Animation ref
   const [organicRef, organicInView] = useInView({
     threshold: 0.1,
     triggerOnce: true,
@@ -105,43 +98,50 @@ const ParentCategoryPage = () => {
     );
   }, [priceRange, allCategoryProducts]);
 
-  // Fetch parent category name
+  // Fetch primary category name
   useEffect(() => {
-    const fetchParentCategoryName = async () => {
+    const fetchPrimaryCategoryName = async () => {
       try {
         setCategoryLoading(true);
         const categoryResponse = await fetch(
-          `/api/navigation/parent-categories`
+          `/api/product-category/${primaryCategorySlug}`
         );
         const categoryData = await categoryResponse.json();
 
         if (categoryData.success) {
-          const foundCategory = categoryData.data.find(
-            (cat: { _id: string; name: string }) => cat._id === parentCategoryId
-          );
-          if (foundCategory) {
-            setParentCategory(foundCategory);
-          }
+          setPrimaryCategory(categoryData.data);
         }
       } catch (error) {
-        console.error("Error fetching parent category:", error);
+        console.error("Error fetching primary category:", error);
       } finally {
         setCategoryLoading(false);
       }
     };
 
-    if (parentCategoryId) {
-      fetchParentCategoryName();
+    if (primaryCategorySlug) {
+      fetchPrimaryCategoryName();
     }
-  }, [parentCategoryId]);
+  }, [primaryCategorySlug]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <BreadcrumbHeader
-          title="Home"
-          subtitle={parentCategory?.name || "Category"}
-          titleHref="/"
+        <BreadcrumbHeaderEnhanced
+          items={[
+            { label: "Home", href: "/" },
+            ...(primaryCategory?.parentCategory
+              ? [
+                  {
+                    label: primaryCategory.parentCategory.name,
+                    href: `/category/${
+                      primaryCategory.parentCategory.slug ||
+                      primaryCategory.parentCategory._id
+                    }`,
+                  },
+                ]
+              : []),
+            { label: primaryCategory?.name || "Products", isCurrentPage: true },
+          ]}
         />
         <div className="container mx-auto px-4 flex flex-col md:flex-row">
           <div className="w-full hidden md:block md:w-64 md:mr-8 py-[78px]" />
@@ -163,10 +163,22 @@ const ParentCategoryPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BreadcrumbHeader
-        title="Home"
-        subtitle={parentCategory?.name || "Category"}
-        titleHref="/"
+      <BreadcrumbHeaderEnhanced
+        items={[
+          { label: "Home", href: "/" },
+          ...(primaryCategory?.parentCategory
+            ? [
+                {
+                  label: primaryCategory.parentCategory.name,
+                  href: `/category/${
+                    primaryCategory.parentCategory.slug ||
+                    primaryCategory.parentCategory.slug
+                  }`,
+                },
+              ]
+            : []),
+          { label: primaryCategory?.name || "Products", isCurrentPage: true },
+        ]}
       />
 
       <div className="container mx-auto px-4 flex flex-col md:flex-row">
@@ -384,6 +396,7 @@ const ParentCategoryPage = () => {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
+
                       <div className="mb-2 flex items-center gap-2">
                         <span className="text-lg font-bold text-gray-900">
                           ₹
@@ -490,4 +503,4 @@ const ParentCategoryPage = () => {
   );
 };
 
-export default ParentCategoryPage;
+export default ProductCategoryPage;
