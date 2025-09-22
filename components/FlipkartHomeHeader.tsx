@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Image from "next/image";
@@ -29,6 +30,13 @@ import SearchDropdown from "./SearchDropdown";
 import { useCart } from "@/context/CartContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import HoverNavigationMenu from "./HoverNavigationMenu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ParentCategories } from "@/constants";
 
 // Define the search result type
 type SearchResult = {
@@ -59,6 +67,42 @@ const FlipkartHomeHeader = () => {
 
   const cartItemsCount = cartCount || 0;
   const isAuthenticated = status === "authenticated";
+
+  // Navigation data for mobile waterfall menu
+  interface NavigationCategory {
+    _id: string;
+    name: string;
+    primaryCategories: { _id: string; name: string }[];
+  }
+  const [navigationData, setNavigationData] = useState<NavigationCategory[]>(
+    []
+  );
+
+  useEffect(() => {
+    const fetchNav = async () => {
+      try {
+        const response = await fetch("/api/navigation/parent-categories");
+        const data = await response.json();
+        if (data.success) {
+          // Enforce ParentCategories order
+          const normalize = (s: string) =>
+            s.toLowerCase().replace(/[^a-z0-9]/g, "");
+          const order = ParentCategories.map((c) => normalize(c.label));
+          const sorted = [...data.data].sort((a: any, b: any) => {
+            const ai = order.indexOf(normalize(a.name));
+            const bi = order.indexOf(normalize(b.name));
+            const aval = ai === -1 ? Number.MAX_SAFE_INTEGER : ai;
+            const bval = bi === -1 ? Number.MAX_SAFE_INTEGER : bi;
+            return aval - bval;
+          });
+          setNavigationData(sorted);
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    fetchNav();
+  }, []);
 
   // * Search function with debouncing
   const handleSearch = (query: string) => {
@@ -342,6 +386,43 @@ const FlipkartHomeHeader = () => {
                 </div>
               </div>
 
+              {/* Waterfall mobile nav inside sheet */}
+              <div className="border-t px-4 py-3">
+                <p className="text-sm text-gray-500 mb-3">Browse Categories</p>
+                <Accordion type="single" collapsible className="w-full">
+                  {navigationData.map((parent) => (
+                    <AccordionItem key={parent._id} value={parent._id}>
+                      <AccordionTrigger className="text-left capitalize">
+                        {parent.name}
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="flex flex-col space-y-2">
+                          {parent.primaryCategories?.map((pc) => (
+                            <Link
+                              prefetch
+                              key={pc._id}
+                              href={`/product-category/${pc._id}`}
+                              className="text-sm text-gray-700 hover:text-brand"
+                              onClick={() => setOpen(false)}
+                            >
+                              {pc.name}
+                            </Link>
+                          ))}
+                          <Link
+                            prefetch
+                            href={`/category/${parent._id}`}
+                            className="text-sm text-brand hover:underline"
+                            onClick={() => setOpen(false)}
+                          >
+                            View all {parent.name.toLowerCase()} →
+                          </Link>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
+
               <div className="px-4 py-3">{renderAuthButtons()}</div>
             </SheetContent>
           </Sheet>
@@ -407,8 +488,10 @@ const FlipkartHomeHeader = () => {
         </div>
       </div>
 
-      {/* Navigation Menu - Home Page Style with Icons */}
-      <HoverNavigationMenu isHomePage={true} />
+      {/* Navigation Menu - Home Page Style with Icons (desktop only) */}
+      <div className="hidden md:block">
+        <HoverNavigationMenu isHomePage={true} />
+      </div>
     </nav>
   );
 };

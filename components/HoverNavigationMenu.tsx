@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ParentCategories } from "@/constants";
 import { cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
 
 interface NavigationCategory {
   _id: string;
@@ -134,16 +135,64 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
                 return false;
               });
 
+              // Determine a robust fallback icon based on the DB category name
+              const getFallbackIcon = () => {
+                const dn = dbCategory.name.toLowerCase();
+                const by = (needle: string) =>
+                  ParentCategories.find((c) =>
+                    c.label.toLowerCase().includes(needle)
+                  )?.icon;
+
+                if (dn.includes("toy") || dn.includes("game")) {
+                  return by("toys") || ParentCategories[0].icon;
+                }
+                if (
+                  dn.includes("food") ||
+                  dn.includes("beverage") ||
+                  dn.includes("bevrage")
+                ) {
+                  return by("food") || ParentCategories[0].icon;
+                }
+                if (dn.includes("home") && dn.includes("decor")) {
+                  return by("home") || ParentCategories[0].icon;
+                }
+                if (dn.includes("fashion")) {
+                  return by("fashion") || ParentCategories[0].icon;
+                }
+                if (dn.includes("handicraft")) {
+                  return by("handicraft") || ParentCategories[0].icon;
+                }
+                if (dn.includes("organic")) {
+                  return by("organic") || ParentCategories[0].icon;
+                }
+                if (dn.includes("creative")) {
+                  return by("creative") || ParentCategories[0].icon;
+                }
+                return ParentCategories[0].icon;
+              };
+
               return {
                 _id: dbCategory._id,
                 name: dbCategory.name,
-                route: constantCategory?.route || `/category/${dbCategory._id}`,
-                icon: constantCategory?.icon || ParentCategories[0].icon,
+                route: `/category/${dbCategory._id}`,
+                icon: constantCategory?.icon || getFallbackIcon(),
               };
             }
           );
 
-          setParentCategoriesWithIcons(mappedCategories);
+          // Enforce desired order as defined in ParentCategories
+          const normalize = (s: string) =>
+            s.toLowerCase().replace(/[^a-z0-9]/g, "");
+          const order = ParentCategories.map((c) => normalize(c.label));
+          const sortedCategories = [...mappedCategories].sort((a, b) => {
+            const ai = order.indexOf(normalize(a.name));
+            const bi = order.indexOf(normalize(b.name));
+            const aval = ai === -1 ? Number.MAX_SAFE_INTEGER : ai;
+            const bval = bi === -1 ? Number.MAX_SAFE_INTEGER : bi;
+            return aval - bval;
+          });
+
+          setParentCategoriesWithIcons(sortedCategories);
         } else {
           console.error("Failed to fetch navigation data:", data.error);
         }
@@ -158,15 +207,7 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
   }, []);
 
   if (loading) {
-    return (
-      <div className="bg-white drop-shadow-md h-16 md:h-14">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center h-full px-4">
-            <div className="animate-pulse">Loading navigation...</div>
-          </div>
-        </div>
-      </div>
-    );
+    return <HoverNavigationMenuSkeleton />;
   }
 
   return (
@@ -177,7 +218,7 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
           isHomePage ? "h-16 md:h-20" : "h-14"
         )}
       >
-        <div className="max-w-6xl mx-auto overflow-visible">
+        <div className="max-w-full mx-auto overflow-visible">
           <div
             className={cn(
               "flex items-center px-2 md:px-4 overflow-x-auto scrollbar-hide overflow-y-visible",
@@ -199,7 +240,7 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
                       onMouseEnter={() => handleMouseEnter(parentCategory._id)}
                       onMouseLeave={handleMouseLeave}
                     >
-                      <Link href={parentCategory.route}>
+                      <Link href={`/category/${parentCategory._id}`}>
                         <div
                           className={cn(
                             "flex flex-col items-center space-y-1 p-2 md:p-3 rounded-lg transition-all duration-200 min-w-max cursor-pointer",
@@ -231,8 +272,9 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
                     onMouseLeave={handleMouseLeave}
                   >
                     <Link href={`/category/${navigationCategory._id}`}>
-                      <div className="text-neutral-600 hover:text-brand transition-colors font-medium px-4 py-2 cursor-pointer capitalize">
+                      <div className="flex items-center justify-center gap-2 text-neutral-600 hover:text-brand transition-colors font-medium px-4 py-2 cursor-pointer capitalize">
                         {navigationCategory.name}
+                        <ChevronDown className="size-4 text-muted-foreground" />
                       </div>
                     </Link>
                   </div>
@@ -280,14 +322,14 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
                     {isHomePage && currentParentCategory && (
                       <div className="flex items-center space-x-2 p-3 rounded-lg bg-gradient-to-r from-brand/10 to-brand/5 border border-brand/20">
                         <currentParentCategory.icon className="h-5 w-5 text-brand" />
-                        <span className="font-semibold text-brand text-sm">
+                        <span className="font-semibold text-brand text-sm capitalize">
                           {currentParentCategory.name}
                         </span>
                       </div>
                     )}
 
                     {!isHomePage && (
-                      <div className="font-semibold text-brand text-sm border-b border-gray-100 pb-2">
+                      <div className="font-semibold text-brand text-sm border-b border-gray-100 pb-2 capitalize">
                         {currentNavigationCategory.name}
                       </div>
                     )}
@@ -318,7 +360,7 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
                       (isHomePage ? 8 : 20) &&
                       currentParentCategory && (
                         <Link
-                          href={currentParentCategory.route}
+                          href={`/category/${currentParentCategory._id}`}
                           className="text-brand hover:underline text-sm font-medium text-center p-2 border-t border-gray-100 mt-2"
                         >
                           View all {currentParentCategory.name.toLowerCase()} →
@@ -336,3 +378,49 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
 };
 
 export default HoverNavigationMenu;
+
+const HoverNavigationMenuSkeleton = ({
+  isHomePage,
+}: HoverNavigationMenuProps) => {
+  return (
+    <div
+      className={cn(
+        "bg-white drop-shadow-md relative z-50 overflow-visible",
+        isHomePage ? "h-16 md:h-20" : "h-14"
+      )}
+    >
+      <div className="max-w-6xl mx-auto overflow-visible">
+        <div
+          className={cn(
+            "flex items-center px-2 md:px-4 overflow-x-auto scrollbar-hide overflow-y-visible",
+            isHomePage
+              ? "justify-start md:justify-center space-x-3 md:space-x-6 lg:space-x-8 h-16 md:h-20"
+              : "justify-center h-14 space-x-6 md:space-x-8 w-full"
+          )}
+        >
+          {isHomePage
+            ? // Home page skeleton - show icon and text placeholders
+              Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col items-center space-y-1 p-2 md:p-3 rounded-lg min-w-max"
+                >
+                  <div className="h-5 w-5 md:h-6 md:w-6 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
+                </div>
+              ))
+            : // Other pages skeleton - show text placeholders
+              Array.from({ length: 5 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-center gap-2 px-4 py-2"
+                >
+                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+                </div>
+              ))}
+        </div>
+      </div>
+    </div>
+  );
+};

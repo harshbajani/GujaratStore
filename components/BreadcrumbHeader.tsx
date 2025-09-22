@@ -57,7 +57,9 @@ const BreadcrumbHeader = ({
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{subtitle}</BreadcrumbPage>
+                <BreadcrumbPage className="capitalize">
+                  {subtitle}
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
