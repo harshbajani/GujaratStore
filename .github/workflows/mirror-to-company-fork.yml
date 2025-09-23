@@ -1,7 +1,8 @@
 name: Mirror to Company Fork
 on:
   push:
-    branches: [ main ]   # change this if your default branch is different
+    branches: [ main ]
+  workflow_dispatch:    # allows manual run from Actions UI
 
 permissions:
   contents: write
@@ -21,7 +22,7 @@ jobs:
           git config user.name "Proactii-Media Mirror Bot"
           git config user.email "hello@proactii.com"
 
-            - name: Push to Proactii-Media/GujaratStore (with token check)
+      - name: Push to Proactii-Media/GujaratStore (with token check)
         env:
           COMPANY_TOKEN: ${{ secrets.FORK_PUSH_TOKEN }}
         run: |
@@ -62,4 +63,3 @@ jobs:
           git push fork HEAD:main --force-with-lease
 
           git log --oneline -n 5
-
