@@ -264,7 +264,7 @@ const OrderSummaryPage = () => {
                 <div className="flex flex-col sm:flex-row gap-4 pt-3 border-t no-print">
                   <Button
                     variant="outline"
-                    onClick={() => router.push("/shop")}
+                    onClick={() => router.push("/")}
                     className="flex-1"
                   >
                     Continue Shopping

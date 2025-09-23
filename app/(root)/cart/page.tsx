@@ -20,6 +20,7 @@ import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
 import { calculateDeliveryCharges } from "@/lib/utils/deliveryCharges";
 import FreeDeliveryIndicator from "@/components/FreeDeliveryIndicator";
+import Link from "next/link";
 
 const CartPage = () => {
   const router = useRouter();
@@ -207,7 +208,7 @@ const CartPage = () => {
               <div className="text-center py-8">
                 <p className="text-gray-500">Your cart is empty</p>
                 <Button variant="link" className="mt-4" asChild>
-                  <a href="/shop">Continue Shopping</a>
+                  <Link href="/">Continue Shopping</Link>
                 </Button>
               </div>
             ) : (
