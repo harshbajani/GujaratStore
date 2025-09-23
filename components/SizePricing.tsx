@@ -200,6 +200,11 @@ const SizePriceRow: React.FC<SizePriceRowProps> = ({
     name: `productSize.${index}.mrp`,
     defaultValue: 0,
   });
+  const landingPrice = useWatch({
+    control,
+    name: `productSize.${index}.landingPrice`,
+    defaultValue: 0,
+  });
   const discountType = useWatch({
     control,
     name: `productSize.${index}.discountType`,
