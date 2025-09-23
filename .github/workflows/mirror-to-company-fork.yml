@@ -1,0 +1,31 @@
+name: Mirror to Company Fork
+on:
+  push:
+    branches: [ main ]   # change this if your default branch is different
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git author
+        run: |
+          git config user.name "Proactii-Media Mirror Bot"
+          git config user.email "hello@proactii.com"
+
+      - name: Push to Proactii-Media/GujaratStore
+        env:
+          COMPANY_TOKEN: ${{ secrets.FORK_PUSH_TOKEN }}
+        run: |
+          # remote points to the company fork
+          git remote add fork https://$COMPANY_TOKEN@github.com/Proactii-Media/GujaratStore.git
+          # push current main to the fork (use --force-with-lease to be safer)
+          git push --force-with-lease fork main
