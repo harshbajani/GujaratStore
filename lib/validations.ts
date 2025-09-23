@@ -218,6 +218,16 @@ export const productSchema = z
             .nonnegative("Delivery days must be non-negative"),
           quantity: z.number().nonnegative("Quantity must be non-negative"),
         })
+        .refine(
+          (sizeItem) => {
+            // Ensure netPrice is not less than landingPrice for each size
+            return sizeItem.netPrice >= sizeItem.landingPrice;
+          },
+          {
+            message: "Net price cannot be less than landing price (minimum 5% profit required)",
+            path: ["netPrice"],
+          }
+        )
       )
       .default([]),
     productSKU: z.string().min(1, "Product SKU is required"),
@@ -297,6 +307,19 @@ export const productSchema = z
         "Either standard pricing (MRP and Landing Price) or size-based pricing must be provided",
       path: ["mrp"], // This will show the error on the MRP field
     }
+  )
+  .refine(
+    (data) => {
+      // If using standard pricing, ensure netPrice is not less than landingPrice
+      if (data.mrp && data.landingPrice && data.netPrice) {
+        return data.netPrice >= data.landingPrice;
+      }
+      return true;
+    },
+    {
+      message: "Net price cannot be less than landing price (minimum 5% profit required)",
+      path: ["netPrice"],
+    }
   );
 
 export const adminProductSchema = z
@@ -349,6 +372,16 @@ export const adminProductSchema = z
             .nonnegative("Delivery days must be non-negative"),
           quantity: z.number().nonnegative("Quantity must be non-negative"),
         })
+        .refine(
+          (sizeItem) => {
+            // Ensure netPrice is not less than landingPrice for each size
+            return sizeItem.netPrice >= sizeItem.landingPrice;
+          },
+          {
+            message: "Net price cannot be less than landing price (minimum 5% profit required)",
+            path: ["netPrice"],
+          }
+        )
       )
       .default([]),
     productSKU: z.string().min(1, "Product SKU is required"),
@@ -427,6 +460,19 @@ export const adminProductSchema = z
       message:
         "Either standard pricing (MRP and Landing Price) or size-based pricing must be provided",
       path: ["mrp"], // This will show the error on the MRP field
+    }
+  )
+  .refine(
+    (data) => {
+      // If using standard pricing, ensure netPrice is not less than landingPrice
+      if (data.mrp && data.landingPrice && data.netPrice) {
+        return data.netPrice >= data.landingPrice;
+      }
+      return true;
+    },
+    {
+      message: "Net price cannot be less than landing price (minimum 5% profit required)",
+      path: ["netPrice"],
     }
   );
 

@@ -100,6 +100,7 @@ const AddProductsForm = () => {
 
   const productName = form.watch("productName");
   const mrp = form.watch("mrp");
+  const landingPrice = form.watch("landingPrice");
   const gstType = form.watch("gstType");
   const discountType = form.watch("discountType");
   const discountValue = form.watch("discountValue");
@@ -112,6 +113,7 @@ const AddProductsForm = () => {
         : mrp - discountValue;
 
     const safeDiscountedBase = Math.max(discountedBase || 0, 0);
+    
     if (gstType === "inclusive") {
       // discountedBase is tax-inclusive net price
       const gstAmountInclusive =

@@ -46,6 +46,7 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
   >([]);
   const [loading, setLoading] = useState(true);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [defaultHighlightCategory, setDefaultHighlightCategory] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{
     top: number;
     left: number;
@@ -101,7 +102,33 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
         const data = await response.json();
 
         if (data.success) {
-          setNavigationData(data.data);
+          // Sort navigation data with Creative Corner at the end
+          const normalizeNav = (s: string) =>
+            s.toLowerCase().replace(/[^a-z0-9]/g, "");
+          const sortedNavigationData = [...data.data].sort((a, b) => {
+            const aName = normalizeNav(a.name);
+            const bName = normalizeNav(b.name);
+
+            // Creative Corner always goes to the end
+            const isACreative = aName.includes("creative");
+            const isBCreative = bName.includes("creative");
+
+            if (isACreative && !isBCreative) return 1;
+            if (!isACreative && isBCreative) return -1;
+
+            // For others, maintain original order or alphabetical
+            return a.name.localeCompare(b.name);
+          });
+
+          setNavigationData(sortedNavigationData);
+
+          // Set Creative Corner as default highlighted (visual only, no dropdown)
+          const creativeCornerNav = sortedNavigationData.find(cat => 
+            normalizeNav(cat.name).includes('creative')
+          );
+          if (creativeCornerNav) {
+            setDefaultHighlightCategory(creativeCornerNav._id);
+          }
 
           // Map database parent categories with icons from constants
           const mappedCategories = data.data.map(
@@ -184,19 +211,39 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
             }
           );
 
-          // Enforce desired order as defined in ParentCategories
-          const normalize = (s: string) =>
+          // Enforce desired order with Creative Corner at the end
+          const normalizeHome = (s: string) =>
             s.toLowerCase().replace(/[^a-z0-9]/g, "");
-          const order = ParentCategories.map((c) => normalize(c.label));
+          const order = ParentCategories.map((c) => normalizeHome(c.label));
+
           const sortedCategories = [...mappedCategories].sort((a, b) => {
-            const ai = order.indexOf(normalize(a.name));
-            const bi = order.indexOf(normalize(b.name));
+            const aName = normalizeHome(a.name);
+            const bName = normalizeHome(b.name);
+
+            // Creative Corner always goes to the end
+            const isACreative = aName.includes("creative");
+            const isBCreative = bName.includes("creative");
+
+            if (isACreative && !isBCreative) return 1;
+            if (!isACreative && isBCreative) return -1;
+
+            // For non-creative items, use original order
+            const ai = order.indexOf(aName);
+            const bi = order.indexOf(bName);
             const aval = ai === -1 ? Number.MAX_SAFE_INTEGER : ai;
             const bval = bi === -1 ? Number.MAX_SAFE_INTEGER : bi;
             return aval - bval;
           });
 
           setParentCategoriesWithIcons(sortedCategories);
+
+          // Set Creative Corner as default highlighted (visual only, no dropdown)
+          const creativeCornerHome = sortedCategories.find(cat => 
+            normalizeHome(cat.name).includes('creative')
+          );
+          if (creativeCornerHome) {
+            setDefaultHighlightCategory(creativeCornerHome._id);
+          }
         } else {
           console.error("Failed to fetch navigation data:", data.error);
         }
@@ -225,9 +272,9 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
         <div className="max-w-full mx-auto overflow-visible">
           <div
             className={cn(
-              "flex items-center px-2 md:px-4 overflow-x-auto scrollbar-hide overflow-y-visible",
+              "flex items-center px-2 md:px-4 overflow-hidden",
               isHomePage
-                ? "justify-start md:justify-center space-x-3 md:space-x-6 lg:space-x-8 h-16 md:h-20"
+                ? "justify-start md:justify-center space-x-3 md:space-x-6 lg:space-x-14 h-16 md:h-20"
                 : "justify-center h-14 space-x-6 md:space-x-8 w-full"
             )}
           >
@@ -249,11 +296,15 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
                           className={cn(
                             "flex flex-col items-center space-y-1 p-2 md:p-3 rounded-lg transition-all duration-200 min-w-max cursor-pointer",
                             "hover:bg-brand hover:text-white",
-                            "text-brand bg-transparent",
+                            hoveredCategory === parentCategory._id
+                              ? "bg-brand text-white"
+                              : defaultHighlightCategory === parentCategory._id
+                              ? "bg-brand text-white"
+                              : "text-brand bg-transparent",
                             "text-xs md:text-sm"
                           )}
                         >
-                          <parentCategory.icon className="h-5 w-5 md:h-6 md:w-6" />
+                          <parentCategory.icon className="h-5 w-5 md:h-8 md:w-8" />
                           <span className="text-xs font-medium whitespace-nowrap capitalize">
                             {parentCategory.name}
                           </span>
@@ -276,7 +327,16 @@ const HoverNavigationMenu: React.FC<HoverNavigationMenuProps> = ({
                     onMouseLeave={handleMouseLeave}
                   >
                     <Link href={`/category/${navigationCategory.slug}`}>
-                      <div className="flex items-center justify-center gap-2 text-neutral-600 hover:text-brand transition-colors font-medium px-4 py-2 cursor-pointer capitalize">
+                      <div
+                        className={cn(
+                          "flex items-center justify-center gap-2 transition-colors text-sm font-medium px-3 py-2 cursor-pointer capitalize rounded-md",
+                        hoveredCategory === navigationCategory._id
+                          ? "text-brand bg-brand/10 border border-brand/20"
+                          : defaultHighlightCategory === navigationCategory._id
+                          ? "text-brand bg-brand/10 border border-brand/20"
+                          : "text-neutral-600 hover:text-brand hover:bg-brand/5"
+                        )}
+                      >
                         {navigationCategory.name}
                         <ChevronDown className="size-4 text-muted-foreground" />
                       </div>
