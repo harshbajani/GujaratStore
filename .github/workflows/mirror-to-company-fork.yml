@@ -25,7 +25,19 @@ jobs:
         env:
           COMPANY_TOKEN: ${{ secrets.FORK_PUSH_TOKEN }}
         run: |
-          # remote points to the company fork
-          git remote add fork https://$COMPANY_TOKEN@github.com/Proactii-Media/GujaratStore.git
-          # push current main to the fork (use --force-with-lease to be safer)
-          git push --force-with-lease fork main
+          set -euo pipefail
+
+          # ensure no leftover remote
+          git remote remove fork || true
+
+          # add remote using token (quote the URL)
+          git remote add fork "https://$COMPANY_TOKEN@github.com/Proactii-Media/GujaratStore.git"
+
+          # verify remote
+          git remote -v
+
+          # push current HEAD to fork's main (explicit refspec)
+          git push fork HEAD:main --force-with-lease
+
+          # print branch status
+          git log --oneline -n 5
