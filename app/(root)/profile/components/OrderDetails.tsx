@@ -21,12 +21,23 @@ interface OrderItem {
   selectedSize?: string;
 }
 
+interface RefundInfo {
+  refund_id?: string;
+  refund_amount?: number;
+  refund_status?: 'pending' | 'processed' | 'failed';
+  refund_initiated_at?: string;
+  refund_processed_at?: string;
+  refund_reason?: string;
+  refund_receipt?: string;
+}
+
 interface Order {
   _id: string;
   orderId: string;
   status:
     | "confirmed"
     | "processing"
+    | "ready to ship"
     | "shipped"
     | "delivered"
     | "cancelled"
@@ -39,6 +50,8 @@ interface Order {
   updatedAt: string;
   addressId: string;
   paymentOption: string;
+  paymentStatus?: string;
+  refundInfo?: RefundInfo;
 }
 
 interface OrderDetailsProps {
@@ -53,8 +66,10 @@ const getStatusColor = (status: string) => {
       return "bg-blue-100 text-blue-800";
     case "processing":
       return "bg-yellow-100 text-yellow-800";
-    case "shipped":
+    case "ready to ship":
       return "bg-purple-100 text-purple-800";
+    case "shipped":
+      return "bg-indigo-100 text-indigo-800";
     case "delivered":
       return "bg-green-100 text-green-800";
     case "cancelled":
@@ -93,8 +108,8 @@ const isDeliveryDatePassed = (dateString: string) => {
 
 // Function to get display status
 const getDisplayStatus = (order: Order) => {
-  // If status is already delivered, cancelled or returned, keep as is
-  if (["delivered", "cancelled", "returned"].includes(order.status)) {
+  // If status is already in final states, keep as is
+  if (["ready to ship", "shipped", "delivered", "cancelled", "returned"].includes(order.status)) {
     return order.status;
   }
 

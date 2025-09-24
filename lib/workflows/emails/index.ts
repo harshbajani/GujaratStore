@@ -12,6 +12,14 @@ export {
   sendOrderReadyToShipEmail,
 } from "./order/orderEmails";
 
+// Refund-related emails
+export {
+  sendRefundInitiatedEmail,
+  sendRefundProcessedEmail,
+  sendRefundFailedEmail,
+  sendRefundUnderReviewEmail,
+} from "./order/refundEmails";
+
 // Payment-related emails
 export { sendPaymentFailureEmail } from "./payment/paymentEmails";
 

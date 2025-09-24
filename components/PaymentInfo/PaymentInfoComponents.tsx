@@ -45,11 +45,11 @@ export const PaymentInfoRow: React.FC<PaymentInfoRowProps> = ({
   showPaymentId = false,
   showProcessingTime = false,
 }) => {
-  const statusBadge = getPaymentStatusBadge(order.paymentStatus);
+  const statusBadge = getPaymentStatusBadge(order.paymentStatus, order.refundInfo);
   const paymentMethod = formatPaymentMethod(order.paymentOption);
-  const paymentAmount = formatPaymentAmount(
-    order.paymentInfo?.payment_amount || order.total
-  );
+  // Always use order.total for display as it's the definitive amount
+  // payment_amount from Razorpay is in paise and may be inconsistent
+  const paymentAmount = formatPaymentAmount(order.total);
 
   return (
     <div className="space-y-1">
@@ -92,7 +92,7 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
   order,
   showAdvancedDetails = false,
 }) => {
-  const statusBadge = getPaymentStatusBadge(order.paymentStatus);
+  const statusBadge = getPaymentStatusBadge(order.paymentStatus, order.refundInfo);
   const paymentMethod = formatPaymentMethod(order.paymentOption);
   const paymentReference = formatPaymentReference(
     order.paymentInfo?.razorpay_payment_id,
@@ -144,11 +144,9 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
               <IndianRupee className="h-4 w-4" />
               Amount
             </p>
-            <p className="text-lg font-bold text-green-600">
-              {formatPaymentAmount(
-                order.paymentInfo?.payment_amount || order.total
-              )}
-            </p>
+          <p className="text-lg font-bold text-green-600">
+            {formatPaymentAmount(order.total)}
+          </p>
           </div>
 
           <div className="space-y-1">
@@ -277,6 +275,111 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
           </>
         )}
 
+        {/* Refund Information */}
+        {order.refundInfo && (
+          <>
+            <Separator />
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-gray-800 flex items-center gap-2">
+                <div className="h-2 w-2 bg-purple-500 rounded-full"></div>
+                Refund Information
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {order.refundInfo.refund_status && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-600">Refund Status</p>
+                    <Badge
+                      variant={getPaymentStatusBadge(undefined, order.refundInfo).variant}
+                      className={getPaymentStatusBadge(undefined, order.refundInfo).className}
+                    >
+                      {getPaymentStatusBadge(undefined, order.refundInfo).label}
+                    </Badge>
+                  </div>
+                )}
+                
+                {order.refundInfo.refund_amount && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                      <IndianRupee className="h-4 w-4" />
+                      Refund Amount
+                    </p>
+                    <p className="text-lg font-bold text-purple-600">
+                      {formatPaymentAmount(order.total)}
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              {(order.refundInfo.refund_initiated_at || order.refundInfo.refund_processed_at) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {order.refundInfo.refund_initiated_at && (
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        Refund Initiated
+                      </p>
+                      <p className="text-sm">
+                        {order.refundInfo.refund_initiated_at && formatPaymentDate(
+                          typeof order.refundInfo.refund_initiated_at === 'string' 
+                            ? order.refundInfo.refund_initiated_at
+                            : order.refundInfo.refund_initiated_at.toISOString()
+                        )}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {order.refundInfo.refund_processed_at && (
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                        <CheckCircle className="h-4 w-4" />
+                        Refund Processed
+                      </p>
+                      <p className="text-sm">
+                        {order.refundInfo.refund_processed_at && formatPaymentDate(
+                          typeof order.refundInfo.refund_processed_at === 'string' 
+                            ? order.refundInfo.refund_processed_at
+                            : order.refundInfo.refund_processed_at.toISOString()
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {order.refundInfo.refund_id && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Refund ID</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-mono">
+                      {maskPaymentId(order.refundInfo.refund_id)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        copyToClipboard(
+                          order.refundInfo!.refund_id!,
+                          "Refund ID"
+                        )
+                      }
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {order.refundInfo.refund_reason && (
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-600">Refund Reason</p>
+                  <p className="text-sm text-gray-700 italic">{order.refundInfo.refund_reason}</p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
         {/* Action Buttons for Failed Payments */}
         {order.paymentStatus === "failed" && (
           <>
@@ -302,7 +405,7 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
  * Payment summary for order listings
  */
 export const PaymentSummary: React.FC<{ order: IOrder }> = ({ order }) => {
-  const statusBadge = getPaymentStatusBadge(order.paymentStatus);
+  const statusBadge = getPaymentStatusBadge(order.paymentStatus, order.refundInfo);
 
   return (
     <div className="flex items-center gap-2">

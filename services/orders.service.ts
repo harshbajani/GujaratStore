@@ -53,6 +53,17 @@ export class OrdersService {
         };
       }
 
+      // Check if order already exists first
+      const existingOrder = await Order.findOne({ orderId: orderData.orderId });
+      if (existingOrder) {
+        console.log(`Order ${orderData.orderId} already exists, returning existing order`);
+        return {
+          success: true,
+          message: "Order already exists",
+          data: existingOrder,
+        };
+      }
+
       // Handle potential duplicate orderId with retry mechanism
       return await this.createOrderWithRetry(orderData, items);
     } catch (error) {
