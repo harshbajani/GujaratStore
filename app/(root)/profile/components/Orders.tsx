@@ -75,6 +75,9 @@ const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(
+    null
+  );
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [showCleanupButton, setShowCleanupButton] = useState(false);
@@ -179,6 +182,7 @@ const Orders = () => {
 
   const handleCancelOrder = async (orderId: string) => {
     try {
+      setCancellingOrderId(orderId);
       const order = orders.find((o) => o._id === orderId);
 
       if (!order) {
@@ -190,22 +194,46 @@ const Orders = () => {
         return;
       }
 
-      if (order.status === "shipped" || order.status === "delivered") {
+      // Check if order can be cancelled based on status
+      // Users cannot cancel orders once they are "ready to ship" or in later stages
+      const nonCancellableStatuses = [
+        "ready to ship",
+        "shipped",
+        "delivered",
+        "cancelled",
+        "returned",
+      ];
+      if (nonCancellableStatuses.includes(order.status)) {
+        const statusMessages = {
+          "ready to ship":
+            "Orders that are ready to ship cannot be cancelled. The vendor has already prepared your order for shipping. Please contact support if you need assistance.",
+          shipped:
+            "Orders that have been shipped cannot be cancelled. You can return the order after delivery.",
+          delivered:
+            "Orders that have been delivered cannot be cancelled. You can return the order instead.",
+          cancelled: "This order is already cancelled.",
+          returned: "This order has already been returned.",
+        };
+
         toast({
-          title: "Cannot Cancel",
+          title: "Cannot Cancel Order",
           description:
-            "Orders that are already shipped or delivered cannot be cancelled",
+            statusMessages[order.status as keyof typeof statusMessages] ||
+            "This order cannot be cancelled.",
           variant: "destructive",
         });
         return;
       }
 
-      const response = await fetch(`/api/order/byId/${orderId}`, {
+      // Use the new user-specific cancellation API route that handles both status update and refund processing
+      const response = await fetch(`/api/user/order/cancel/${orderId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: "cancelled" }),
+        body: JSON.stringify({
+          reason: "Order cancelled by customer from profile",
+        }),
       });
 
       const data = await response.json();
@@ -225,8 +253,9 @@ const Orders = () => {
       });
 
       toast({
-        title: "Success",
-        description: "Order cancelled successfully",
+        title: "Order Cancelled Successfully",
+        description: data.message || "Order has been cancelled successfully.",
+        duration: 8000, // Show longer to read refund message
       });
     } catch (error) {
       console.error("Failed to cancel order", error);
@@ -236,6 +265,8 @@ const Orders = () => {
           error instanceof Error ? error.message : "Failed to cancel order",
         variant: "destructive",
       });
+    } finally {
+      setCancellingOrderId(null);
     }
   };
 
@@ -450,17 +481,32 @@ const Orders = () => {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="gap-1"
-                    onClick={() => handleCancelOrder(order._id)}
-                    disabled={
-                      order.status === "shipped" || order.status === "delivered"
-                    }
-                  >
-                    Cancel Order
-                  </Button>
+                  {/* Only show cancel button for cancellable orders */}
+                  {/* Users cannot cancel orders once they are "ready to ship" or in later stages */}
+                  {![
+                    "ready to ship",
+                    "shipped",
+                    "delivered",
+                    "cancelled",
+                    "returned",
+                  ].includes(order.status) && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="gap-1"
+                      onClick={() => handleCancelOrder(order._id)}
+                      disabled={cancellingOrderId === order._id}
+                    >
+                      {cancellingOrderId === order._id ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Cancelling...
+                        </>
+                      ) : (
+                        "Cancel Order"
+                      )}
+                    </Button>
+                  )}
 
                   <Button
                     variant="outline"
