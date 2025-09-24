@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getStatusBadge } from "@/lib/utils";
 
 const CustomerDetailPage = () => {
   const [orders, setOrders] = useState<IOrder[]>([]);
@@ -161,30 +162,6 @@ const CustomerDetailPage = () => {
       month: "short",
       day: "numeric",
     });
-  };
-
-  const getStatusBadge = (status: string) => {
-    let badgeClass = "";
-    switch (status.toLowerCase()) {
-      case "confirmed":
-        badgeClass = "bg-blue-100 text-blue-800";
-        break;
-      case "processing":
-        badgeClass = "bg-yellow-100 text-yellow-800";
-        break;
-      case "shipped":
-        badgeClass = "bg-purple-100 text-purple-800";
-        break;
-      case "delivered":
-        badgeClass = "bg-green-100 text-green-800";
-        break;
-      case "cancelled":
-        badgeClass = "bg-red-100 text-red-800";
-        break;
-      default:
-        badgeClass = "bg-gray-100 text-gray-800";
-    }
-    return badgeClass;
   };
 
   // Calculate customer stats
