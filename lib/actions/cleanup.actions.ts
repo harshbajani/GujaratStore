@@ -9,10 +9,12 @@ import { getCurrentUser } from "@/lib/actions/user.actions";
  * Clean up user's order array by removing IDs of deleted orders
  * This helps maintain data integrity when orders are accidentally deleted
  */
-export async function cleanupUserOrders(): Promise<ActionResponse<{
-  removedCount: number;
-  remainingCount: number;
-}>> {
+export async function cleanupUserOrders(): Promise<
+  ActionResponse<{
+    removedCount: number;
+    remainingCount: number;
+  }>
+> {
   try {
     await connectToDB();
 
@@ -38,11 +40,15 @@ export async function cleanupUserOrders(): Promise<ActionResponse<{
 
     // Check which order IDs actually exist in the orders collection
     const existingOrders = await Order.find({
-      _id: { $in: orderIds }
-    }).select('_id').lean();
+      _id: { $in: orderIds },
+    })
+      .select("_id")
+      .lean<IOrder[]>();
 
-    const existingOrderIds = existingOrders.map(order => order._id.toString());
-    const validOrderIds = orderIds.filter(id => 
+    const existingOrderIds = existingOrders.map((order) =>
+      order._id.toString()
+    );
+    const validOrderIds = orderIds.filter((id) =>
       existingOrderIds.includes(id.toString())
     );
 
@@ -63,16 +69,21 @@ export async function cleanupUserOrders(): Promise<ActionResponse<{
         removedCount,
         remainingCount: validOrderIds.length,
       },
-      message: removedCount > 0 
-        ? `Cleaned up ${removedCount} invalid order reference${removedCount > 1 ? 's' : ''}`
-        : "No cleanup needed - all order references are valid",
+      message:
+        removedCount > 0
+          ? `Cleaned up ${removedCount} invalid order reference${
+              removedCount > 1 ? "s" : ""
+            }`
+          : "No cleanup needed - all order references are valid",
     };
-
   } catch (error) {
     console.error("Cleanup user orders error:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to clean up user orders",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to clean up user orders",
     };
   }
 }
@@ -81,33 +92,41 @@ export async function cleanupUserOrders(): Promise<ActionResponse<{
  * Admin function to clean up all users' order arrays
  * This should be used carefully and preferably in a maintenance script
  */
-export async function cleanupAllUsersOrders(): Promise<ActionResponse<{
-  usersProcessed: number;
-  totalOrdersRemoved: number;
-}>> {
+export async function cleanupAllUsersOrders(): Promise<
+  ActionResponse<{
+    usersProcessed: number;
+    totalOrdersRemoved: number;
+  }>
+> {
   try {
     await connectToDB();
 
     // Get all users who have orders
     const users = await User.find({
-      order: { $exists: true, $not: { $size: 0 } }
-    }).select('_id order').lean();
+      order: { $exists: true, $not: { $size: 0 } },
+    })
+      .select("_id order")
+      .lean();
 
     let totalOrdersRemoved = 0;
     const usersProcessed = users.length;
 
     for (const user of users) {
       const orderIds = user.order || [];
-      
+
       if (orderIds.length === 0) continue;
 
       // Check which order IDs actually exist
       const existingOrders = await Order.find({
-        _id: { $in: orderIds }
-      }).select('_id').lean();
+        _id: { $in: orderIds },
+      })
+        .select("_id")
+        .lean<IOrder[]>();
 
-      const existingOrderIds = existingOrders.map(order => order._id.toString());
-      const validOrderIds = orderIds.filter(id => 
+      const existingOrderIds = existingOrders.map((order) =>
+        order._id.toString()
+      );
+      const validOrderIds = orderIds.filter((id: string) =>
         existingOrderIds.includes(id.toString())
       );
 
@@ -132,12 +151,14 @@ export async function cleanupAllUsersOrders(): Promise<ActionResponse<{
       },
       message: `Processed ${usersProcessed} users and removed ${totalOrdersRemoved} invalid order references`,
     };
-
   } catch (error) {
     console.error("Cleanup all users orders error:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to clean up all users orders",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to clean up all users orders",
     };
   }
 }
