@@ -56,7 +56,9 @@ export class OrdersService {
       // Check if order already exists first
       const existingOrder = await Order.findOne({ orderId: orderData.orderId });
       if (existingOrder) {
-        console.log(`Order ${orderData.orderId} already exists, returning existing order`);
+        console.log(
+          `Order ${orderData.orderId} already exists, returning existing order`
+        );
         return {
           success: true,
           message: "Order already exists",
@@ -68,27 +70,40 @@ export class OrdersService {
       return await this.createOrderWithRetry(orderData, items);
     } catch (error) {
       console.error("Create order error:", error);
-      
+
       // Provide more specific error messages based on the error type
       let errorMessage = "Failed to create order";
-      
+
       if (error instanceof Error) {
-        if (error.message.includes('Order validation failed')) {
+        if (error.message.includes("Order validation failed")) {
           // Extract specific validation errors from MongoDB
-          if (error.message.includes('vendorId') && error.message.includes('required')) {
-            errorMessage = "Product vendor information is missing. Please refresh and try again.";
-          } else if (error.message.includes('selectedSize') && error.message.includes('Cast to string failed')) {
-            errorMessage = "Size selection format is invalid. Please reselect sizes and try again.";
+          if (
+            error.message.includes("vendorId") &&
+            error.message.includes("required")
+          ) {
+            errorMessage =
+              "Product vendor information is missing. Please refresh and try again.";
+          } else if (
+            error.message.includes("selectedSize") &&
+            error.message.includes("Cast to string failed")
+          ) {
+            errorMessage =
+              "Size selection format is invalid. Please reselect sizes and try again.";
           } else {
-            errorMessage = "Order information is incomplete. Please check all fields and try again.";
+            errorMessage =
+              "Order information is incomplete. Please check all fields and try again.";
           }
-        } else if (error.message.includes('stock') || error.message.includes('quantity')) {
-          errorMessage = "Some products are out of stock. Please check your cart.";
+        } else if (
+          error.message.includes("stock") ||
+          error.message.includes("quantity")
+        ) {
+          errorMessage =
+            "Some products are out of stock. Please check your cart.";
         } else {
           errorMessage = error.message;
         }
       }
-      
+
       return {
         success: false,
         message: errorMessage,
@@ -98,8 +113,8 @@ export class OrdersService {
 
   // Helper method to handle order creation with retry logic for duplicate orderIds
   private static async createOrderWithRetry(
-    orderData: Partial<IOrder>, 
-    items: OrderItem[], 
+    orderData: Partial<IOrder>,
+    items: OrderItem[],
     maxRetries: number = 3
   ): Promise<ActionResponse<IOrder>> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -107,16 +122,22 @@ export class OrdersService {
         // Check if this is a retry due to duplicate orderId
         if (attempt > 1) {
           // Generate a new orderId for retry attempts
-          const { generateUniqueOrderId } = await import('@/lib/utils');
+          const { generateUniqueOrderId } = await import("@/lib/utils");
           orderData.orderId = generateUniqueOrderId();
-          console.log(`Retry attempt ${attempt} with new orderId: ${orderData.orderId}`);
+          console.log(
+            `Retry attempt ${attempt} with new orderId: ${orderData.orderId}`
+          );
         }
 
         // Check if an order with this orderId already exists
-        const existingOrder = await Order.findOne({ orderId: orderData.orderId });
+        const existingOrder = await Order.findOne({
+          orderId: orderData.orderId,
+        });
         if (existingOrder) {
           if (attempt < maxRetries) {
-            console.log(`Order with ID ${orderData.orderId} already exists, generating new ID...`);
+            console.log(
+              `Order with ID ${orderData.orderId} already exists, generating new ID...`
+            );
             continue; // This will trigger a retry with a new orderId
           } else {
             throw new Error(`Duplicate orderId after ${maxRetries} attempts`);
@@ -130,9 +151,15 @@ export class OrdersService {
         // Update product quantities
         await this.updateProductQuantities(items);
 
-      // Update user cart and orders - only clear cart for processing orders (completed orders)
-      const shouldClearCart = orderData.status === "processing" || orderData.paymentOption === "cash-on-delivery";
-        await this.updateUserData(orderData.userId as string, newOrder._id, shouldClearCart);
+        // Update user cart and orders - only clear cart for processing orders (completed orders)
+        const shouldClearCart =
+          orderData.status === "processing" ||
+          orderData.paymentOption === "cash-on-delivery";
+        await this.updateUserData(
+          orderData.userId as string,
+          newOrder._id,
+          shouldClearCart
+        );
 
         // Also invalidate user caches so profile/cart reflect immediately
         try {
@@ -152,20 +179,27 @@ export class OrdersService {
         };
       } catch (error: any) {
         // Check if this is a duplicate key error
-        if (error.code === 11000 && error.keyPattern?.orderId && attempt < maxRetries) {
-          console.log(`Duplicate orderId detected on attempt ${attempt}, retrying...`);
+        if (
+          error.code === 11000 &&
+          error.keyPattern?.orderId &&
+          attempt < maxRetries
+        ) {
+          console.log(
+            `Duplicate orderId detected on attempt ${attempt}, retrying...`
+          );
           continue; // Retry with a new orderId
         }
-        
+
         // If it's not a duplicate error or we've exhausted retries, throw the error
         throw error;
       }
     }
-    
+
     // If we get here, all retries failed
     return {
       success: false,
-      message: "Failed to create order after multiple attempts. Please try again.",
+      message:
+        "Failed to create order after multiple attempts. Please try again.",
     };
   }
   // Get order by custom orderId (for frontend display)
@@ -715,9 +749,7 @@ export class OrdersService {
       return {
         success: false,
         message:
-          error instanceof Error
-            ? error.message
-            : "Failed to update order",
+          error instanceof Error ? error.message : "Failed to update order",
       };
     }
   }
@@ -746,7 +778,7 @@ export class OrdersService {
       "confirmed",
       "unconfirmed",
       "processing",
-      "shipped",
+      "ready to ship",
       "delivered",
       "cancelled",
       "returned",
@@ -839,17 +871,13 @@ export class OrdersService {
       const updateData: any = {
         $push: { order: orderId },
       };
-      
+
       // Only clear cart if specified (for confirmed orders or COD)
       if (clearCart) {
         updateData.$set = { cart: [] };
       }
-      
-      await User.findByIdAndUpdate(
-        userId,
-        updateData,
-        { new: true }
-      );
+
+      await User.findByIdAndUpdate(userId, updateData, { new: true });
     } catch (error) {
       console.error("Update user data error:", error);
       throw new Error(

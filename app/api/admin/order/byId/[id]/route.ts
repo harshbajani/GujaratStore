@@ -120,7 +120,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const validStatuses = [
       "confirmed",
       "processing",
-      "shipped",
+      "ready to ship",
       "delivered",
       "cancelled",
       "returned",

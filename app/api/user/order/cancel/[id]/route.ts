@@ -73,7 +73,6 @@ export async function PATCH(
     // Users cannot cancel orders once they are "ready to ship" or in later stages
     const nonCancellableStatuses = [
       "ready to ship",
-      "shipped", 
       "delivered",
       "cancelled",
       "returned",
@@ -83,8 +82,6 @@ export async function PATCH(
       const statusMessages = {
         "ready to ship":
           "Orders that are ready to ship cannot be cancelled. The vendor has already prepared your order for shipping. Please contact support if you need assistance.",
-        shipped:
-          "Orders that have been shipped cannot be cancelled. You can return the order after delivery.",
         delivered:
           "Orders that have been delivered cannot be cancelled. You can return the order instead.",
         cancelled: "This order is already cancelled.",

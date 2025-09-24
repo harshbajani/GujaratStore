@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getStatusColor } from "@/lib/utils";
 
 interface OrderItem {
   _id: string;
@@ -24,7 +25,7 @@ interface OrderItem {
 interface RefundInfo {
   refund_id?: string;
   refund_amount?: number;
-  refund_status?: 'pending' | 'processed' | 'failed';
+  refund_status?: "pending" | "processed" | "failed";
   refund_initiated_at?: string;
   refund_processed_at?: string;
   refund_reason?: string;
@@ -38,7 +39,6 @@ interface Order {
     | "confirmed"
     | "processing"
     | "ready to ship"
-    | "shipped"
     | "delivered"
     | "cancelled"
     | "returned";
@@ -59,27 +59,6 @@ interface OrderDetailsProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "confirmed":
-      return "bg-blue-100 text-blue-800";
-    case "processing":
-      return "bg-yellow-100 text-yellow-800";
-    case "ready to ship":
-      return "bg-purple-100 text-purple-800";
-    case "shipped":
-      return "bg-indigo-100 text-indigo-800";
-    case "delivered":
-      return "bg-green-100 text-green-800";
-    case "cancelled":
-      return "bg-red-100 text-red-800";
-    case "returned":
-      return "bg-gray-100 text-gray-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -109,7 +88,11 @@ const isDeliveryDatePassed = (dateString: string) => {
 // Function to get display status
 const getDisplayStatus = (order: Order) => {
   // If status is already in final states, keep as is
-  if (["ready to ship", "shipped", "delivered", "cancelled", "returned"].includes(order.status)) {
+  if (
+    ["ready to ship", "delivered", "cancelled", "returned"].includes(
+      order.status
+    )
+  ) {
     return order.status;
   }
 

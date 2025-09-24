@@ -16,8 +16,8 @@ export const generateOrderId = () => {
 
 // Alternative function for even more uniqueness (UUID-like)
 export const generateUniqueOrderId = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = 'TGS';
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "TGS";
   for (let i = 0; i < 8; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -126,8 +126,8 @@ export const getOrderById = async (id: string) => {
 };
 
 export const updateOrderStatus = async (
-  id: string, 
-  status: string, 
+  id: string,
+  status: string,
   additionalData?: {
     cancellationReason?: string;
     isAdminCancellation?: boolean;
@@ -200,3 +200,46 @@ export function formatPrice(amount: number): string {
 export function clampValue(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
+
+export const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "confirmed":
+      return "bg-blue-100 text-blue-800";
+    case "processing":
+      return "bg-yellow-100 text-yellow-800";
+    case "ready to ship":
+      return "bg-purple-100 text-purple-800";
+    case "delivered":
+      return "bg-green-100 text-green-800";
+    case "cancelled":
+      return "bg-red-100 text-red-800";
+    case "returned":
+      return "bg-gray-100 text-gray-800";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
+};
+
+export const getStatusBadge = (status: string) => {
+  let badgeClass = "";
+  switch (status.toLowerCase()) {
+    case "confirmed":
+      badgeClass = "bg-blue-100 text-blue-800";
+      break;
+    case "processing":
+      badgeClass = "bg-yellow-100 text-yellow-800";
+      break;
+    case "ready to ship":
+      badgeClass = "bg-purple-100 text-purple-800";
+      break;
+    case "delivered":
+      badgeClass = "bg-green-100 text-green-800";
+      break;
+    case "cancelled":
+      badgeClass = "bg-red-100 text-red-800";
+      break;
+    default:
+      badgeClass = "bg-gray-100 text-gray-800";
+  }
+  return badgeClass;
+};

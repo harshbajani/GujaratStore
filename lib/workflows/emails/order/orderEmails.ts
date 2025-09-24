@@ -220,7 +220,7 @@ export const sendVendorCancellationEmail = async (
           <h3 style="margin: 0 0 10px; color: #721c24;">Action Required</h3>
           <p style="margin: 0; color: #721c24; font-size: 14px;">
             Please ensure you do not ship any items for this cancelled order. 
-            If items have already been shipped, please contact our support team immediately.
+            If items have already been prepared for shipping, please contact our support team immediately.
           </p>
         </div>
       </td>
@@ -321,7 +321,7 @@ export const sendAdminCancellationEmail = async (
           <p style="margin: 0; color: #0c5460; font-size: 14px;">
             • Review the cancellation reason for patterns<br>
             • Verify refund processing if payment was made<br>
-            • Check with vendor if items were already shipped<br>
+            • Check with vendor if items were already prepared for shipping<br>
             • Update order analytics and inventory if needed
           </p>
         </div>
