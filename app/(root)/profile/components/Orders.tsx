@@ -11,6 +11,7 @@ import { cleanupUserOrders } from "@/lib/actions/cleanup.actions";
 import { useToast } from "@/hooks/use-toast";
 import OrderDetails from "./OrderDetails";
 import Link from "next/link";
+import { getStatusColor } from "@/lib/utils";
 
 interface OrderItem {
   _id: string;
@@ -29,7 +30,7 @@ interface Order {
   status:
     | "confirmed"
     | "processing"
-    | "shipped"
+    | "ready to ship"
     | "delivered"
     | "cancelled"
     | "returned";
@@ -42,25 +43,6 @@ interface Order {
   addressId: string;
   paymentOption: string;
 }
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "confirmed":
-      return "bg-blue-100 text-blue-800";
-    case "processing":
-      return "bg-yellow-100 text-yellow-800";
-    case "shipped":
-      return "bg-purple-100 text-purple-800";
-    case "delivered":
-      return "bg-green-100 text-green-800";
-    case "cancelled":
-      return "bg-red-100 text-red-800";
-    case "returned":
-      return "bg-gray-100 text-gray-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -110,9 +92,19 @@ const Orders = () => {
       const result = await cleanupUserOrders();
 
       if (result.success) {
+        // Show detailed result information
+        const removedCount = result.data?.removedCount || 0;
+        const remainingCount = result.data?.remainingCount || 0;
+
         toast({
           title: "Cleanup Complete",
-          description: result.message,
+          description:
+            removedCount > 0
+              ? `Removed ${removedCount} invalid order reference${
+                  removedCount > 1 ? "s" : ""
+                }. ${remainingCount} valid orders remain.`
+              : "No invalid order references found. All orders are valid.",
+          duration: 6000,
         });
 
         // Refresh orders list after cleanup
@@ -152,7 +144,12 @@ const Orders = () => {
             const sortedOrdersData = sortOrdersByDate(ordersData);
 
             setOrders(sortedOrdersData);
-            setShowCleanupButton(false); // Hide cleanup button after successful cleanup
+
+            // Only hide cleanup button if we actually removed invalid references
+            // If no cleanup was needed, keep showing the button in case user wants to try again later
+            if (removedCount > 0) {
+              setShowCleanupButton(false);
+            }
           } catch (error) {
             console.error("Error refreshing orders after cleanup:", error);
           } finally {
@@ -198,7 +195,6 @@ const Orders = () => {
       // Users cannot cancel orders once they are "ready to ship" or in later stages
       const nonCancellableStatuses = [
         "ready to ship",
-        "shipped",
         "delivered",
         "cancelled",
         "returned",
@@ -207,8 +203,6 @@ const Orders = () => {
         const statusMessages = {
           "ready to ship":
             "Orders that are ready to ship cannot be cancelled. The vendor has already prepared your order for shipping. Please contact support if you need assistance.",
-          shipped:
-            "Orders that have been shipped cannot be cancelled. You can return the order after delivery.",
           delivered:
             "Orders that have been delivered cannot be cancelled. You can return the order instead.",
           cancelled: "This order is already cancelled.",
@@ -324,13 +318,12 @@ const Orders = () => {
         if (missingOrdersCount > 0) {
           setShowCleanupButton(true);
           toast({
-            title: "Some Orders Unavailable",
-            description: `${missingOrdersCount} order${
+            title: "Some Order References Invalid",
+            description: `${missingOrdersCount} order reference${
               missingOrdersCount > 1 ? "s" : ""
-            } could not be loaded. This may happen if order${
-              missingOrdersCount > 1 ? "s were" : " was"
-            } removed from the system. You can clean up these references using the cleanup button.`,
-            variant: "default", // Use default variant instead of destructive since this is informational
+            } point to orders that no longer exist. Use 'Clean Up Order Refs' to remove invalid references from your profile. Note: This only cleans up references, it doesn't change actual order statuses.`,
+            variant: "default",
+            duration: 8000, // Show longer since it's informational
           });
         }
 
@@ -400,6 +393,7 @@ const Orders = () => {
             onClick={handleCleanupOrders}
             disabled={isCleaningUp}
             className="text-xs"
+            title="Remove references to orders that no longer exist in the database"
           >
             {isCleaningUp ? (
               <>
@@ -407,7 +401,7 @@ const Orders = () => {
                 Cleaning...
               </>
             ) : (
-              "Clean Up Orders"
+              "Clean Up Order Refs"
             )}
           </Button>
         )}
@@ -485,7 +479,6 @@ const Orders = () => {
                   {/* Users cannot cancel orders once they are "ready to ship" or in later stages */}
                   {![
                     "ready to ship",
-                    "shipped",
                     "delivered",
                     "cancelled",
                     "returned",

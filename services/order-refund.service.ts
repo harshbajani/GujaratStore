@@ -127,7 +127,7 @@ export class OrderRefundService {
     reason?: string;
   } {
     // Check order status - align with business requirement that users cannot cancel after 'ready to ship'
-    const nonRefundableStatuses = ["ready to ship", "shipped", "delivered", "returned"];
+    const nonRefundableStatuses = ["ready to ship", "delivered", "returned"];
     if (nonRefundableStatuses.includes(order.status)) {
       return {
         eligible: false,

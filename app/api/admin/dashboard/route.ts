@@ -259,7 +259,7 @@ async function calculateOrderStatusBreakdown(
     {
       confirmed: 0,
       processing: 0,
-      shipped: 0,
+      "ready to ship": 0,
       delivered: 0,
       cancelled: 0,
       returned: 0,

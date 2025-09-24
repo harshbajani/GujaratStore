@@ -12,6 +12,7 @@ import Loader from "@/components/Loader";
 import BreadcrumbHeader from "@/components/BreadcrumbHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { getStatusColor } from "@/lib/utils";
 
 interface OrderItem {
   productId: string;
@@ -125,33 +126,12 @@ const OrderSummaryPage = () => {
   if (loading) return <Loader />;
   if (!order) return null;
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "confirmed":
-        return "bg-blue-100 text-blue-800";
-      case "processing":
-        return "bg-yellow-100 text-yellow-800";
-      case "shipped":
-        return "bg-indigo-100 text-indigo-800";
-      case "delivered":
-        return "bg-green-100 text-green-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      case "returned":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
       case "confirmed":
         return <CheckCircle className="h-5 w-5" />;
       case "processing":
         return <Clock className="h-5 w-5" />;
-      case "shipped":
-        return <Truck className="h-5 w-5" />;
       case "delivered":
         return <ShoppingBag className="h-5 w-5" />;
       default:
@@ -385,7 +365,7 @@ const OrderSummaryPage = () => {
                         [
                           "confirmed",
                           "processing",
-                          "shipped",
+                          "ready to ship",
                           "delivered",
                         ].includes(order.status.toLowerCase())
                           ? "bg-green-500 text-white"
@@ -398,7 +378,7 @@ const OrderSummaryPage = () => {
                   </div>
                   <div
                     className={`flex-1 h-1 mx-2 ${
-                      ["processing", "shipped", "delivered"].includes(
+                      ["processing", "ready to ship", "delivered"].includes(
                         order.status.toLowerCase()
                       )
                         ? "bg-green-500"
@@ -408,7 +388,7 @@ const OrderSummaryPage = () => {
                   <div className="relative z-10">
                     <div
                       className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                        ["processing", "shipped", "delivered"].includes(
+                        ["processing", "ready to ship", "delivered"].includes(
                           order.status.toLowerCase()
                         )
                           ? "bg-green-500 text-white"
@@ -421,7 +401,7 @@ const OrderSummaryPage = () => {
                   </div>
                   <div
                     className={`flex-1 h-1 mx-2 ${
-                      ["shipped", "delivered"].includes(
+                      ["ready to ship", "delivered"].includes(
                         order.status.toLowerCase()
                       )
                         ? "bg-green-500"
@@ -431,7 +411,7 @@ const OrderSummaryPage = () => {
                   <div className="relative z-10">
                     <div
                       className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                        ["shipped", "delivered"].includes(
+                        ["ready to ship", "delivered"].includes(
                           order.status.toLowerCase()
                         )
                           ? "bg-green-500 text-white"
@@ -440,7 +420,9 @@ const OrderSummaryPage = () => {
                     >
                       <Truck className="h-5 w-5" />
                     </div>
-                    <div className="mt-2 text-sm font-medium">Shipped</div>
+                    <div className="mt-2 text-sm font-medium">
+                      Ready to Ship
+                    </div>
                   </div>
                   <div
                     className={`flex-1 h-1 mx-2 ${
