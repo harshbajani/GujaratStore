@@ -1,48 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ChevronRight } from "lucide-react";
 import Image from "next/image";
-import { getCurrentUser } from "@/lib/actions/user.actions";
 import { cleanupUserOrders } from "@/lib/actions/cleanup.actions";
 import { useToast } from "@/hooks/use-toast";
+import { useUserOrdersInfinite } from "@/hooks/useUserOrdersInfinite";
 import OrderDetails from "./OrderDetails";
 import Link from "next/link";
 import { getStatusColor } from "@/lib/utils";
-
-interface OrderItem {
-  _id: string;
-  productId: string;
-  productName: string;
-  coverImage: string;
-  price: number;
-  quantity: number;
-  deliveryDate: string;
-  selectedSize?: string;
-}
-
-interface Order {
-  _id: string;
-  orderId: string;
-  status:
-    | "confirmed"
-    | "processing"
-    | "ready to ship"
-    | "delivered"
-    | "cancelled"
-    | "returned";
-  items: OrderItem[];
-  subtotal: number;
-  deliveryCharges: number;
-  total: number;
-  createdAt: string;
-  updatedAt: string;
-  addressId: string;
-  paymentOption: string;
-}
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -54,8 +23,17 @@ const formatDate = (dateString: string) => {
 };
 
 const Orders = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Use the infinite loading hook
+  const {
+    orders,
+    isLoading,
+    isLoadingMore,
+    error,
+    hasNextPage,
+    refresh,
+    loadMoreRef,
+  } = useUserOrdersInfinite({ initialLimit: 10 });
+
   const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(
     null
@@ -66,25 +44,6 @@ const Orders = () => {
   const { toast } = useToast();
 
   const getImageUrl = (imageId: string | File) => `/api/files/${imageId}`;
-
-  // Reusable function to sort orders by creation date (latest first)
-  const sortOrdersByDate = (orders: Order[]) => {
-    return orders.sort((a, b) => {
-      try {
-        const dateA = new Date(a.createdAt);
-        const dateB = new Date(b.createdAt);
-
-        // Handle invalid dates by putting them at the end
-        if (isNaN(dateA.getTime())) return 1;
-        if (isNaN(dateB.getTime())) return -1;
-
-        return dateB.getTime() - dateA.getTime(); // Latest first (descending order)
-      } catch (error) {
-        console.warn("Error sorting orders by date:", error);
-        return 0; // Keep original order if sorting fails
-      }
-    });
-  };
 
   const handleCleanupOrders = async () => {
     try {
@@ -107,57 +66,13 @@ const Orders = () => {
           duration: 6000,
         });
 
-        // Refresh orders list after cleanup
-        const fetchOrders = async () => {
-          try {
-            setIsLoading(true);
-            const userResponse = await getCurrentUser();
-            if (!userResponse.success || !userResponse.data) {
-              throw new Error(
-                userResponse.message || "Failed to fetch user data"
-              );
-            }
-            const orderIds = userResponse.data.order || [];
-            if (orderIds.length === 0) {
-              setOrders([]);
-              setIsLoading(false);
-              setShowCleanupButton(false);
-              return;
-            }
-            // Fetch orders again after cleanup
-            const orderDetailsPromises = orderIds.map(async (orderId) => {
-              try {
-                const response = await fetch(`/api/order/byId/${orderId}`);
-                const data = await response.json();
-                if (!data.success) {
-                  return null;
-                }
-                return data.order;
-              } catch {
-                return null;
-              }
-            });
-            const orderResponses = await Promise.all(orderDetailsPromises);
-            const ordersData = orderResponses.filter((order) => order !== null);
+        // Refresh orders list after cleanup using the infinite hook
+        refresh();
 
-            // Sort orders by creation date (latest first)
-            const sortedOrdersData = sortOrdersByDate(ordersData);
-
-            setOrders(sortedOrdersData);
-
-            // Only hide cleanup button if we actually removed invalid references
-            // If no cleanup was needed, keep showing the button in case user wants to try again later
-            if (removedCount > 0) {
-              setShowCleanupButton(false);
-            }
-          } catch (error) {
-            console.error("Error refreshing orders after cleanup:", error);
-          } finally {
-            setIsLoading(false);
-          }
-        };
-
-        await fetchOrders();
+        // Only hide cleanup button if we actually removed invalid references
+        if (removedCount > 0) {
+          setShowCleanupButton(false);
+        }
       } else {
         toast({
           title: "Cleanup Failed",
@@ -236,15 +151,8 @@ const Orders = () => {
         throw new Error(data.message || "Failed to cancel order");
       }
 
-      // Update local state and maintain sort order
-      setOrders((prevOrders) => {
-        const updatedOrders = prevOrders.map((o) =>
-          o._id === orderId ? { ...o, status: "cancelled" as const } : o
-        );
-
-        // Re-sort to maintain latest first order
-        return sortOrdersByDate(updatedOrders);
-      });
+      // Refresh the orders list to reflect the cancelled status
+      refresh();
 
       toast({
         title: "Order Cancelled Successfully",
@@ -264,85 +172,14 @@ const Orders = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setIsLoading(true);
-
-        // First get the current user to get their order IDs
-        const userResponse = await getCurrentUser();
-
-        if (!userResponse.success || !userResponse.data) {
-          throw new Error(userResponse.message || "Failed to fetch user data");
-        }
-
-        const orderIds = userResponse.data.order || [];
-
-        if (orderIds.length === 0) {
-          setOrders([]);
-          setIsLoading(false);
-          return;
-        }
-
-        // Fetch details for each order using the new route
-        const orderDetailsPromises = orderIds.map(async (orderId) => {
-          try {
-            // Use the new API route specifically for MongoDB ObjectIds
-            const response = await fetch(`/api/order/byId/${orderId}`);
-            const data = await response.json();
-
-            if (!data.success) {
-              console.warn(
-                `Order ${orderId} not found in database, skipping...`
-              );
-              return null; // Return null for missing orders instead of throwing
-            }
-
-            return data.order;
-          } catch (error) {
-            console.warn(`Failed to fetch order ${orderId}:`, error);
-            return null; // Return null for failed requests instead of throwing
-          }
-        });
-
-        const orderResponses = await Promise.all(orderDetailsPromises);
-        // Filter out null values (missing/deleted orders) and keep only valid orders
-        const ordersData = orderResponses.filter((order) => order !== null);
-
-        // Sort orders by creation date (latest first)
-        const sortedOrdersData = sortOrdersByDate(ordersData);
-
-        // Count missing orders for user notification
-        const missingOrdersCount = orderResponses.length - ordersData.length;
-
-        if (missingOrdersCount > 0) {
-          setShowCleanupButton(true);
-          toast({
-            title: "Some Order References Invalid",
-            description: `${missingOrdersCount} order reference${
-              missingOrdersCount > 1 ? "s" : ""
-            } point to orders that no longer exist. Use 'Clean Up Order Refs' to remove invalid references from your profile. Note: This only cleans up references, it doesn't change actual order statuses.`,
-            variant: "default",
-            duration: 8000, // Show longer since it's informational
-          });
-        }
-
-        setOrders(sortedOrdersData);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-        toast({
-          title: "Error",
-          description:
-            error instanceof Error ? error.message : "Failed to fetch orders",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [toast]);
+  // Show error toast if there's an error from the infinite hook
+  if (error) {
+    toast({
+      title: "Error",
+      description: error,
+      variant: "destructive",
+    });
+  }
 
   const handleViewDetails = (orderId: string) => {
     setSelectedOrderId(orderId);
@@ -515,6 +352,18 @@ const Orders = () => {
           </Card>
         );
       })}
+
+      {/* Load more trigger */}
+      {hasNextPage && (
+        <div ref={loadMoreRef} className="flex justify-center p-4">
+          {isLoadingMore && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading more orders...</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <OrderDetails
         orderId={selectedOrderId}
