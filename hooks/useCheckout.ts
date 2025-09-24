@@ -586,10 +586,7 @@ export function useCheckout() {
   // Initialize Razorpay payment
   const initializeRazorpayPayment = async (orderId: string, amount: number) => {
     try {
-      // First create order in database with unconfirmed status
-      await createOrderWithPayment(orderId, null, "unconfirmed", "pending");
-
-      // Create Razorpay order
+      // Create Razorpay order first (don't create database order yet)
       const razorpayResponse = await fetch("/api/razorpay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -638,7 +635,7 @@ export function useCheckout() {
         failure: async (response: any) => {
           console.error("Razorpay payment failed:", response);
           const failureReason = getRazorpayErrorMessage(response.error);
-          await handlePaymentFailure(orderId, failureReason);
+          await handlePaymentFailureWithoutOrder(orderId, failureReason);
           dispatch({ type: "SET_SUBMITTING", payload: false });
           toast.error("Payment Failed", {
             description: "Payment failed. Please try again.",
@@ -651,10 +648,10 @@ export function useCheckout() {
           contact: state.userData?.phone || "",
         },
         modal: {
-          // Handle payment failure scenarios
+          // Handle payment cancellation by user
           ondismiss: async () => {
-            // Payment was cancelled/dismissed by user
-            await handlePaymentFailure(
+            // Payment was cancelled/dismissed by user - don't create order
+            await handlePaymentFailureWithoutOrder(
               orderId,
               "Payment was cancelled by user. You can retry the payment anytime by returning to your cart."
             );
@@ -669,7 +666,7 @@ export function useCheckout() {
           onerror: async (error: any) => {
             console.error("Razorpay payment error:", error);
             const errorMessage = getRazorpayErrorMessage(error);
-            await handlePaymentFailure(orderId, errorMessage);
+            await handlePaymentFailureWithoutOrder(orderId, errorMessage);
             dispatch({ type: "SET_SUBMITTING", payload: false });
             toast.error("Payment Error", {
               description:
@@ -680,7 +677,7 @@ export function useCheckout() {
           // Handle payment timeout
           timeout: 300, // 5 minutes timeout
           ontimeout: async () => {
-            await handlePaymentFailure(
+            await handlePaymentFailureWithoutOrder(
               orderId,
               "Payment timed out due to network issues. Please check your internet connection and try again."
             );
@@ -702,7 +699,7 @@ export function useCheckout() {
           razorpay.open();
         };
         script.onerror = async () => {
-          await handlePaymentFailure(orderId, "Failed to load payment gateway");
+          await handlePaymentFailureWithoutOrder(orderId, "Failed to load payment gateway");
           throw new Error("Failed to load Razorpay checkout script");
         };
         document.body.appendChild(script);
@@ -712,7 +709,7 @@ export function useCheckout() {
       }
     } catch (error) {
       console.error("Razorpay initialization error:", error);
-      await handlePaymentFailure(
+      await handlePaymentFailureWithoutOrder(
         orderId,
         error instanceof Error ? error.message : "Payment initialization failed"
       );
@@ -760,7 +757,58 @@ export function useCheckout() {
     );
   };
 
-  // Handle payment failure
+  // Handle payment failure without creating order (new approach)
+  const handlePaymentFailureWithoutOrder = async (
+    orderId: string,
+    failureReason: string
+  ) => {
+    try {
+      // Get the selected address details
+      const selectedAddressDetails = state.userData?.addresses.find(
+        (address) => address._id === state.selectedAddress
+      );
+
+      if (!selectedAddressDetails) {
+        console.error("Selected address not found for payment failure email");
+        return;
+      }
+
+      // Prepare email data for payment failure (without creating database order)
+      const emailData = {
+        orderId,
+        items: state.checkoutData?.items || [],
+        subtotal: state.checkoutData?.subtotal || 0,
+        deliveryCharges: state.checkoutData?.deliveryCharges || 0,
+        discountAmount: state.checkoutData?.discountAmount || 0,
+        rewardDiscountAmount: state.rewardDiscountAmount || 0,
+        pointsRedeemed: state.pointsToRedeem || 0,
+        total: state.checkoutData?.total || 0,
+        paymentOption: state.paymentOption,
+        createdAt: new Date().toISOString(),
+        address: selectedAddressDetails,
+        userName: state.userData?.name || "",
+        userEmail: state.userData?.email || "",
+        paymentFailureReason: failureReason,
+      };
+
+      try {
+        // Send payment failure email without creating order
+        await fetch("/api/payment-failure-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(emailData),
+        });
+        console.log("Payment failure email sent successfully (no order created)");
+      } catch (emailError) {
+        console.error("Failed to send payment failure email:", emailError);
+        // Don't block the process if email fails
+      }
+    } catch (error) {
+      console.error("Error handling payment failure:", error);
+    }
+  };
+
+  // Handle payment failure (legacy - for existing database orders)
   const handlePaymentFailure = async (
     orderId: string,
     failureReason: string
@@ -851,9 +899,9 @@ export function useCheckout() {
         throw new Error(verifyData.error || "Payment verification failed");
       }
 
-      // Payment verified successfully, update the order to processing
+      // Payment verified successfully, create the order in database
       console.log(
-        "Payment verified successfully, updating order in database..."
+        "Payment verified successfully, creating order in database..."
       );
       await createOrderWithPayment(
         orderId,
@@ -862,7 +910,7 @@ export function useCheckout() {
           razorpay_order_id: response.razorpay_order_id,
           payment_status: "paid",
           payment_method: verifyData.data?.method || "card",
-          payment_amount: verifyData.data?.amount || 0,
+          payment_amount: (verifyData.data?.amount || 0) / 100, // Convert from paise to rupees
           verified_at: verifyData.data?.verifiedAt,
         },
         "processing",
@@ -881,9 +929,6 @@ export function useCheckout() {
     }
   };
 
-  // Track created orders to avoid duplicate creation
-  const [createdOrders, setCreatedOrders] = useState<Set<string>>(new Set());
-
   // Create order with payment information
   const createOrderWithPayment = async (
     orderId: string,
@@ -891,10 +936,6 @@ export function useCheckout() {
     orderStatus: string = "confirmed",
     paymentStatus: "pending" | "paid" | "failed" | "refunded" = "pending"
   ) => {
-    const isUpdate = createdOrders.has(orderId);
-    let endpoint = "/api/order";
-    let method = "POST";
-
     const orderPayload = {
       orderId,
       status: orderStatus,
@@ -924,17 +965,9 @@ export function useCheckout() {
       paymentInfo: paymentInfo || null,
     };
 
-    if (isUpdate) {
-      // If order already exists, use update endpoint
-      endpoint = `/api/order/update/${orderId}`;
-      method = "PATCH";
-    } else {
-      // Mark this order as created
-      setCreatedOrders((prev) => new Set(prev).add(orderId));
-    }
-
-    fetch(endpoint, {
-      method: method,
+    // Always try to create order first - the backend will handle duplicates
+    fetch("/api/order", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(orderPayload),
     })

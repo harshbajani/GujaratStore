@@ -104,6 +104,19 @@ const orderSchema = new Schema(
       payment_amount: { type: Number },
       verified_at: { type: String },
     },
+    refundInfo: {
+      refund_id: { type: String }, // Razorpay refund ID
+      refund_amount: { type: Number }, // Amount refunded in paise
+      refund_status: { 
+        type: String, 
+        enum: ['pending', 'processed', 'failed'],
+        default: null 
+      },
+      refund_initiated_at: { type: Date },
+      refund_processed_at: { type: Date },
+      refund_reason: { type: String },
+      refund_receipt: { type: String }, // Unique receipt for refund
+    },
   },
   { timestamps: true } // Automatically manages createdAt and updatedAt fields
 );

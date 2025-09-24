@@ -74,7 +74,7 @@ export class RazorpayService {
         };
       }
 
-      // Ensure amount is in paise (multiply by 100 if it's in rupees)
+      // Ensure amount is in paise (multiply by 100 as Razorpay expects amount in paise)
       const amountInPaise = Math.round(options.amount * 100);
 
       const orderOptions = {

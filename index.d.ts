@@ -598,6 +598,15 @@ declare interface IOrder {
     payment_amount?: number;
     verified_at?: string;
   };
+  refundInfo?: {
+    refund_id?: string; // Razorpay refund ID
+    refund_amount?: number; // Amount refunded in paise
+    refund_status?: "pending" | "processed" | "failed" | "manual_review";
+    refund_initiated_at?: Date;
+    refund_processed_at?: Date;
+    refund_reason?: string;
+    refund_receipt?: string; // Unique receipt for refund
+  };
   createdAt: string;
   updatedAt: string;
   userName?: string;

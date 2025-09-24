@@ -60,6 +60,23 @@ export interface CancellationEmailData extends OrderEmailData {
   refundAmount: string;
 }
 
+export interface RefundEmailData {
+  orderId: string;
+  userName: string;
+  userEmail: string;
+  email: string;
+  customerName: string;
+  orderDate: string;
+  orderTotal: string;
+  refundAmount: string;
+  refundId?: string;
+  refundStatus: "initiated" | "processed" | "failed" | "manual_review";
+  refundReason: string;
+  paymentMethod: string;
+  refundProcessingTime?: string;
+  expectedCompletionDate?: string;
+}
+
 // Email template interfaces
 export interface EmailTemplateParams {
   subject: string;

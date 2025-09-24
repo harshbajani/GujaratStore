@@ -41,13 +41,64 @@ export function formatPaymentDate(dateString: string | undefined): string {
 }
 
 /**
- * Get payment status badge styling
+ * Get payment status badge styling with refund status support
  */
-export function getPaymentStatusBadge(status: string | undefined): {
+export function getPaymentStatusBadge(
+  status: string | undefined,
+  refundInfo?: {
+    refund_id?: string;
+    refund_amount?: number;
+    refund_status?: "pending" | "processed" | "failed" | "manual_review";
+    refund_initiated_at?: Date;
+    refund_processed_at?: Date;
+    refund_reason?: string;
+    refund_receipt?: string;
+  }
+): {
   className: string;
   label: string;
   variant: "default" | "secondary" | "destructive" | "outline";
 } {
+  // Check refund status first if available
+  if (refundInfo?.refund_status) {
+    switch (refundInfo.refund_status.toLowerCase()) {
+      case "processed":
+        return {
+          className: "bg-purple-100 text-purple-800 border-purple-200",
+          label: "↩ Refunded",
+          variant: "secondary",
+        };
+      case "pending":
+        return {
+          className: "bg-orange-100 text-orange-800 border-orange-200",
+          label: "⏳ Refund Pending",
+          variant: "default",
+        };
+      case "failed":
+        return {
+          className: "bg-red-100 text-red-800 border-red-200",
+          label: "✗ Refund Failed",
+          variant: "destructive",
+        };
+      case "manual_review":
+        return {
+          className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          label: "👤 Refund Under Review",
+          variant: "default",
+        };
+    }
+  }
+
+  // If refund was initiated but status is not available yet
+  if (refundInfo?.refund_initiated_at && !refundInfo?.refund_status) {
+    return {
+      className: "bg-orange-100 text-orange-800 border-orange-200",
+      label: "⏳ Refund Initiated",
+      variant: "default",
+    };
+  }
+
+  // Default payment status handling
   const normalizedStatus = (status || "").toLowerCase();
 
   switch (normalizedStatus) {
@@ -77,7 +128,7 @@ export function getPaymentStatusBadge(status: string | undefined): {
     case "refunded":
     case "refund":
       return {
-        className: "bg-blue-100 text-blue-800 border-blue-200",
+        className: "bg-purple-100 text-purple-800 border-purple-200",
         label: "↩ Refunded",
         variant: "secondary",
       };
