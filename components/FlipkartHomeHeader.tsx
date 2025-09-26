@@ -241,7 +241,13 @@ const FlipkartHomeHeader = () => {
         <div className="h-20 w-full max-w-6xl mx-auto hidden md:flex flex-row items-center justify-between px-4">
           <div className="flex flex-row items-center space-x-4">
             <Link prefetch href="/">
-              <Image src="/logo.png" height={56} width={108} alt="logo" />
+              <Image
+                src="/logo.png"
+                height={500}
+                width={500}
+                alt="logo"
+                className="h-12 w-full"
+              />
             </Link>
             <div className="relative" ref={searchRef}>
               <Input

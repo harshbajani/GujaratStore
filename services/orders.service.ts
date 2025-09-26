@@ -779,6 +779,8 @@ export class OrdersService {
       "unconfirmed",
       "processing",
       "ready to ship",
+      "shipped",
+      "out for delivery",
       "delivered",
       "cancelled",
       "returned",

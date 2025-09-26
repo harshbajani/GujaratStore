@@ -35,6 +35,9 @@ export type VendorUpdateData = Partial<{
     CorporationCertificate?: string | File;
     OtherDocuments?: string | File;
   };
+  // Shiprocket integration fields
+  shiprocket_pickup_location?: string;
+  shiprocket_pickup_location_added?: boolean;
 }>;
 // Upload file helper function
 const uploadFile = async (file: File): Promise<string> => {

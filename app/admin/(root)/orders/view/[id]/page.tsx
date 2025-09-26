@@ -36,6 +36,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { ShippingInfo } from "@/components/admin/ShippingInfo";
+import { PickupLocationDialog, PickupLocationData } from "@/components/dialogs/PickupLocationDialog";
 
 interface CancellationData {
   cancellationReason?: string;
@@ -54,6 +56,8 @@ const ViewOrderPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
+  const [pickupLocationDialogOpen, setPickupLocationDialogOpen] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(null);
   // Replace the old hook with the new useUsers hook
   const {
     data: user,
@@ -107,7 +111,8 @@ const ViewOrderPage = () => {
   const updateOrderStatus = async (
     id: string,
     status: string,
-    cancellationData: CancellationData
+    cancellationData: CancellationData,
+    customPickupLocation?: PickupLocationData
   ) => {
     try {
       const response = await fetch(`/api/order/byId/${id}`, {
@@ -115,7 +120,11 @@ const ViewOrderPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status, ...cancellationData }),
+        body: JSON.stringify({ 
+          status, 
+          ...cancellationData,
+          ...(customPickupLocation && { customPickupLocation })
+        }),
       });
 
       const data = await response.json();
@@ -132,6 +141,12 @@ const ViewOrderPage = () => {
     try {
       if (status === "cancelled") {
         setCancellationDialogOpen(true);
+        return;
+      }
+
+      if (status === "ready to ship") {
+        setPendingStatusChange(status);
+        setPickupLocationDialogOpen(true);
         return;
       }
 
@@ -206,6 +221,48 @@ const ViewOrderPage = () => {
       });
     } finally {
       setIsLoading(false); // Ensure loading state is reset after the process
+    }
+  };
+
+  const handlePickupLocationConfirm = async (pickupLocationData?: PickupLocationData) => {
+    if (!order || !pendingStatusChange) return;
+
+    setIsLoading(true);
+    try {
+      const response = await updateOrderStatus(
+        order._id,
+        pendingStatusChange,
+        { isAdminCancellation: false },
+        pickupLocationData
+      );
+
+      if (response.success) {
+        setPickupLocationDialogOpen(false);
+        setPendingStatusChange(null);
+        fetchOrder();
+        toast({
+          title: "Success",
+          description: pickupLocationData 
+            ? "Order status updated with custom pickup location!"
+            : "Order status updated with default pickup location!",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to update order status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -459,6 +516,17 @@ const ViewOrderPage = () => {
           </CardContent>
         </Card>
 
+        {/* Shiprocket Shipping Information Card */}
+        <div className="col-span-1 lg:col-span-3">
+          <ShippingInfo 
+            order={order} 
+            onRefresh={async (orderId) => {
+              // Refresh order data
+              await fetchOrder();
+            }}
+          />
+        </div>
+
         {/* Enhanced Payment Information Card */}
         <Card className="col-span-1 lg:col-span-2">
           <PaymentInfoCard order={order} showAdvancedDetails={true} />
@@ -504,6 +572,20 @@ const ViewOrderPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <PickupLocationDialog
+        open={pickupLocationDialogOpen}
+        onOpenChange={(open) => {
+          setPickupLocationDialogOpen(open);
+          if (!open) {
+            // Reset pending status change if dialog is closed without confirming
+            setPendingStatusChange(null);
+          }
+        }}
+        onConfirm={(pickupLocationData) => handlePickupLocationConfirm(pickupLocationData)}
+        onSkip={() => handlePickupLocationConfirm(undefined)}
+        isLoading={isLoading}
+      />
     </div>
   );
 };

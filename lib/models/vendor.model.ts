@@ -54,6 +54,9 @@ const vendorSchema = new mongoose.Schema({
   emailVerified: { type: Boolean, default: false }, // Email verification via OTP
   verificationToken: String,
   verificationTokenExpiry: Date,
+  // Shiprocket integration
+  shiprocket_pickup_location: { type: String, required: false }, // The pickup location name in Shiprocket
+  shiprocket_pickup_location_added: { type: Boolean, default: false }, // Whether pickup location has been added to Shiprocket
 });
 
 const Vendor = mongoose.models.Vendor || mongoose.model("Vendor", vendorSchema);
