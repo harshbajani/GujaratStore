@@ -90,8 +90,23 @@ export async function handleShiprocketOrderCreation(
       // Use custom pickup location provided by admin/vendor
       console.log('[Shiprocket Handler] Using custom pickup location:', customPickupLocation.name);
       
-      // Create pickup location name for custom location
-      const customLocationName = `Custom_${customPickupLocation.name.replace(/[^a-zA-Z0-9_]/g, '_')}_${Date.now()}`;
+      // Create pickup location name for custom location with 36 character limit
+      const sanitizedName = customPickupLocation.name.replace(/[^a-zA-Z0-9_]/g, '_');
+      const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+      let customLocationName = `Custom_${sanitizedName}_${timestamp}`;
+      
+      // Enforce 36 character limit (Shiprocket requirement)
+      if (customLocationName.length > 36) {
+        const prefixLength = 7 + timestamp.length + 1; // "Custom_" + timestamp + "_"
+        const maxNameLength = 36 - prefixLength;
+        const truncatedName = sanitizedName.slice(0, maxNameLength);
+        customLocationName = `Custom_${truncatedName}_${timestamp}`;
+        
+        // Final safety check
+        if (customLocationName.length > 36) {
+          customLocationName = customLocationName.slice(0, 36);
+        }
+      }
       
       // Add pickup location to Shiprocket
       const pickupResult = await sdk.pickups.addPickupLocation({

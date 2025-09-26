@@ -1,11 +1,12 @@
-import { SHIPROCKET_CONFIG } from './config';
-import { ShiprocketHttpClient } from './http-client';
-import { ShiprocketAuth } from './auth';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { SHIPROCKET_CONFIG } from "./config";
+import { ShiprocketHttpClient } from "./http-client";
+import { ShiprocketAuth } from "./auth";
 import {
   ShiprocketPickupLocationRequest,
   ShiprocketPickupLocationResponse,
   ShiprocketAPIResponse,
-} from './types';
+} from "./types";
 
 /**
  * Shiprocket Pickup Locations Module
@@ -25,16 +26,16 @@ export class ShiprocketPickups {
    */
   async getAllPickupLocations(): Promise<ShiprocketAPIResponse<any>> {
     try {
-      console.log('[Shiprocket Pickups] Fetching all pickup locations');
+      console.log("[Shiprocket Pickups] Fetching all pickup locations");
 
       const token = await this.auth.getToken();
       if (!token) {
         return {
           success: false,
           error: {
-            message: 'Authentication failed',
+            message: "Authentication failed",
             status: 401,
-            statusText: 'Unauthorized',
+            statusText: "Unauthorized",
           },
         };
       }
@@ -45,21 +46,32 @@ export class ShiprocketPickups {
       );
 
       if (response.success) {
-        console.log('[Shiprocket Pickups] Successfully fetched pickup locations');
+        console.log(
+          "[Shiprocket Pickups] Successfully fetched pickup locations"
+        );
       } else {
-        console.error('[Shiprocket Pickups] Failed to fetch pickup locations', response.error);
+        console.error(
+          "[Shiprocket Pickups] Failed to fetch pickup locations",
+          response.error
+        );
       }
 
       return response;
     } catch (error) {
-      console.error('[Shiprocket Pickups] Error fetching pickup locations:', error);
-      
+      console.error(
+        "[Shiprocket Pickups] Error fetching pickup locations:",
+        error
+      );
+
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Failed to fetch pickup locations',
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch pickup locations",
           status: 500,
-          statusText: 'Internal Server Error',
+          statusText: "Internal Server Error",
           response: error,
         },
       };
@@ -73,42 +85,56 @@ export class ShiprocketPickups {
     locationData: ShiprocketPickupLocationRequest
   ): Promise<ShiprocketAPIResponse<ShiprocketPickupLocationResponse>> {
     try {
-      console.log(`[Shiprocket Pickups] Adding pickup location: ${locationData.pickup_location}`);
+      console.log(
+        `[Shiprocket Pickups] Adding pickup location: ${locationData.pickup_location}`
+      );
 
       const token = await this.auth.getToken();
       if (!token) {
         return {
           success: false,
           error: {
-            message: 'Authentication failed',
+            message: "Authentication failed",
             status: 401,
-            statusText: 'Unauthorized',
+            statusText: "Unauthorized",
           },
         };
       }
 
-      const response = await this.httpClient.post<ShiprocketPickupLocationResponse>(
-        SHIPROCKET_CONFIG.ENDPOINTS.ADD_PICKUP_LOCATION,
-        locationData,
-        token
-      );
+      const response =
+        await this.httpClient.post<ShiprocketPickupLocationResponse>(
+          SHIPROCKET_CONFIG.ENDPOINTS.ADD_PICKUP_LOCATION,
+          locationData,
+          token
+        );
 
       if (response.success) {
-        console.log(`[Shiprocket Pickups] Successfully added pickup location: ${locationData.pickup_location}`);
+        console.log(
+          `[Shiprocket Pickups] Successfully added pickup location: ${locationData.pickup_location}`
+        );
       } else {
-        console.error(`[Shiprocket Pickups] Failed to add pickup location: ${locationData.pickup_location}`, response.error);
+        console.error(
+          `[Shiprocket Pickups] Failed to add pickup location: ${locationData.pickup_location}`,
+          response.error
+        );
       }
 
       return response;
     } catch (error) {
-      console.error('[Shiprocket Pickups] Error adding pickup location:', error);
-      
+      console.error(
+        "[Shiprocket Pickups] Error adding pickup location:",
+        error
+      );
+
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Failed to add pickup location',
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to add pickup location",
           status: 500,
-          statusText: 'Internal Server Error',
+          statusText: "Internal Server Error",
           response: error,
         },
       };
@@ -125,7 +151,7 @@ export class ShiprocketPickups {
       if (!vendor.store?.addresses) {
         return {
           success: false,
-          error: 'Vendor address not found',
+          error: "Vendor address not found",
         };
       }
 
@@ -138,14 +164,16 @@ export class ShiprocketPickups {
         email: vendor.email,
         phone: vendor.store.contact,
         address: address.address_line_1,
-        address_2: address.address_line_2 || '',
+        address_2: address.address_line_2 || "",
         city: address.locality,
         state: address.state,
-        country: 'India',
+        country: "India",
         pin_code: address.pincode,
       };
 
-      console.log(`[Shiprocket Pickups] Creating pickup location for vendor: ${vendor.name}`);
+      console.log(
+        `[Shiprocket Pickups] Creating pickup location for vendor: ${vendor.name}`
+      );
       const response = await this.addPickupLocation(pickupLocationData);
 
       if (response.success) {
@@ -156,38 +184,68 @@ export class ShiprocketPickups {
       } else {
         return {
           success: false,
-          error: response.error?.message || 'Failed to create pickup location',
+          error: response.error?.message || "Failed to create pickup location",
         };
       }
     } catch (error) {
-      console.error('[Shiprocket Pickups] Error creating vendor pickup location:', error);
+      console.error(
+        "[Shiprocket Pickups] Error creating vendor pickup location:",
+        error
+      );
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   /**
    * Generate standardized pickup location name for vendor
+   * Ensures name is under 36 character limit required by Shiprocket
    */
   generateLocationName(vendor: any): string {
-    const storeName = vendor.store?.storeName || 'Store';
-    const vendorId = vendor._id || 'unknown';
-    return `${storeName}_${vendorId}`.replace(/[^a-zA-Z0-9_]/g, '_');
+    const storeName = vendor.store?.storeName || "Store";
+    const vendorId = vendor._id || "unknown";
+
+    // Create base name
+    let baseName = `${storeName}_${vendorId}`.replace(/[^a-zA-Z0-9_]/g, "_");
+
+    // Enforce 36 character limit (Shiprocket requirement)
+    if (baseName.length > 36) {
+      // Keep first part of store name + last 8 chars of vendor ID
+      const vendorIdSuffix = vendorId.slice(-8);
+      const maxStoreNameLength = 36 - vendorIdSuffix.length - 1; // -1 for underscore
+      const truncatedStoreName = storeName.slice(0, maxStoreNameLength);
+      baseName = `${truncatedStoreName}_${vendorIdSuffix}`.replace(
+        /[^a-zA-Z0-9_]/g,
+        "_"
+      );
+
+      // Final safety check
+      if (baseName.length > 36) {
+        baseName = baseName.slice(0, 36);
+      }
+    }
+
+    return baseName;
   }
 
   /**
    * Get pickup location name for vendor (checks if already exists)
    */
   getVendorPickupLocation(vendor: any): string {
-    return vendor.shiprocket_pickup_location || this.generateLocationName(vendor);
+    return (
+      vendor.shiprocket_pickup_location || this.generateLocationName(vendor)
+    );
   }
 
   /**
    * Check if vendor has valid pickup location setup
    */
   hasValidPickupLocation(vendor: any): boolean {
-    return !!(vendor.shiprocket_pickup_location && vendor.shiprocket_pickup_location_added);
+    return !!(
+      vendor.shiprocket_pickup_location &&
+      vendor.shiprocket_pickup_location_added
+    );
   }
 }

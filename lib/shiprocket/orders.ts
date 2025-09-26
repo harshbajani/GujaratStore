@@ -1,11 +1,12 @@
-import { SHIPROCKET_CONFIG } from './config';
-import { ShiprocketHttpClient } from './http-client';
-import { ShiprocketAuth } from './auth';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { SHIPROCKET_CONFIG } from "./config";
+import { ShiprocketHttpClient } from "./http-client";
+import { ShiprocketAuth } from "./auth";
 import {
   ShiprocketOrderRequest,
   ShiprocketOrderResponse,
   ShiprocketAPIResponse,
-} from './types';
+} from "./types";
 
 /**
  * Shiprocket Orders Module
@@ -34,9 +35,9 @@ export class ShiprocketOrders {
         return {
           success: false,
           error: {
-            message: 'Authentication failed',
+            message: "Authentication failed",
             status: 401,
-            statusText: 'Unauthorized',
+            statusText: "Unauthorized",
           },
         };
       }
@@ -48,21 +49,27 @@ export class ShiprocketOrders {
       );
 
       if (response.success) {
-        console.log(`[Shiprocket Orders] Order created successfully: ${orderData.order_id}`);
+        console.log(
+          `[Shiprocket Orders] Order created successfully: ${orderData.order_id}`
+        );
       } else {
-        console.error(`[Shiprocket Orders] Failed to create order: ${orderData.order_id}`, response.error);
+        console.error(
+          `[Shiprocket Orders] Failed to create order: ${orderData.order_id}`,
+          response.error
+        );
       }
 
       return response;
     } catch (error) {
-      console.error('[Shiprocket Orders] Error creating order:', error);
-      
+      console.error("[Shiprocket Orders] Error creating order:", error);
+
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Failed to create order',
+          message:
+            error instanceof Error ? error.message : "Failed to create order",
           status: 500,
-          statusText: 'Internal Server Error',
+          statusText: "Internal Server Error",
           response: error,
         },
       };
@@ -81,9 +88,9 @@ export class ShiprocketOrders {
         return {
           success: false,
           error: {
-            message: 'Authentication failed',
+            message: "Authentication failed",
             status: 401,
-            statusText: 'Unauthorized',
+            statusText: "Unauthorized",
           },
         };
       }
@@ -95,21 +102,29 @@ export class ShiprocketOrders {
       );
 
       if (response.success) {
-        console.log(`[Shiprocket Orders] Orders cancelled successfully:`, orderIds);
+        console.log(
+          `[Shiprocket Orders] Orders cancelled successfully:`,
+          orderIds
+        );
       } else {
-        console.error(`[Shiprocket Orders] Failed to cancel orders:`, orderIds, response.error);
+        console.error(
+          `[Shiprocket Orders] Failed to cancel orders:`,
+          orderIds,
+          response.error
+        );
       }
 
       return response;
     } catch (error) {
-      console.error('[Shiprocket Orders] Error cancelling orders:', error);
-      
+      console.error("[Shiprocket Orders] Error cancelling orders:", error);
+
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Failed to cancel orders',
+          message:
+            error instanceof Error ? error.message : "Failed to cancel orders",
           status: 500,
-          statusText: 'Internal Server Error',
+          statusText: "Internal Server Error",
           response: error,
         },
       };
@@ -119,18 +134,23 @@ export class ShiprocketOrders {
   /**
    * Generate pickup for orders
    */
-  async generatePickup(orderIds: number[]): Promise<ShiprocketAPIResponse<any>> {
+  async generatePickup(
+    orderIds: number[]
+  ): Promise<ShiprocketAPIResponse<any>> {
     try {
-      console.log(`[Shiprocket Orders] Generating pickup for orders:`, orderIds);
+      console.log(
+        `[Shiprocket Orders] Generating pickup for orders:`,
+        orderIds
+      );
 
       const token = await this.auth.getToken();
       if (!token) {
         return {
           success: false,
           error: {
-            message: 'Authentication failed',
+            message: "Authentication failed",
             status: 401,
-            statusText: 'Unauthorized',
+            statusText: "Unauthorized",
           },
         };
       }
@@ -142,21 +162,31 @@ export class ShiprocketOrders {
       );
 
       if (response.success) {
-        console.log(`[Shiprocket Orders] Pickup generated successfully:`, orderIds);
+        console.log(
+          `[Shiprocket Orders] Pickup generated successfully:`,
+          orderIds
+        );
       } else {
-        console.error(`[Shiprocket Orders] Failed to generate pickup:`, orderIds, response.error);
+        console.error(
+          `[Shiprocket Orders] Failed to generate pickup:`,
+          orderIds,
+          response.error
+        );
       }
 
       return response;
     } catch (error) {
-      console.error('[Shiprocket Orders] Error generating pickup:', error);
-      
+      console.error("[Shiprocket Orders] Error generating pickup:", error);
+
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Failed to generate pickup',
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to generate pickup",
           status: 500,
-          statusText: 'Internal Server Error',
+          statusText: "Internal Server Error",
           response: error,
         },
       };
@@ -174,35 +204,87 @@ export class ShiprocketOrders {
   ): ShiprocketOrderRequest {
     // Calculate total weight and dimensions
     const totalWeight = order.items.reduce((weight: number, item: any) => {
-      return weight + item.quantity * SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.weight;
+      return (
+        weight + item.quantity * SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.weight
+      );
     }, 0);
 
     // Determine pickup location based on vendor or use default
-    const pickupLocation = vendorData?.shiprocket_pickup_location || 
-                          `${vendorData?.store?.storeName || 'Store'}_${vendorData?._id || 'default'}`.replace(/[^a-zA-Z0-9_]/g, '_') || 
-                          SHIPROCKET_CONFIG.DEFAULT_PICKUP_LOCATION;
+    let pickupLocation = vendorData?.shiprocket_pickup_location;
+
+    if (!pickupLocation && vendorData) {
+      // Generate pickup location name with 36 character limit
+      const storeName = vendorData?.store?.storeName || "Store";
+      const vendorId = vendorData?._id || "default";
+      let baseName = `${storeName}_${vendorId}`.replace(/[^a-zA-Z0-9_]/g, "_");
+
+      // Enforce 36 character limit (Shiprocket requirement)
+      if (baseName.length > 36) {
+        const vendorIdSuffix = vendorId.slice(-8);
+        const maxStoreNameLength = 36 - vendorIdSuffix.length - 1;
+        const truncatedStoreName = storeName.slice(0, maxStoreNameLength);
+        baseName = `${truncatedStoreName}_${vendorIdSuffix}`.replace(
+          /[^a-zA-Z0-9_]/g,
+          "_"
+        );
+
+        if (baseName.length > 36) {
+          baseName = baseName.slice(0, 36);
+        }
+      }
+
+      pickupLocation = baseName;
+    }
+
+    if (!pickupLocation) {
+      pickupLocation = SHIPROCKET_CONFIG.DEFAULT_PICKUP_LOCATION;
+    }
 
     return {
       order_id: order.orderId,
-      order_date: new Date(order.createdAt).toISOString().split('T')[0], // YYYY-MM-DD format
+      order_date: new Date(order.createdAt).toISOString().split("T")[0], // YYYY-MM-DD format
       pickup_location: pickupLocation,
       channel_id: SHIPROCKET_CONFIG.DEFAULT_CHANNEL_ID,
       comment: `Order from Gujarat Store - ${order.orderId}`,
 
       // Billing address
-      billing_customer_name: address.name.split(' ')[0] || address.name,
-      billing_last_name: address.name.split(' ').slice(1).join(' ') || '',
-      billing_address: address.address_line_1,
-      billing_address_2: address.address_line_2 || '',
-      billing_city: address.locality,
-      billing_pincode: address.pincode,
-      billing_state: address.state,
-      billing_country: 'India',
-      billing_email: user.email,
-      billing_phone: address.contact,
+      billing_customer_name:
+        address.name?.split(" ")[0] ||
+        address.name ||
+        user.name?.split(" ")[0] ||
+        "Customer",
+      billing_last_name:
+        address.name?.split(" ").slice(1).join(" ") ||
+        user.name?.split(" ").slice(1).join(" ") ||
+        "",
+      billing_address: address.address_line_1 || "",
+      billing_address_2: address.address_line_2 || "",
+      billing_city: address.locality || address.city || "",
+      billing_pincode: address.pincode || address.pin_code || "",
+      billing_state: address.state || "",
+      billing_country: "India",
+      billing_email: user.email || "",
+      billing_phone: address.contact || user.phone || "",
 
-      // Shipping address (same as billing)
-      shipping_is_billing: true,
+      // Shipping address (explicitly provide even if same as billing for better compatibility)
+      shipping_is_billing: false,
+      shipping_customer_name:
+        address.name?.split(" ")[0] ||
+        address.name ||
+        user.name?.split(" ")[0] ||
+        "Customer",
+      shipping_last_name:
+        address.name?.split(" ").slice(1).join(" ") ||
+        user.name?.split(" ").slice(1).join(" ") ||
+        "",
+      shipping_address: address.address_line_1 || "",
+      shipping_address_2: address.address_line_2 || "",
+      shipping_city: address.locality || address.city || "",
+      shipping_pincode: address.pincode || address.pin_code || "",
+      shipping_state: address.state || "",
+      shipping_country: "India",
+      shipping_email: user.email || "",
+      shipping_phone: address.contact || user.phone || "",
 
       // Order items
       order_items: order.items.map((item: any) => ({
@@ -216,7 +298,8 @@ export class ShiprocketOrders {
       })),
 
       // Payment and pricing
-      payment_method: order.paymentOption === 'cash-on-delivery' ? 'COD' : 'Prepaid',
+      payment_method:
+        order.paymentOption === "cash-on-delivery" ? "COD" : "Prepaid",
       shipping_charges: order.deliveryCharges,
       giftwrap_charges: 0,
       transaction_charges: 0,
@@ -236,7 +319,7 @@ export class ShiprocketOrders {
    */
   mapStatusToSystem(shiprocketStatus: string): string {
     const status = shiprocketStatus.toUpperCase();
-    return SHIPROCKET_CONFIG.STATUS_MAPPING[status] || 'processing';
+    return SHIPROCKET_CONFIG.STATUS_MAPPING[status] || "processing";
   }
 
   /**
