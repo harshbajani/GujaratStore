@@ -45,7 +45,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { PickupLocationDialog, PickupLocationData } from "@/components/dialogs/PickupLocationDialog";
+import { PickupLocationData } from "@/components/dialogs/PickupLocationDialog";
+import { EnhancedPickupLocationDialog } from "@/components/dialogs/EnhancedPickupLocationDialog";
 
 interface CancellationData {
   cancellationReason?: string;
@@ -385,16 +386,27 @@ const OrdersPage = () => {
     }
   };
 
-  const handlePickupLocationConfirm = async (pickupLocationData?: PickupLocationData) => {
+  const handlePickupLocationConfirm = async (
+    pickupLocationName?: string,
+    pickupLocationData?: PickupLocationData
+  ) => {
     if (!pendingStatusChange) return;
 
     setIsLoading(true);
     try {
+      // Create custom pickup location object if we have a selected pickup location name
+      let customPickupLocation = pickupLocationData;
+      if (pickupLocationName && !pickupLocationData) {
+        // When using existing location, we don't need to create a new one
+        // Just pass the location name to the handler
+        customPickupLocation = { pickup_location_name: pickupLocationName } as any;
+      }
+      
       const response = await updateOrderStatus(
         pendingStatusChange.orderId,
         pendingStatusChange.status,
         { isAdminCancellation: false },
-        pickupLocationData
+        customPickupLocation
       );
 
       if (response.success) {
@@ -403,7 +415,9 @@ const OrdersPage = () => {
         await fetchOrders();
         toast({
           title: "Success",
-          description: pickupLocationData 
+          description: pickupLocationName
+            ? `Order status updated with pickup location: ${pickupLocationName}!`
+            : pickupLocationData
             ? "Order status updated with custom pickup location!"
             : "Order status updated with default pickup location!",
           variant: "default",
@@ -957,7 +971,7 @@ const OrdersPage = () => {
         </DialogContent>
       </Dialog>
 
-      <PickupLocationDialog
+      <EnhancedPickupLocationDialog
         open={pickupLocationDialogOpen}
         onOpenChange={(open) => {
           setPickupLocationDialogOpen(open);
@@ -966,8 +980,10 @@ const OrdersPage = () => {
             setPendingStatusChange(null);
           }
         }}
-        onConfirm={(pickupLocationData) => handlePickupLocationConfirm(pickupLocationData)}
-        onSkip={() => handlePickupLocationConfirm(undefined)}
+        onConfirm={(pickupLocationName, pickupLocationData) =>
+          handlePickupLocationConfirm(pickupLocationName, pickupLocationData)
+        }
+        onSkip={() => handlePickupLocationConfirm()}
         isLoading={isLoading}
       />
     </div>

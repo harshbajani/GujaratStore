@@ -40,8 +40,8 @@ import {
   useUserDetails,
 } from "@/hooks/useOrderHooks";
 import { PaymentInfoCard } from "@/components/PaymentInfo/PaymentInfoComponents";
-import { ShippingInfo } from "@/components/admin/ShippingInfo";
-import { PickupLocationDialog, PickupLocationData } from "@/components/dialogs/PickupLocationDialog";
+import EnhancedShippingInfo from "@/components/admin/EnhancedShippingInfo";
+import ShiprocketPriceCalculator from "@/components/admin/ShiprocketPriceCalculator";
 
 interface CancellationData {
   cancellationReason?: string;
@@ -57,8 +57,6 @@ const ViewOrderPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
-  const [pickupLocationDialogOpen, setPickupLocationDialogOpen] = useState(false);
-  const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(null);
 
   const { order, loading, fetchOrder } = useOrder(orderId);
   const { address } = useShippingAddress(order?.addressId);
@@ -110,8 +108,7 @@ const ViewOrderPage = () => {
   const updateOrderStatus = async (
     id: string,
     status: string,
-    cancellationData: CancellationData,
-    customPickupLocation?: PickupLocationData
+    cancellationData: CancellationData
   ) => {
     try {
       const response = await fetch(`/api/order/byId/${id}`, {
@@ -119,10 +116,9 @@ const ViewOrderPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          status, 
+        body: JSON.stringify({
+          status,
           ...cancellationData,
-          ...(customPickupLocation && { customPickupLocation })
         }),
       });
 
@@ -143,11 +139,8 @@ const ViewOrderPage = () => {
         return;
       }
 
-      if (status === "ready to ship") {
-        setPendingStatusChange(status);
-        setPickupLocationDialogOpen(true);
-        return;
-      }
+      // For vendor orders, "ready to ship" should use vendor store address automatically
+      // No need for pickup location dialog - vendor orders always use vendor store address
 
       const response = await updateOrderStatus(order._id, status, {
         isVendorCancellation: false,
@@ -208,48 +201,6 @@ const ViewOrderPage = () => {
       toast({
         title: "Error",
         description: "Failed to cancel order",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePickupLocationConfirm = async (pickupLocationData?: PickupLocationData) => {
-    if (!order || !pendingStatusChange) return;
-
-    setIsLoading(true);
-    try {
-      const response = await updateOrderStatus(
-        order._id,
-        pendingStatusChange,
-        { isVendorCancellation: false },
-        pickupLocationData
-      );
-
-      if (response.success) {
-        setPickupLocationDialogOpen(false);
-        setPendingStatusChange(null);
-        fetchOrder();
-        toast({
-          title: "Success",
-          description: pickupLocationData 
-            ? "Order status updated with custom pickup location!"
-            : "Order status updated with default pickup location!",
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: response.message || "Failed to update order status",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error updating order status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update order status",
         variant: "destructive",
       });
     } finally {
@@ -327,8 +278,12 @@ const ViewOrderPage = () => {
                   </Button>
                   <Button
                     size="sm"
-                    variant={order.status === "ready to ship" ? "default" : "outline"}
-                    className={order.status === "ready to ship" ? "bg-brand" : ""}
+                    variant={
+                      order.status === "ready to ship" ? "default" : "outline"
+                    }
+                    className={
+                      order.status === "ready to ship" ? "bg-brand" : ""
+                    }
                     onClick={() => handleStatusChange("ready to ship")}
                   >
                     Ready to Ship
@@ -380,7 +335,8 @@ const ViewOrderPage = () => {
                     {order.paymentOption === "cash-on-delivery"
                       ? "COD"
                       : order.paymentStatus
-                      ? order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)
+                      ? order.paymentStatus.charAt(0).toUpperCase() +
+                        order.paymentStatus.slice(1)
                       : "Pending"}
                   </Badge>
                 </p>
@@ -390,7 +346,7 @@ const ViewOrderPage = () => {
         </Card>
 
         {/* Order Items Card */}
-        <Card className="col-span-1 lg:col-span-2">
+        <Card className="col-span-1">
           <CardHeader className="bg-gray-50 border-b">
             <CardTitle>Order Items</CardTitle>
           </CardHeader>
@@ -501,9 +457,18 @@ const ViewOrderPage = () => {
           </CardContent>
         </Card>
 
-        {/* Shipping Information Card */}
-        <Card className="col-span-1 lg:col-span-3">
-          <ShippingInfo order={order} />
+        {/* Enhanced Shipping Information Card */}
+        <div className="col-span-1 lg:col-span-3">
+          <EnhancedShippingInfo
+            order={order}
+            user={userDetails}
+            address={address}
+          />
+        </div>
+
+        {/* Shiprocket Price Calculator Card */}
+        <Card className="col-span-1">
+          <ShiprocketPriceCalculator order={order} address={address} />
         </Card>
 
         {/* Enhanced Payment Information Card */}
@@ -553,20 +518,6 @@ const ViewOrderPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <PickupLocationDialog
-        open={pickupLocationDialogOpen}
-        onOpenChange={(open) => {
-          setPickupLocationDialogOpen(open);
-          if (!open) {
-            // Reset pending status change if dialog is closed without confirming
-            setPendingStatusChange(null);
-          }
-        }}
-        onConfirm={(pickupLocationData) => handlePickupLocationConfirm(pickupLocationData)}
-        onSkip={() => handlePickupLocationConfirm(undefined)}
-        isLoading={isLoading}
-      />
     </div>
   );
 };

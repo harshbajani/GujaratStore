@@ -286,6 +286,41 @@ export const productSchema = z
     metaTitle: z.string().optional(),
     metaKeywords: z.string().optional(),
     metaDescription: z.string().optional(),
+    // Shipping weight and dimensions for Shiprocket
+    deadWeight: z
+      .number()
+      .positive("Dead weight must be positive")
+      .default(0.5)
+      .optional(),
+    dimensions: z
+      .object({
+        length: z
+          .number()
+          .positive("Length must be positive")
+          .default(10)
+          .optional(),
+        width: z
+          .number()
+          .positive("Width must be positive")
+          .default(10)
+          .optional(),
+        height: z
+          .number()
+          .positive("Height must be positive")
+          .default(10)
+          .optional(),
+      })
+      .optional(),
+    volumetricWeight: z
+      .number()
+      .nonnegative("Volumetric weight must be non-negative")
+      .default(0)
+      .optional(),
+    appliedWeight: z
+      .number()
+      .nonnegative("Applied weight must be non-negative")
+      .default(0)
+      .optional(),
   })
   .refine(
     (data) => {
@@ -440,6 +475,41 @@ export const adminProductSchema = z
     metaTitle: z.string().optional(),
     metaKeywords: z.string().optional(),
     metaDescription: z.string().optional(),
+    // Shipping weight and dimensions for Shiprocket
+    deadWeight: z
+      .number()
+      .positive("Dead weight must be positive")
+      .default(0.5)
+      .optional(),
+    dimensions: z
+      .object({
+        length: z
+          .number()
+          .positive("Length must be positive")
+          .default(10)
+          .optional(),
+        width: z
+          .number()
+          .positive("Width must be positive")
+          .default(10)
+          .optional(),
+        height: z
+          .number()
+          .positive("Height must be positive")
+          .default(10)
+          .optional(),
+      })
+      .optional(),
+    volumetricWeight: z
+      .number()
+      .nonnegative("Volumetric weight must be non-negative")
+      .default(0)
+      .optional(),
+    appliedWeight: z
+      .number()
+      .nonnegative("Applied weight must be non-negative")
+      .default(0)
+      .optional(),
   })
   .refine(
     (data) => {

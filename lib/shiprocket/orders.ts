@@ -202,12 +202,24 @@ export class ShiprocketOrders {
     user: any,
     vendorData?: any
   ): ShiprocketOrderRequest {
-    // Calculate total weight and dimensions
+    // Calculate total weight and dimensions from products
     const totalWeight = order.items.reduce((weight: number, item: any) => {
-      return (
-        weight + item.quantity * SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.weight
-      );
+      const itemWeight = item.appliedWeight || item.deadWeight || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.weight;
+      return weight + (item.quantity * itemWeight);
     }, 0);
+
+    // Calculate maximum dimensions from all items
+    let maxLength = SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.length;
+    let maxWidth = SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.breadth;
+    let maxHeight = SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.height;
+    
+    order.items.forEach((item: any) => {
+      if (item.dimensions) {
+        maxLength = Math.max(maxLength, item.dimensions.length || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.length);
+        maxWidth = Math.max(maxWidth, item.dimensions.width || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.breadth);
+        maxHeight = Math.max(maxHeight, item.dimensions.height || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.height);
+      }
+    });
 
     // Determine pickup location based on vendor or use default
     let pickupLocation = vendorData?.shiprocket_pickup_location;
@@ -295,6 +307,7 @@ export class ShiprocketOrders {
         discount: 0,
         tax: 0,
         hsn: 0,
+        category: item.secondaryCategory?.name || "General", // Use secondary category name
       })),
 
       // Payment and pricing
@@ -306,11 +319,11 @@ export class ShiprocketOrders {
       total_discount: order.discountAmount || 0,
       sub_total: order.subtotal,
 
-      // Package dimensions
-      length: SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.length,
-      breadth: SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.breadth,
-      height: SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.height,
-      weight: totalWeight,
+      // Package dimensions - use calculated values from products
+      length: Math.round(maxLength),
+      breadth: Math.round(maxWidth),
+      height: Math.round(maxHeight),
+      weight: Math.max(totalWeight, 0.5), // Minimum weight of 0.5kg
     };
   }
 

@@ -182,6 +182,20 @@ export class ShiprocketPickups {
           location_name: locationName,
         };
       } else {
+        // Check if the error is about existing inactive address
+        const errorMessage = response.error?.message || response.error?.response || "";
+        if (typeof errorMessage === 'string' && 
+            (errorMessage.includes("Address name already exists and is inactive") ||
+             errorMessage.includes("already exists and is inactive"))) {
+          console.log(
+            `[Shiprocket Pickups] Pickup location ${locationName} already exists but is inactive. Using existing location.`
+          );
+          return {
+            success: true,
+            location_name: locationName,
+          };
+        }
+        
         return {
           success: false,
           error: response.error?.message || "Failed to create pickup location",

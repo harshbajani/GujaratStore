@@ -14,7 +14,7 @@ export const SHIPROCKET_CONFIG: ShiprocketConfig = {
   PASSWORD: process.env.SHIPROCKET_PASSWORD,
   
   // Default values for testing
-  DEFAULT_PICKUP_LOCATION: 'Primary', // This should match your pickup location name in Shiprocket
+  DEFAULT_PICKUP_LOCATION: process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION || 'The_Gujarat_Store_67b331ad', // This should match your pickup location name in Shiprocket
   DEFAULT_CHANNEL_ID: 'custom', // Custom channel for API orders
   
   // Order status mapping from Shiprocket to your system

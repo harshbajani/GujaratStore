@@ -39,7 +39,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { PickupLocationDialog, PickupLocationData } from "@/components/dialogs/PickupLocationDialog";
 import { useToast } from "@/hooks/use-toast";
 import { withVendorProtection } from "../../HOC";
 import { PaymentInfoRow } from "@/components/PaymentInfo/PaymentInfoComponents";
@@ -123,8 +122,7 @@ const deleteOrder = async (id: string) => {
 const updateOrderStatus = async (
   id: string,
   status: string,
-  cancellationData: CancellationData,
-  customPickupLocation?: PickupLocationData
+  cancellationData: CancellationData
 ) => {
   try {
     const response = await fetch(`/api/order/byId/${id}`, {
@@ -134,8 +132,7 @@ const updateOrderStatus = async (
       },
       body: JSON.stringify({ 
         status, 
-        ...cancellationData,
-        ...(customPickupLocation && { customPickupLocation })
+        ...cancellationData
       }),
     });
 
@@ -193,8 +190,6 @@ const OrdersPage = () => {
   const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
-  const [pickupLocationDialogOpen, setPickupLocationDialogOpen] = useState(false);
-  const [pendingStatusChange, setPendingStatusChange] = useState<{ orderId: string; status: string } | null>(null);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -314,11 +309,8 @@ const OrdersPage = () => {
         return;
       }
 
-      if (status === "ready to ship") {
-        setPendingStatusChange({ orderId: id, status });
-        setPickupLocationDialogOpen(true);
-        return;
-      }
+      // For vendor orders, "ready to ship" should use vendor store address automatically
+      // No need for pickup location dialog - vendor orders always use vendor store address
 
       const response = await updateOrderStatus(id, status, {
         cancellationReason: "",
@@ -387,47 +379,6 @@ const OrdersPage = () => {
     }
   };
 
-  const handlePickupLocationConfirm = async (pickupLocationData?: PickupLocationData) => {
-    if (!pendingStatusChange) return;
-
-    setIsLoading(true);
-    try {
-      const response = await updateOrderStatus(
-        pendingStatusChange.orderId,
-        pendingStatusChange.status,
-        { isVendorCancellation: false },
-        pickupLocationData
-      );
-
-      if (response.success) {
-        setPickupLocationDialogOpen(false);
-        setPendingStatusChange(null);
-        await fetchOrders();
-        toast({
-          title: "Success",
-          description: pickupLocationData 
-            ? "Order status updated with custom pickup location!"
-            : "Order status updated with default pickup location!",
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: response.message || "Failed to update order status",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error updating order status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update order status",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -959,19 +910,6 @@ const OrdersPage = () => {
         </DialogContent>
       </Dialog>
 
-      <PickupLocationDialog
-        open={pickupLocationDialogOpen}
-        onOpenChange={(open) => {
-          setPickupLocationDialogOpen(open);
-          if (!open) {
-            // Reset pending status change if dialog is closed without confirming
-            setPendingStatusChange(null);
-          }
-        }}
-        onConfirm={(pickupLocationData) => handlePickupLocationConfirm(pickupLocationData)}
-        onSkip={() => handlePickupLocationConfirm(undefined)}
-        isLoading={isLoading}
-      />
     </div>
   );
 };

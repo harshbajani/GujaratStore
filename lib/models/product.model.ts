@@ -145,6 +145,45 @@ const productSchema = new Schema({
     required: false,
     default: "male",
   },
+  // Shipping weight and dimensions for Shiprocket
+  deadWeight: {
+    type: Number,
+    required: false,
+    default: 0.5, // kg
+    min: 0,
+  },
+  dimensions: {
+    length: {
+      type: Number,
+      required: false,
+      default: 10, // cm
+      min: 0,
+    },
+    width: {
+      type: Number,
+      required: false,
+      default: 10, // cm
+      min: 0,
+    },
+    height: {
+      type: Number,
+      required: false,
+      default: 10, // cm
+      min: 0,
+    },
+  },
+  volumetricWeight: {
+    type: Number,
+    required: false,
+    default: 0,
+    min: 0,
+  },
+  appliedWeight: {
+    type: Number,
+    required: false,
+    default: 0,
+    min: 0,
+  },
   productRating: { type: Number, required: false },
   productReviews: [
     { type: Schema.Types.ObjectId, ref: "ProductReviews", required: false },

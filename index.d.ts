@@ -383,6 +383,15 @@ declare interface IProduct {
   metaTitle?: string;
   metaKeywords?: string;
   metaDescription?: string;
+  // Shipping weight and dimensions for Shiprocket
+  deadWeight?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  volumetricWeight?: number;
+  appliedWeight?: number;
 }
 
 declare interface IAdminProduct {
@@ -420,6 +429,15 @@ declare interface IAdminProduct {
   metaTitle?: string;
   metaKeywords?: string;
   metaDescription?: string;
+  // Shipping weight and dimensions for Shiprocket
+  deadWeight?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  volumetricWeight?: number;
+  appliedWeight?: number;
 }
 
 declare type ProductWithPopulatedFields = IProduct & {
@@ -501,6 +519,15 @@ declare interface IProductResponse {
   metaTitle?: string;
   metaKeywords?: string;
   metaDescription?: string;
+  // Shipping weight and dimensions for Shiprocket
+  deadWeight?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  volumetricWeight?: number;
+  appliedWeight?: number;
 }
 
 declare interface IProductReview {
@@ -538,8 +565,7 @@ declare interface CheckoutData {
   discountCode: string;
   total: number;
 }
-
-declare interface OrderItem {
+declare interface IOrderItem {
   _id: string;
   productId: string;
   productName: string;
@@ -555,6 +581,19 @@ declare interface OrderItem {
     discountValue: number;
   };
   vendorId?: string;
+  // Shipping weight and dimensions for Shiprocket
+  deadWeight?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  volumetricWeight?: number;
+  appliedWeight?: number;
+  secondaryCategory?: {
+    _id: string;
+    name: string;
+  };
 }
 
 // declare interface IOrder {

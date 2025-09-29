@@ -11,7 +11,7 @@ interface IOrder {
   orderId: string;
   status: string;
   userId: string;
-  items: OrderItem[];
+  items: IOrderItem[];
   subtotal: number;
   deliveryCharges: number;
   total: number;
@@ -114,7 +114,7 @@ export class OrdersService {
   // Helper method to handle order creation with retry logic for duplicate orderIds
   private static async createOrderWithRetry(
     orderData: Partial<IOrder>,
-    items: OrderItem[],
+    items: IOrderItem[],
     maxRetries: number = 3
   ): Promise<ActionResponse<IOrder>> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -806,7 +806,7 @@ export class OrdersService {
   }
 
   private static async validateProductStock(
-    items: OrderItem[]
+    items: IOrderItem[]
   ): Promise<{ success: boolean; error?: string }> {
     try {
       for (const item of items) {
@@ -843,7 +843,7 @@ export class OrdersService {
   }
 
   private static async updateProductQuantities(
-    items: OrderItem[]
+    items: IOrderItem[]
   ): Promise<void> {
     try {
       const updates = items.map((item) =>

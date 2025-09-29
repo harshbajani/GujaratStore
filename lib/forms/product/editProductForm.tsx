@@ -926,6 +926,143 @@ const EditProductsForm = () => {
           />
         </div>
 
+        {/* Weight and Dimensions Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold mb-4">Shipping Information</h3>
+          <div className="grid grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="deadWeight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Dead Weight (kg)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      placeholder="0.5"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0.5)}
+                      value={field.value || 0.5}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="volumetricWeight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Volumetric Weight (kg)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      placeholder="Auto-calculated"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      value={field.value || 0}
+                      readOnly
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-4 gap-6">
+            <FormField
+              control={form.control}
+              name="dimensions.length"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Length (cm)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      placeholder="10"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 10)}
+                      value={field.value || 10}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="dimensions.width"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Width (cm)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      placeholder="10"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 10)}
+                      value={field.value || 10}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="dimensions.height"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Height (cm)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      placeholder="10"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 10)}
+                      value={field.value || 10}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="appliedWeight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Applied Weight (kg)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      placeholder="Auto-calculated"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      value={field.value || 0}
+                      readOnly
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
         <div className="w-full">
           <FormField
             control={form.control}

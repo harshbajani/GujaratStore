@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { action, vendorId } = await request.json();
+    const { action, vendorId, pickup_location, name, email, phone, address, address_2, city, state, country, pin_code } = await request.json();
 
     if (action === "create") {
       if (!vendorId) {
@@ -58,6 +58,76 @@ export async function POST(request: Request) {
       } else {
         return NextResponse.json(
           { success: false, message: result.message },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (action === "create-admin") {
+      // Admin creating a custom pickup location
+      if (!pickup_location || !name || !email || !phone || !address || !city || !state || !country || !pin_code) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: "Missing required fields: pickup_location, name, email, phone, address, city, state, country, pin_code" 
+          },
+          { status: 400 }
+        );
+      }
+
+      const sdk = getShiprocketSDK();
+      const token = await sdk.auth.getToken();
+      
+      if (!token) {
+        return NextResponse.json(
+          { success: false, message: "Authentication failed" },
+          { status: 401 }
+        );
+      }
+
+      console.log("[Admin Pickup] Creating new pickup location:", pickup_location);
+
+      // Call Shiprocket API to create pickup location
+      const response = await sdk.http.post(
+        "/settings/company/addpickup",
+        {
+          pickup_location,
+          name,
+          email,
+          phone,
+          address,
+          address_2: address_2 || '',
+          city,
+          state,
+          country,
+          pin_code: pin_code.toString()
+        },
+        token
+      );
+
+      if (response.success) {
+        return NextResponse.json({
+          success: true,
+          message: "Pickup location created successfully",
+          data: {
+            pickup_location,
+            name,
+            email,
+            phone,
+            address,
+            city,
+            state,
+            country,
+            pin_code
+          }
+        });
+      } else {
+        console.error("[Admin Pickup] Create API Error:", response.error);
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: response.error?.message || "Failed to create pickup location" 
+          },
           { status: 400 }
         );
       }
