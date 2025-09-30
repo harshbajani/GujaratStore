@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/shiprocket/sync-status",
+      "schedule": "0 */12 * * *"
+    }
+  ],
+  "env": {
+    "CRON_SECRET": "@cron-secret"
+  },
+  "functions": {
+    "app/api/shiprocket/sync-status/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}
