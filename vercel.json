@@ -10,7 +10,7 @@
   },
   "functions": {
     "app/api/shiprocket/sync-status/route.ts": {
-      "maxDuration": 300
+      "maxDuration": 60
     }
   }
 }
