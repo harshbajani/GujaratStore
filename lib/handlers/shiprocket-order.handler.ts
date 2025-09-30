@@ -57,8 +57,8 @@ export async function handleShiprocketOrderCreation(
     await connectToDB();
     const sdk = getShiprocketSDK();
 
-    // Get order details
-    const order = await OrdersService.getOrderById(orderId);
+    // Get order details with populated product data for weight/dimensions
+    const order = await OrdersService.getOrderByIdWithProducts(orderId);
     if (!order.success || !order.data) {
       return {
         success: false,

@@ -792,7 +792,7 @@ const AddProductsForm = () => {
               name="volumetricWeight"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Volumetric Weight (kg)</FormLabel>
+                  <FormLabel>Volumetric Weight (kg) <span className="text-xs text-gray-500">(Auto-calculated)</span></FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -802,6 +802,7 @@ const AddProductsForm = () => {
                       {...field}
                       onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       value={field.value || 0}
+                      className="bg-gray-50"
                       readOnly
                     />
                   </FormControl>
@@ -879,7 +880,7 @@ const AddProductsForm = () => {
               name="appliedWeight"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Applied Weight (kg)</FormLabel>
+                  <FormLabel>Applied Weight (kg) <span className="text-xs text-gray-500">(Auto-calculated)</span></FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -889,6 +890,7 @@ const AddProductsForm = () => {
                       {...field}
                       onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       value={field.value || 0}
+                      className="bg-gray-50"
                       readOnly
                     />
                   </FormControl>

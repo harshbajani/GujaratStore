@@ -93,6 +93,14 @@ const EditProductsForm = () => {
       productRating: 0,
       productWarranty: "",
       productReturnPolicy: "",
+      deadWeight: 0.5,
+      dimensions: {
+        length: 10,
+        width: 10,
+        height: 10,
+      },
+      volumetricWeight: 0,
+      appliedWeight: 0,
     },
   });
 
@@ -129,14 +137,35 @@ const EditProductsForm = () => {
   const deadWeight = form.watch("deadWeight");
   
   useEffect(() => {
-    if (dimensions?.length && dimensions?.width && dimensions?.height) {
+    // Add debugging
+    console.log('Weight calculation triggered:', { dimensions, deadWeight });
+    
+    // Ensure we have valid dimensions and deadWeight
+    const length = dimensions?.length || 0;
+    const width = dimensions?.width || 0;
+    const height = dimensions?.height || 0;
+    const weight = deadWeight || 0.5;
+    
+    if (length > 0 && width > 0 && height > 0) {
       // Shiprocket volumetric weight formula: (L x W x H) / 5000
-      const volumetricWeight = (dimensions.length * dimensions.width * dimensions.height) / 5000;
-      form.setValue("volumetricWeight", Math.round(volumetricWeight * 100) / 100);
+      const volumetricWeight = (length * width * height) / 5000;
+      const roundedVolumetricWeight = Math.round(volumetricWeight * 100) / 100;
       
       // Applied weight is the higher of dead weight and volumetric weight
-      const appliedWeight = Math.max(deadWeight || 0.5, volumetricWeight);
-      form.setValue("appliedWeight", Math.round(appliedWeight * 100) / 100);
+      const appliedWeight = Math.max(weight, roundedVolumetricWeight);
+      const roundedAppliedWeight = Math.round(appliedWeight * 100) / 100;
+      
+      console.log('Calculated weights:', {
+        volumetricWeight: roundedVolumetricWeight,
+        appliedWeight: roundedAppliedWeight,
+        formula: `(${length} × ${width} × ${height}) ÷ 5000 = ${roundedVolumetricWeight}`,
+        maxOf: `Max(${weight}, ${roundedVolumetricWeight}) = ${roundedAppliedWeight}`
+      });
+      
+      form.setValue("volumetricWeight", roundedVolumetricWeight);
+      form.setValue("appliedWeight", roundedAppliedWeight);
+    } else {
+      console.log('Skipping calculation - invalid dimensions:', { length, width, height });
     }
   }, [dimensions, deadWeight, form]);
 
@@ -282,6 +311,15 @@ const EditProductsForm = () => {
             secondaryCategory: product.secondaryCategory?._id || "",
             brands: product.brands?._id || "",
             productSize: productSizeData, // Keep the complete size pricing data
+            // Ensure dimensions object is properly structured
+            dimensions: {
+              length: product.dimensions?.length || 10,
+              width: product.dimensions?.width || 10,
+              height: product.dimensions?.height || 10,
+            },
+            deadWeight: product.deadWeight || 0.5,
+            volumetricWeight: product.volumetricWeight || 0,
+            appliedWeight: product.appliedWeight || 0,
           });
 
           // If the product already has attributes, seed them to the field array
@@ -313,6 +351,28 @@ const EditProductsForm = () => {
             replace(normalized);
             setPreloadedAttributeNames(nameMap);
           }
+          
+          // Manually trigger weight calculations after data is loaded
+          setTimeout(() => {
+            const dims = product.dimensions || {};
+            const weight = product.deadWeight || 0.5;
+            console.log('Manual weight calculation trigger for loaded product:', { dims, weight });
+            
+            if (dims.length && dims.width && dims.height) {
+              const volumetricWeight = (dims.length * dims.width * dims.height) / 5000;
+              const roundedVolumetricWeight = Math.round(volumetricWeight * 100) / 100;
+              const appliedWeight = Math.max(weight, roundedVolumetricWeight);
+              const roundedAppliedWeight = Math.round(appliedWeight * 100) / 100;
+              
+              form.setValue("volumetricWeight", roundedVolumetricWeight);
+              form.setValue("appliedWeight", roundedAppliedWeight);
+              
+              console.log('Manual calculation completed:', {
+                volumetricWeight: roundedVolumetricWeight,
+                appliedWeight: roundedAppliedWeight
+              });
+            }
+          }, 100);
         }
       } catch (error) {
         console.error("Error fetching product:", error);
@@ -889,7 +949,36 @@ const EditProductsForm = () => {
 
         {/* Weight and Dimensions Section */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold mb-4">Shipping Information</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Shipping Information</h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const currentDimensions = form.getValues("dimensions");
+                const currentDeadWeight = form.getValues("deadWeight");
+                console.log('Manual recalculate triggered:', { currentDimensions, currentDeadWeight });
+                
+                if (currentDimensions?.length && currentDimensions?.width && currentDimensions?.height) {
+                  const volumetricWeight = (currentDimensions.length * currentDimensions.width * currentDimensions.height) / 5000;
+                  const roundedVolumetricWeight = Math.round(volumetricWeight * 100) / 100;
+                  const appliedWeight = Math.max(currentDeadWeight || 0.5, roundedVolumetricWeight);
+                  const roundedAppliedWeight = Math.round(appliedWeight * 100) / 100;
+                  
+                  form.setValue("volumetricWeight", roundedVolumetricWeight);
+                  form.setValue("appliedWeight", roundedAppliedWeight);
+                  
+                  console.log('Manual recalculation completed:', {
+                    formula: `(${currentDimensions.length} × ${currentDimensions.width} × ${currentDimensions.height}) ÷ 5000 = ${roundedVolumetricWeight}`,
+                    result: `Applied Weight = Max(${currentDeadWeight || 0.5}, ${roundedVolumetricWeight}) = ${roundedAppliedWeight}`
+                  });
+                }
+              }}
+            >
+              🔄 Recalculate Weights
+            </Button>
+          </div>
           <div className="grid grid-cols-2 gap-6">
             <FormField
               control={form.control}
@@ -917,7 +1006,7 @@ const EditProductsForm = () => {
               name="volumetricWeight"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Volumetric Weight (kg)</FormLabel>
+                  <FormLabel>Volumetric Weight (kg) <span className="text-xs text-gray-500">(Auto-calculated)</span></FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -927,6 +1016,7 @@ const EditProductsForm = () => {
                       {...field}
                       onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       value={field.value || 0}
+                      className="bg-gray-50"
                       readOnly
                     />
                   </FormControl>
@@ -1004,7 +1094,7 @@ const EditProductsForm = () => {
               name="appliedWeight"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Applied Weight (kg)</FormLabel>
+                  <FormLabel>Applied Weight (kg) <span className="text-xs text-gray-500">(Auto-calculated)</span></FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -1014,6 +1104,7 @@ const EditProductsForm = () => {
                       {...field}
                       onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       value={field.value || 0}
+                      className="bg-gray-50"
                       readOnly
                     />
                   </FormControl>

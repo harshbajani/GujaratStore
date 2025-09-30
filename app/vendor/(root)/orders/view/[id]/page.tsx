@@ -458,7 +458,7 @@ const ViewOrderPage = () => {
         </Card>
 
         {/* Enhanced Shipping Information Card */}
-        <div className="col-span-1 lg:col-span-3">
+        <div className="col-span-1 lg:col-span-3 h-full">
           <EnhancedShippingInfo
             order={order}
             user={userDetails}

@@ -45,7 +45,10 @@ export const PaymentInfoRow: React.FC<PaymentInfoRowProps> = ({
   showPaymentId = false,
   showProcessingTime = false,
 }) => {
-  const statusBadge = getPaymentStatusBadge(order.paymentStatus, order.refundInfo);
+  const statusBadge = getPaymentStatusBadge(
+    order.paymentStatus,
+    order.refundInfo
+  );
   const paymentMethod = formatPaymentMethod(order.paymentOption);
   // Always use order.total for display as it's the definitive amount
   // payment_amount from Razorpay is in paise and may be inconsistent
@@ -92,7 +95,10 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
   order,
   showAdvancedDetails = false,
 }) => {
-  const statusBadge = getPaymentStatusBadge(order.paymentStatus, order.refundInfo);
+  const statusBadge = getPaymentStatusBadge(
+    order.paymentStatus,
+    order.refundInfo
+  );
   const paymentMethod = formatPaymentMethod(order.paymentOption);
   const paymentReference = formatPaymentReference(
     order.paymentInfo?.razorpay_payment_id,
@@ -114,7 +120,7 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="pt-6 space-y-4">
+      <CardContent className="pt-6 space-y-4 h-full">
         {/* Payment Status and Method */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
@@ -144,9 +150,9 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
               <IndianRupee className="h-4 w-4" />
               Amount
             </p>
-          <p className="text-lg font-bold text-green-600">
-            {formatPaymentAmount(order.total)}
-          </p>
+            <p className="text-lg font-bold text-green-600">
+              {formatPaymentAmount(order.total)}
+            </p>
           </div>
 
           <div className="space-y-1">
@@ -284,20 +290,28 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                 <div className="h-2 w-2 bg-purple-500 rounded-full"></div>
                 Refund Information
               </h4>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {order.refundInfo.refund_status && (
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-600">Refund Status</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      Refund Status
+                    </p>
                     <Badge
-                      variant={getPaymentStatusBadge(undefined, order.refundInfo).variant}
-                      className={getPaymentStatusBadge(undefined, order.refundInfo).className}
+                      variant={
+                        getPaymentStatusBadge(undefined, order.refundInfo)
+                          .variant
+                      }
+                      className={
+                        getPaymentStatusBadge(undefined, order.refundInfo)
+                          .className
+                      }
                     >
                       {getPaymentStatusBadge(undefined, order.refundInfo).label}
                     </Badge>
                   </div>
                 )}
-                
+
                 {order.refundInfo.refund_amount && (
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-gray-600 flex items-center gap-1">
@@ -310,8 +324,9 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   </div>
                 )}
               </div>
-              
-              {(order.refundInfo.refund_initiated_at || order.refundInfo.refund_processed_at) && (
+
+              {(order.refundInfo.refund_initiated_at ||
+                order.refundInfo.refund_processed_at) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {order.refundInfo.refund_initiated_at && (
                     <div className="space-y-1">
@@ -320,15 +335,17 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                         Refund Initiated
                       </p>
                       <p className="text-sm">
-                        {order.refundInfo.refund_initiated_at && formatPaymentDate(
-                          typeof order.refundInfo.refund_initiated_at === 'string' 
-                            ? order.refundInfo.refund_initiated_at
-                            : order.refundInfo.refund_initiated_at.toISOString()
-                        )}
+                        {order.refundInfo.refund_initiated_at &&
+                          formatPaymentDate(
+                            typeof order.refundInfo.refund_initiated_at ===
+                              "string"
+                              ? order.refundInfo.refund_initiated_at
+                              : order.refundInfo.refund_initiated_at.toISOString()
+                          )}
                       </p>
                     </div>
                   )}
-                  
+
                   {order.refundInfo.refund_processed_at && (
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-gray-600 flex items-center gap-1">
@@ -336,17 +353,19 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                         Refund Processed
                       </p>
                       <p className="text-sm">
-                        {order.refundInfo.refund_processed_at && formatPaymentDate(
-                          typeof order.refundInfo.refund_processed_at === 'string' 
-                            ? order.refundInfo.refund_processed_at
-                            : order.refundInfo.refund_processed_at.toISOString()
-                        )}
+                        {order.refundInfo.refund_processed_at &&
+                          formatPaymentDate(
+                            typeof order.refundInfo.refund_processed_at ===
+                              "string"
+                              ? order.refundInfo.refund_processed_at
+                              : order.refundInfo.refund_processed_at.toISOString()
+                          )}
                       </p>
                     </div>
                   )}
                 </div>
               )}
-              
+
               {order.refundInfo.refund_id && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Refund ID</span>
@@ -369,11 +388,15 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   </div>
                 </div>
               )}
-              
+
               {order.refundInfo.refund_reason && (
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-600">Refund Reason</p>
-                  <p className="text-sm text-gray-700 italic">{order.refundInfo.refund_reason}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Refund Reason
+                  </p>
+                  <p className="text-sm text-gray-700 italic">
+                    {order.refundInfo.refund_reason}
+                  </p>
                 </div>
               )}
             </div>
@@ -405,7 +428,10 @@ export const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
  * Payment summary for order listings
  */
 export const PaymentSummary: React.FC<{ order: IOrder }> = ({ order }) => {
-  const statusBadge = getPaymentStatusBadge(order.paymentStatus, order.refundInfo);
+  const statusBadge = getPaymentStatusBadge(
+    order.paymentStatus,
+    order.refundInfo
+  );
 
   return (
     <div className="flex items-center gap-2">

@@ -26,8 +26,10 @@ interface CalculatorState {
   isLoading: boolean;
   rates: RateResponse[];
   selectedCourier: string | null;
+  selectedRate: RateResponse | null;
   error: string | null;
   cod_enabled: boolean;
+  isApplying: boolean;
 }
 
 const ShiprocketPriceCalculator: React.FC<ShiprocketPriceCalculatorProps> = ({
@@ -38,9 +40,69 @@ const ShiprocketPriceCalculator: React.FC<ShiprocketPriceCalculatorProps> = ({
     isLoading: false,
     rates: [],
     selectedCourier: null,
+    selectedRate: null,
     error: null,
     cod_enabled: order.paymentOption === "cash-on-delivery",
+    isApplying: false,
   });
+
+  const applyShippingRate = async () => {
+    if (!calculator.selectedRate) {
+      toast({
+        title: "Error",
+        description: "No shipping rate selected",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCalculator((prev) => ({ ...prev, isApplying: true }));
+
+    try {
+      const response = await fetch(`/api/admin/shiprocket/apply-rate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderId: order._id,
+          courierName: calculator.selectedRate.courier_name,
+          shippingRate: calculator.selectedRate.total_rate,
+          estimatedDelivery: calculator.selectedRate.estimated_delivery_date,
+          rateDetails: calculator.selectedRate,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: `Applied ${
+            calculator.selectedRate.courier_name
+          } shipping rate: ₹${calculator.selectedRate.total_rate.toFixed(2)}`,
+        });
+
+        // Reset selection after successful application
+        setCalculator((prev) => ({
+          ...prev,
+          selectedCourier: null,
+          selectedRate: null,
+          isApplying: false,
+        }));
+      } else {
+        throw new Error(data.error || "Failed to apply shipping rate");
+      }
+    } catch (error) {
+      console.error("Error applying shipping rate:", error);
+      toast({
+        title: "Error",
+        description: "Failed to apply shipping rate. Please try again.",
+        variant: "destructive",
+      });
+      setCalculator((prev) => ({ ...prev, isApplying: false }));
+    }
+  };
 
   const calculateShippingRates = async () => {
     if (!address) {
@@ -62,10 +124,29 @@ const ShiprocketPriceCalculator: React.FC<ShiprocketPriceCalculatorProps> = ({
       let maxHeight = 10;
 
       order.items.forEach((item) => {
-        const itemWeight = item.appliedWeight || item.deadWeight || 0.5;
+        // Try to get weight from populated product data first, then fallback to item properties
+        let itemWeight = 0.5; // Default weight
+
+        // Check if productId is populated (object vs string)
+        if (typeof item.productId === "object" && item.productId !== null) {
+          const product = item.productId as any; // Populated product data
+          itemWeight = product.appliedWeight || product.deadWeight || 0.5;
+        } else {
+          // Use item-level weight properties
+          itemWeight = item.appliedWeight || item.deadWeight || 0.5;
+        }
         totalWeight += item.quantity * itemWeight;
 
-        if (item.dimensions) {
+        // Try to get dimensions from populated product data first
+        if (typeof item.productId === "object" && item.productId !== null) {
+          const product = item.productId as any; // Populated product data
+          if (product.dimensions) {
+            maxLength = Math.max(maxLength, product.dimensions.length || 10);
+            maxWidth = Math.max(maxWidth, product.dimensions.width || 10);
+            maxHeight = Math.max(maxHeight, product.dimensions.height || 10);
+          }
+        } else if (item.dimensions) {
+          // Use item-level dimensions
           maxLength = Math.max(maxLength, item.dimensions.length || 10);
           maxWidth = Math.max(maxWidth, item.dimensions.width || 10);
           maxHeight = Math.max(maxHeight, item.dimensions.height || 10);
@@ -186,8 +267,20 @@ const ShiprocketPriceCalculator: React.FC<ShiprocketPriceCalculatorProps> = ({
               <span className="text-gray-600">Weight:</span>{" "}
               {order.items
                 .reduce((weight, item) => {
-                  const itemWeight =
-                    item.appliedWeight || item.deadWeight || 0.5;
+                  let itemWeight = 0.5;
+
+                  // Check if productId is populated (object vs string)
+                  if (
+                    typeof item.productId === "object" &&
+                    item.productId !== null
+                  ) {
+                    const product = item.productId as any; // Populated product data
+                    itemWeight =
+                      product.appliedWeight || product.deadWeight || 0.5;
+                  } else {
+                    // Use item-level weight properties
+                    itemWeight = item.appliedWeight || item.deadWeight || 0.5;
+                  }
                   return weight + item.quantity * itemWeight;
                 }, 0)
                 .toFixed(2)}{" "}
@@ -230,12 +323,17 @@ const ShiprocketPriceCalculator: React.FC<ShiprocketPriceCalculatorProps> = ({
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
-                  onClick={() =>
+                  onClick={() => {
+                    const isCurrentlySelected =
+                      calculator.selectedCourier === rate.courier_name;
                     setCalculator((prev) => ({
                       ...prev,
-                      selectedCourier: rate.courier_name,
-                    }))
-                  }
+                      selectedCourier: isCurrentlySelected
+                        ? null
+                        : rate.courier_name,
+                      selectedRate: isCurrentlySelected ? null : rate,
+                    }));
+                  }}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
@@ -277,13 +375,29 @@ const ShiprocketPriceCalculator: React.FC<ShiprocketPriceCalculatorProps> = ({
               ))}
             </div>
 
-            {calculator.selectedCourier && (
+            {calculator.selectedCourier && calculator.selectedRate && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <p className="text-green-800 text-sm font-medium">
-                  Selected: {calculator.selectedCourier}
-                </p>
-                <p className="text-green-600 text-xs mt-1">
-                  This rate can be used for shipping cost estimation.
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <p className="text-green-800 text-sm font-medium">
+                      Selected: {calculator.selectedCourier}
+                    </p>
+                    <p className="text-green-600 text-xs mt-1">
+                      Rate: ₹{calculator.selectedRate.total_rate.toFixed(2)}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={applyShippingRate}
+                    disabled={calculator.isApplying}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {calculator.isApplying ? "Applying..." : "Apply Rate"}
+                  </Button>
+                </div>
+                <p className="text-green-600 text-xs">
+                  Click &quot;Apply Rate&quot; to use this shipping option for
+                  the order.
                 </p>
               </div>
             )}

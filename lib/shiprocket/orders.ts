@@ -195,6 +195,7 @@ export class ShiprocketOrders {
 
   /**
    * Format order data from your system to Shiprocket format
+   * Note: This method expects order.items to be populated with product data including weight/dimensions
    */
   formatOrderForShiprocket(
     order: any,
@@ -202,23 +203,65 @@ export class ShiprocketOrders {
     user: any,
     vendorData?: any
   ): ShiprocketOrderRequest {
-    // Calculate total weight and dimensions from products
-    const totalWeight = order.items.reduce((weight: number, item: any) => {
-      const itemWeight = item.appliedWeight || item.deadWeight || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.weight;
-      return weight + (item.quantity * itemWeight);
-    }, 0);
+    console.log('[Shiprocket] Formatting order for Shiprocket:', {
+      orderId: order.orderId,
+      itemCount: order.items?.length,
+      hasProductData: order.items?.[0]?.productData ? 'Yes' : 'No'
+    });
 
-    // Calculate maximum dimensions from all items
+    // Calculate total weight and dimensions from products
+    let totalWeight = 0;
     let maxLength = SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.length;
     let maxWidth = SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.breadth;
     let maxHeight = SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.height;
     
     order.items.forEach((item: any) => {
-      if (item.dimensions) {
-        maxLength = Math.max(maxLength, item.dimensions.length || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.length);
-        maxWidth = Math.max(maxWidth, item.dimensions.width || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.breadth);
-        maxHeight = Math.max(maxHeight, item.dimensions.height || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.height);
+      // Direct access to populated product data (productId is populated object)
+      let itemWeight = SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.weight;
+      let itemLength = SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.length;
+      let itemWidth = SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.breadth;
+      let itemHeight = SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.height;
+      
+      // Check if productId is populated (object vs string)
+      if (item.productId && typeof item.productId === 'object') {
+        // Direct access to product data - no complex transformation needed
+        const product = item.productId;
+        
+        // Get weight (appliedWeight takes precedence over deadWeight)
+        itemWeight = product.appliedWeight || product.deadWeight || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.weight;
+        
+        // Get dimensions
+        if (product.dimensions) {
+          itemLength = product.dimensions.length || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.length;
+          itemWidth = product.dimensions.width || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.breadth;
+          itemHeight = product.dimensions.height || SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.height;
+        }
+        
+        console.log(`[Shiprocket] Item ${item.productName}: weight=${itemWeight}kg, dimensions=${itemLength}x${itemWidth}x${itemHeight}cm`);
+      } else {
+        console.log(`[Shiprocket] Item ${item.productName}: using defaults (product not populated)`);
       }
+      
+      // Update maximum dimensions for the package
+      maxLength = Math.max(maxLength, itemLength);
+      maxWidth = Math.max(maxWidth, itemWidth);
+      maxHeight = Math.max(maxHeight, itemHeight);
+      
+      // Add to total weight
+      totalWeight += (item.quantity || 1) * itemWeight;
+    });
+    
+    // Ensure minimum weight and valid number
+    totalWeight = isNaN(totalWeight) || totalWeight <= 0 ? 0.5 : Math.max(totalWeight, 0.5);
+    
+    // Ensure dimensions are valid numbers
+    maxLength = isNaN(maxLength) || maxLength <= 0 ? SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.length : maxLength;
+    maxWidth = isNaN(maxWidth) || maxWidth <= 0 ? SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.breadth : maxWidth;
+    maxHeight = isNaN(maxHeight) || maxHeight <= 0 ? SHIPROCKET_CONFIG.DEFAULT_DIMENSIONS.height : maxHeight;
+    
+    console.log('[Shiprocket] Calculated totals:', {
+      totalWeight: totalWeight + 'kg',
+      dimensions: `${Math.round(maxLength)}x${Math.round(maxWidth)}x${Math.round(maxHeight)}cm`
     });
 
     // Determine pickup location based on vendor or use default
@@ -298,17 +341,24 @@ export class ShiprocketOrders {
       shipping_email: user.email || "",
       shipping_phone: address.contact || user.phone || "",
 
-      // Order items
-      order_items: order.items.map((item: any) => ({
-        name: item.productName,
-        sku: item.productId,
-        units: item.quantity,
-        selling_price: item.price,
-        discount: 0,
-        tax: 0,
-        hsn: 0,
-        category: item.secondaryCategory?.name || "General", // Use secondary category name
-      })),
+      // Order items - direct access to order item fields
+      order_items: order.items.map((item: any) => {
+        // Use the productId as SKU - if it's populated, get the _id, otherwise use as-is
+        const itemSku = (typeof item.productId === 'object' && item.productId._id) ? 
+          item.productId._id.toString() : 
+          (item.productId ? item.productId.toString() : 'SKU');
+          
+        return {
+          name: item.productName || 'Product',
+          sku: itemSku,
+          units: item.quantity || 1,
+          selling_price: item.price || 0,
+          discount: 0,
+          tax: 0,
+          hsn: 0,
+          category: "General",
+        };
+      }),
 
       // Payment and pricing
       payment_method:
