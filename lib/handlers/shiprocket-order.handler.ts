@@ -93,11 +93,14 @@ export async function handleShiprocketOrderCreation(
     // - If order has vendor items and not skipVendorValidation, use vendor store address
     // - Otherwise, use default/admin pickup location
 
-    let vendorData = null;
+    let vendorData: any = null;
     let finalPickupLocationName = null;
 
     if (customPickupLocation) {
-      console.log("[Shiprocket Handler] Custom pickup location provided:", customPickupLocation);
+      console.log(
+        "[Shiprocket Handler] Custom pickup location provided:",
+        customPickupLocation
+      );
       // Check if admin selected an existing pickup location
       if (customPickupLocation.pickup_location_name) {
         console.log(
@@ -158,7 +161,8 @@ export async function handleShiprocketOrderCreation(
           );
           // Fall back to default pickup location
           finalPickupLocationName =
-            process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION || "The_Gujarat_Store_67b331ad";
+            process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION ||
+            "The_Gujarat_Store_67b331ad";
         }
       }
     } else if (
@@ -200,9 +204,50 @@ export async function handleShiprocketOrderCreation(
               );
               // Use default pickup location for vendor orders too
               finalPickupLocationName =
-                process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION || "The_Gujarat_Store_67b331ad";
+                process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION ||
+                "The_Gujarat_Store_67b331ad";
             }
           } else {
+            // Verify that the stored pickup location actually exists; recreate if missing
+            try {
+              const locationsResp = await sdk.pickups.getAllPickupLocations();
+              const locations = locationsResp.success
+                ? Array.isArray(locationsResp.data)
+                  ? locationsResp.data
+                  : locationsResp.data?.shipping_address ||
+                    locationsResp.data ||
+                    []
+                : [];
+              const exists = (locations || []).some((a: any) => {
+                const name =
+                  a?.pickup_location ||
+                  a?.warehouse_code ||
+                  a?.tag_value ||
+                  a?.tag;
+                return (
+                  name &&
+                  name.toString() === vendorData.shiprocket_pickup_location
+                );
+              });
+              if (!exists) {
+                const recreate = await sdk.pickups.createVendorPickupLocation(
+                  vendorData
+                );
+                if (recreate.success && recreate.location_name) {
+                  await VendorService.updateVendor(vendorData._id, {
+                    shiprocket_pickup_location: recreate.location_name,
+                    shiprocket_pickup_location_added: true,
+                  });
+                  vendorData.shiprocket_pickup_location =
+                    recreate.location_name;
+                }
+              }
+            } catch (e) {
+              console.warn(
+                "[Shiprocket Handler] Could not verify pickup locations",
+                e
+              );
+            }
             finalPickupLocationName = vendorData.shiprocket_pickup_location;
           }
         } else {
@@ -213,12 +258,14 @@ export async function handleShiprocketOrderCreation(
       } else {
         // No vendor ID, use default
         finalPickupLocationName =
-          process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION || "The_Gujarat_Store_67b331ad";
+          process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION ||
+          "The_Gujarat_Store_67b331ad";
       }
     } else {
       // Admin order or skipVendorValidation - use default/admin pickup location
       finalPickupLocationName =
-        process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION || "The_Gujarat_Store_67b331ad";
+        process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION ||
+        "The_Gujarat_Store_67b331ad";
     }
 
     // Create vendor data with final pickup location for formatting

@@ -125,6 +125,29 @@ const EditProductsForm = () => {
     }
   }, [mrp, discountType, discountValue, gstRate, gstType, form]);
 
+  // * Calculate volumetric and applied weight
+  const lengthVal = form.watch("dimensions.length");
+  const widthVal = form.watch("dimensions.width");
+  const heightVal = form.watch("dimensions.height");
+  const deadWeight = form.watch("deadWeight");
+
+  useEffect(() => {
+    const L = Number(lengthVal) || 0;
+    const W = Number(widthVal) || 0;
+    const H = Number(heightVal) || 0;
+
+    if (L > 0 && W > 0 && H > 0) {
+      const volumetricWeight = (L * W * H) / 5000;
+      form.setValue("volumetricWeight", Math.round(volumetricWeight * 100) / 100);
+
+      const appliedWeight = Math.max(deadWeight || 0.5, volumetricWeight);
+      form.setValue("appliedWeight", Math.round(appliedWeight * 100) / 100);
+    } else {
+      form.setValue("volumetricWeight", 0);
+      form.setValue("appliedWeight", Math.round(((deadWeight || 0.5)) * 100) / 100);
+    }
+  }, [lengthVal, widthVal, heightVal, deadWeight, form]);
+
   // * function to look out for attributes based on secondary category
   const { fields, replace } = useFieldArray({
     control: form.control,

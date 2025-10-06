@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
 
 const storeAddressSchema = new mongoose.Schema({
-  address_line_1: { type: String, required: true },
-  address_line_2: { type: String, required: true },
-  locality: { type: String, required: true },
+  address_line_1: { type: String, required: true }, // e.g. House/Flat/Road No + Building
+  address_line_2: { type: String, required: true }, // area/locality
+  city: { type: String, required: false }, // align with Shiprocket; optional for backward-compat
+  locality: { type: String, required: false },
   pincode: { type: String, required: true, minlength: 6 },
   state: { type: String, required: true },
   landmark: { type: String, optional: true },

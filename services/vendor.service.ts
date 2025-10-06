@@ -457,12 +457,29 @@ export class VendorService {
 
       const vendor = vendorResponse.data;
 
-      if (vendor.shiprocket_pickup_location_added) {
-        return {
-          success: true,
-          message: "Pickup location already exists",
-          data: { location_name: vendor.shiprocket_pickup_location! },
-        };
+      if (vendor.shiprocket_pickup_location_added && vendor.shiprocket_pickup_location) {
+        // Verify the pickup location actually exists in Shiprocket
+        const { ShiprocketService } = await import("./shiprocket.service");
+        const shiprocketServiceVerify = ShiprocketService.getInstance();
+        try {
+          const locations = await shiprocketServiceVerify.getPickupLocations();
+          const all = Array.isArray(locations) ? locations : (locations?.data?.shipping_address || locations?.shipping_address || []);
+          const exists = (all || []).some((a: any) => {
+            const name = a?.pickup_location || a?.warehouse_code || a?.tag_value || a?.tag;
+            return name && name.toString() === vendor.shiprocket_pickup_location;
+          });
+          if (exists) {
+            return {
+              success: true,
+              message: "Pickup location already exists",
+              data: { location_name: vendor.shiprocket_pickup_location! },
+            };
+          }
+          // If flag true but not found in Shiprocket, fall through to create it
+          console.warn("Vendor has pickup flag but location not found in Shiprocket. Recreating...", vendor.shiprocket_pickup_location);
+        } catch (e) {
+          console.warn("Failed to verify pickup locations; attempting create anyway", e);
+        }
       }
 
       // Import ShiprocketService dynamically to avoid circular dependency

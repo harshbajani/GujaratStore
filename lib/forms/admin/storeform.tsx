@@ -55,9 +55,10 @@ const Storeform = () => {
     defaultValues: {
       storeName: "",
       contact: "",
-      address: {
+address: {
         address_line_1: "",
         address_line_2: "",
+        city: "",
         locality: "",
         pincode: "",
         state: "",
@@ -115,10 +116,11 @@ const Storeform = () => {
           form.reset({
             storeName: storeData.data.storeName,
             contact: storeData.data.contact,
-            address: {
+address: {
               address_line_1: storeData.data.address.address_line_1,
               address_line_2: storeData.data.address.address_line_2,
-              locality: storeData.data.address.locality,
+              city: (storeData.data.address as any).city || storeData.data.address.address_line_2,
+              locality: storeData.data.address.locality || storeData.data.address.address_line_2,
               pincode: storeData.data.address.pincode,
               state: storeData.data.address.state,
               landmark: storeData.data.address.landmark || "",
@@ -191,8 +193,8 @@ const Storeform = () => {
                     name="address.address_line_2"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">
-                          City/District/Town*
+<FormLabel className="text-sm font-medium">
+                          Area / Locality*
                         </FormLabel>
                         <FormControl>
                           <div className="relative mt-1">
@@ -205,6 +207,27 @@ const Storeform = () => {
                     )}
                   />
                 </div>
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="address.city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">
+                          City*
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative mt-1">
+                            <MapPin className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+                            <Input {...field} className="bg-muted/50 pl-10" />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <div>
                   <FormField
                     control={form.control}

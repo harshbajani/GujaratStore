@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -53,12 +54,15 @@ export const toSchemaFormat = (data: StoreData) => ({
   storeName: data.storeName,
   contact: data.contact,
   addresses: {
-    address_line_1: data.address.address_line_1,
-    address_line_2: data.address.address_line_2,
-    locality: data.address.locality,
-    pincode: data.address.pincode,
-    state: data.address.state,
-    landmark: data.address.landmark,
+    address_line_1: data.address.address_line_1?.trim(),
+    address_line_2: data.address.address_line_2?.trim(), // area/locality
+    city:
+      (data as any).address.city?.trim() || data.address.address_line_2?.trim(),
+    locality:
+      data.address.locality?.trim() || data.address.address_line_2?.trim(),
+    pincode: data.address.pincode?.trim(),
+    state: data.address.state?.trim(),
+    landmark: data.address.landmark?.trim(),
   },
   alternativeContact: data.alternativeContact,
 });
@@ -73,6 +77,7 @@ export const toInterfaceFormat = (store: {
     address_line_2: string;
     locality: string;
     pincode: string;
+    city?: string;
     state: string;
     landmark?: string;
   };
@@ -86,12 +91,19 @@ export const toInterfaceFormat = (store: {
     contact: store.contact,
     address: {
       address_line_1: store.addresses.address_line_1,
-      address_line_2: store.addresses.address_line_2,
-      locality: store.addresses.locality,
+      address_line_2: store.addresses.address_line_2 || store.addresses.city, // keep UI compatibility
+      locality:
+        store.addresses.locality ||
+        store.addresses.address_line_2 ||
+        store.addresses.city,
       pincode: store.addresses.pincode,
       state: store.addresses.state,
       landmark: store.addresses.landmark,
-    },
+      // expose city if present for potential future UI updates
+      ...((store.addresses as any).city
+        ? { city: (store.addresses as any).city }
+        : {}),
+    } as any,
     alternativeContact: store.alternativeContact || "",
   };
 };

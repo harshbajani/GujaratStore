@@ -113,8 +113,9 @@ declare type StoreData = {
   contact: string;
   address: {
     address_line_1: string;
-    address_line_2: string;
-    locality: string;
+    address_line_2: string; // area/locality
+    city: string;
+    locality?: string;
     pincode: string;
     state: string;
     landmark?: string;
@@ -128,8 +129,9 @@ declare interface IStore {
   contact: string;
   address: {
     address_line_1: string;
-    address_line_2: string;
-    locality: string;
+    address_line_2: string; // area/locality
+    city: string;
+    locality?: string;
     pincode: string;
     state: string;
     landmark?: string;

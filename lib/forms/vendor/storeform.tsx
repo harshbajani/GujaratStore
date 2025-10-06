@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -58,6 +61,7 @@ const Storeform = () => {
       address: {
         address_line_1: "",
         address_line_2: "",
+        city: "",
         locality: "",
         pincode: "",
         state: "",
@@ -68,20 +72,28 @@ const Storeform = () => {
   });
   // * data submission of store
   const onSubmit = async (data: StoreInfo) => {
+    try {
+      console.log("[Storeform] onSubmit called with data:", data);
+    } catch {}
     setIsLoading(true);
     try {
       // First check if store exists
+      console.log("[Storeform] Calling getStore()");
       const existingStore = await getStore();
+      console.log("[Storeform] getStore() response:", existingStore);
 
       let result;
       if (existingStore.success) {
         // Update existing store
+        console.log("[Storeform] Updating existing store");
         result = await updateStore(data);
       } else {
         // Create new store
+        console.log("[Storeform] Creating new store");
         result = await createStore(data);
       }
 
+      console.log("[Storeform] Result:", result);
       if (!result.success) {
         throw new Error(result.error);
       }
@@ -118,7 +130,12 @@ const Storeform = () => {
             address: {
               address_line_1: storeData.data.address.address_line_1,
               address_line_2: storeData.data.address.address_line_2,
-              locality: storeData.data.address.locality,
+              city:
+                (storeData.data.address as any).city ||
+                storeData.data.address.address_line_2,
+              locality:
+                storeData.data.address.locality ||
+                storeData.data.address.address_line_2,
               pincode: storeData.data.address.pincode,
               state: storeData.data.address.state,
               landmark: storeData.data.address.landmark || "",
@@ -192,7 +209,7 @@ const Storeform = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-sm font-medium">
-                          City/District/Town*
+                          Area / Locality*
                         </FormLabel>
                         <FormControl>
                           <div className="relative mt-1">
@@ -205,6 +222,27 @@ const Storeform = () => {
                     )}
                   />
                 </div>
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="address.city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">
+                          City*
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative mt-1">
+                            <MapPin className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+                            <Input {...field} className="bg-muted/50 pl-10" />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <div>
                   <FormField
                     control={form.control}

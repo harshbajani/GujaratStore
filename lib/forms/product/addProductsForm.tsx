@@ -137,20 +137,30 @@ const AddProductsForm = () => {
   }, [mrp, discountType, discountValue, gstRate, gstType, form]);
 
   // * Calculate volumetric and applied weight
-  const dimensions = form.watch("dimensions");
+  const lengthVal = form.watch("dimensions.length");
+  const widthVal = form.watch("dimensions.width");
+  const heightVal = form.watch("dimensions.height");
   const deadWeight = form.watch("deadWeight");
   
   useEffect(() => {
-    if (dimensions?.length && dimensions?.width && dimensions?.height) {
+    const L = Number(lengthVal) || 0;
+    const W = Number(widthVal) || 0;
+    const H = Number(heightVal) || 0;
+
+    if (L > 0 && W > 0 && H > 0) {
       // Shiprocket volumetric weight formula: (L x W x H) / 5000
-      const volumetricWeight = (dimensions.length * dimensions.width * dimensions.height) / 5000;
+      const volumetricWeight = (L * W * H) / 5000;
       form.setValue("volumetricWeight", Math.round(volumetricWeight * 100) / 100);
       
       // Applied weight is the higher of dead weight and volumetric weight
       const appliedWeight = Math.max(deadWeight || 0.5, volumetricWeight);
       form.setValue("appliedWeight", Math.round(appliedWeight * 100) / 100);
+    } else {
+      // Reset to sensible defaults when dimensions are incomplete
+      form.setValue("volumetricWeight", 0);
+      form.setValue("appliedWeight", Math.round(((deadWeight || 0.5)) * 100) / 100);
     }
-  }, [dimensions, deadWeight, form]);
+  }, [lengthVal, widthVal, heightVal, deadWeight, form]);
 
   // * function to look out for attributes based on secondary category
   const { fields } = useFieldArray({

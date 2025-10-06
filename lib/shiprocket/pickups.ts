@@ -141,6 +141,30 @@ export class ShiprocketPickups {
     }
   }
 
+  /** Utility: sanitize address line 1 for Shiprocket requirements */
+  private sanitizeAddressLine1(line1: string): string {
+    if (!line1) return '';
+    let s = line1.trim();
+    // Replace common Indian synonyms to Shiprocket friendly keywords
+    s = s.replace(/\bMarg\b/gi, 'Road');
+    s = s.replace(/\bRd\.?\b/gi, 'Road');
+    s = s.replace(/\bSt\.?\b/gi, 'Street');
+
+    const hasKeyword = /(house|flat|plot|block|road|street|no\.?)/i.test(s);
+    if (!hasKeyword) {
+      // Try to extract a number token and prefix House No.
+      const m = s.match(/\b(\d+[A-Za-z\-\/]*)\b/);
+      if (m) {
+        const num = m[1];
+        s = `House No. ${num}, ${s}`;
+      } else {
+        // Fallback minimal prefix
+        s = `House No. 1, ${s}`;
+      }
+    }
+    return s.substring(0, 120); // keep reasonable length
+  }
+
   /**
    * Create pickup location for a vendor from vendor data
    */
@@ -163,12 +187,13 @@ export class ShiprocketPickups {
         name: vendor.name,
         email: vendor.email,
         phone: vendor.store.contact,
-        address: address.address_line_1,
-        address_2: address.address_line_2 || "",
-        city: address.locality,
-        state: address.state,
+        // Shiprocket requires House/Flat/Road No in address
+        address: this.sanitizeAddressLine1((address.address_line_1 || '').trim()),
+        address_2: (address.address_line_2 || address.locality || '').trim(),
+        city: (address.city || address.address_line_2 || address.locality || '').trim(),
+        state: (address.state || '').trim(),
         country: "India",
-        pin_code: address.pincode,
+        pin_code: (address.pincode || '').toString(),
       };
 
       console.log(

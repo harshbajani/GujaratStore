@@ -133,41 +133,33 @@ const EditProductsForm = () => {
   }, [mrp, discountType, discountValue, gstRate, gstType, form]);
 
   // * Calculate volumetric and applied weight
-  const dimensions = form.watch("dimensions");
+  const lengthVal = form.watch("dimensions.length");
+  const widthVal = form.watch("dimensions.width");
+  const heightVal = form.watch("dimensions.height");
   const deadWeight = form.watch("deadWeight");
   
   useEffect(() => {
-    // Add debugging
-    console.log('Weight calculation triggered:', { dimensions, deadWeight });
-    
-    // Ensure we have valid dimensions and deadWeight
-    const length = dimensions?.length || 0;
-    const width = dimensions?.width || 0;
-    const height = dimensions?.height || 0;
-    const weight = deadWeight || 0.5;
-    
-    if (length > 0 && width > 0 && height > 0) {
+    const L = Number(lengthVal) || 0;
+    const W = Number(widthVal) || 0;
+    const H = Number(heightVal) || 0;
+
+    if (L > 0 && W > 0 && H > 0) {
       // Shiprocket volumetric weight formula: (L x W x H) / 5000
-      const volumetricWeight = (length * width * height) / 5000;
+      const volumetricWeight = (L * W * H) / 5000;
       const roundedVolumetricWeight = Math.round(volumetricWeight * 100) / 100;
       
       // Applied weight is the higher of dead weight and volumetric weight
-      const appliedWeight = Math.max(weight, roundedVolumetricWeight);
+      const appliedWeight = Math.max(deadWeight || 0.5, roundedVolumetricWeight);
       const roundedAppliedWeight = Math.round(appliedWeight * 100) / 100;
-      
-      console.log('Calculated weights:', {
-        volumetricWeight: roundedVolumetricWeight,
-        appliedWeight: roundedAppliedWeight,
-        formula: `(${length} × ${width} × ${height}) ÷ 5000 = ${roundedVolumetricWeight}`,
-        maxOf: `Max(${weight}, ${roundedVolumetricWeight}) = ${roundedAppliedWeight}`
-      });
       
       form.setValue("volumetricWeight", roundedVolumetricWeight);
       form.setValue("appliedWeight", roundedAppliedWeight);
     } else {
-      console.log('Skipping calculation - invalid dimensions:', { length, width, height });
+      // Reset to sensible defaults when dimensions are incomplete
+      form.setValue("volumetricWeight", 0);
+      form.setValue("appliedWeight", Math.round(((deadWeight || 0.5)) * 100) / 100);
     }
-  }, [dimensions, deadWeight, form]);
+  }, [lengthVal, widthVal, heightVal, deadWeight, form]);
 
   // * function to look out for attributes based on secondary category
   const { fields, replace } = useFieldArray({
