@@ -36,6 +36,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { PickupLocationData } from "@/components/dialogs/PickupLocationDialog";
+import { EnhancedPickupLocationDialog } from "@/components/dialogs/EnhancedPickupLocationDialog";
+import EnhancedShippingInfo from "@/components/admin/EnhancedShippingInfo";
+import ShiprocketPriceCalculator from "@/components/admin/ShiprocketPriceCalculator";
 
 interface CancellationData {
   cancellationReason?: string;
@@ -54,6 +58,11 @@ const ViewOrderPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
+  const [pickupLocationDialogOpen, setPickupLocationDialogOpen] =
+    useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(
+    null
+  );
   // Replace the old hook with the new useUsers hook
   const {
     data: user,
@@ -107,7 +116,8 @@ const ViewOrderPage = () => {
   const updateOrderStatus = async (
     id: string,
     status: string,
-    cancellationData: CancellationData
+    cancellationData: CancellationData,
+    customPickupLocation?: PickupLocationData
   ) => {
     try {
       const response = await fetch(`/api/order/byId/${id}`, {
@@ -115,7 +125,11 @@ const ViewOrderPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status, ...cancellationData }),
+        body: JSON.stringify({
+          status,
+          ...cancellationData,
+          ...(customPickupLocation && { customPickupLocation }),
+        }),
       });
 
       const data = await response.json();
@@ -132,6 +146,12 @@ const ViewOrderPage = () => {
     try {
       if (status === "cancelled") {
         setCancellationDialogOpen(true);
+        return;
+      }
+
+      if (status === "ready to ship") {
+        setPendingStatusChange(status);
+        setPickupLocationDialogOpen(true);
         return;
       }
 
@@ -209,6 +229,63 @@ const ViewOrderPage = () => {
     }
   };
 
+  const handlePickupLocationConfirm = async (
+    pickupLocationName?: string,
+    pickupLocationData?: PickupLocationData
+  ) => {
+    if (!order || !pendingStatusChange) return;
+
+    setIsLoading(true);
+    try {
+      // Create custom pickup location object if we have a selected pickup location name
+      let customPickupLocation = pickupLocationData;
+      if (pickupLocationName && !pickupLocationData) {
+        // When using existing location, we don't need to create a new one
+        // Just pass the location name to the handler
+        customPickupLocation = {
+          pickup_location_name: pickupLocationName,
+        } as any;
+      }
+
+      const response = await updateOrderStatus(
+        order._id,
+        pendingStatusChange,
+        { isAdminCancellation: false },
+        customPickupLocation
+      );
+
+      if (response.success) {
+        setPickupLocationDialogOpen(false);
+        setPendingStatusChange(null);
+        fetchOrder();
+        toast({
+          title: "Success",
+          description: pickupLocationName
+            ? `Order status updated with pickup location: ${pickupLocationName}!`
+            : pickupLocationData
+            ? "Order status updated with custom pickup location!"
+            : "Order status updated with default pickup location!",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to update order status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (loading) {
     return <Loader />;
   }
@@ -279,8 +356,12 @@ const ViewOrderPage = () => {
                   </Button>
                   <Button
                     size="sm"
-                    variant={order.status === "ready to ship" ? "default" : "outline"}
-                    className={order.status === "ready to ship" ? "bg-brand" : ""}
+                    variant={
+                      order.status === "ready to ship" ? "default" : "outline"
+                    }
+                    className={
+                      order.status === "ready to ship" ? "bg-brand" : ""
+                    }
                     onClick={() => handleStatusChange("ready to ship")}
                   >
                     Ready to Ship
@@ -332,7 +413,8 @@ const ViewOrderPage = () => {
                     {order.paymentOption === "cash-on-delivery"
                       ? "COD"
                       : order.paymentStatus
-                      ? order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)
+                      ? order.paymentStatus.charAt(0).toUpperCase() +
+                        order.paymentStatus.slice(1)
                       : "Pending"}
                   </Badge>
                 </p>
@@ -342,7 +424,7 @@ const ViewOrderPage = () => {
         </Card>
 
         {/* Order Items Card */}
-        <Card className="col-span-1 lg:col-span-2">
+        <Card className="col-span-1">
           <CardHeader className="bg-gray-50 border-b">
             <CardTitle>Order Items</CardTitle>
           </CardHeader>
@@ -459,6 +541,16 @@ const ViewOrderPage = () => {
           </CardContent>
         </Card>
 
+        {/* Enhanced Shiprocket Shipping Information Card */}
+        <div className="col-span-1 lg:col-span-3">
+          <EnhancedShippingInfo order={order} user={user} address={address} />
+        </div>
+
+        {/* Shiprocket Price Calculator Card */}
+        <Card className="col-span-1">
+          <ShiprocketPriceCalculator order={order} address={address} />
+        </Card>
+
         {/* Enhanced Payment Information Card */}
         <Card className="col-span-1 lg:col-span-2">
           <PaymentInfoCard order={order} showAdvancedDetails={true} />
@@ -504,6 +596,22 @@ const ViewOrderPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EnhancedPickupLocationDialog
+        open={pickupLocationDialogOpen}
+        onOpenChange={(open) => {
+          setPickupLocationDialogOpen(open);
+          if (!open) {
+            // Reset pending status change if dialog is closed without confirming
+            setPendingStatusChange(null);
+          }
+        }}
+        onConfirm={(pickupLocationName, pickupLocationData) =>
+          handlePickupLocationConfirm(pickupLocationName, pickupLocationData)
+        }
+        onSkip={() => handlePickupLocationConfirm()}
+        isLoading={isLoading}
+      />
     </div>
   );
 };

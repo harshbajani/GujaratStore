@@ -55,6 +55,9 @@ declare interface IVendor {
   emailVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
+  // Shiprocket integration fields
+  shiprocket_pickup_location?: string;
+  shiprocket_pickup_location_added?: boolean;
   __v: number;
 }
 
@@ -110,8 +113,9 @@ declare type StoreData = {
   contact: string;
   address: {
     address_line_1: string;
-    address_line_2: string;
-    locality: string;
+    address_line_2: string; // area/locality
+    city: string;
+    locality?: string;
     pincode: string;
     state: string;
     landmark?: string;
@@ -125,8 +129,9 @@ declare interface IStore {
   contact: string;
   address: {
     address_line_1: string;
-    address_line_2: string;
-    locality: string;
+    address_line_2: string; // area/locality
+    city: string;
+    locality?: string;
     pincode: string;
     state: string;
     landmark?: string;
@@ -380,6 +385,15 @@ declare interface IProduct {
   metaTitle?: string;
   metaKeywords?: string;
   metaDescription?: string;
+  // Shipping weight and dimensions for Shiprocket
+  deadWeight?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  volumetricWeight?: number;
+  appliedWeight?: number;
 }
 
 declare interface IAdminProduct {
@@ -417,6 +431,15 @@ declare interface IAdminProduct {
   metaTitle?: string;
   metaKeywords?: string;
   metaDescription?: string;
+  // Shipping weight and dimensions for Shiprocket
+  deadWeight?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  volumetricWeight?: number;
+  appliedWeight?: number;
 }
 
 declare type ProductWithPopulatedFields = IProduct & {
@@ -498,6 +521,15 @@ declare interface IProductResponse {
   metaTitle?: string;
   metaKeywords?: string;
   metaDescription?: string;
+  // Shipping weight and dimensions for Shiprocket
+  deadWeight?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  volumetricWeight?: number;
+  appliedWeight?: number;
 }
 
 declare interface IProductReview {
@@ -535,8 +567,7 @@ declare interface CheckoutData {
   discountCode: string;
   total: number;
 }
-
-declare interface OrderItem {
+declare interface IOrderItem {
   _id: string;
   productId: string;
   productName: string;
@@ -552,6 +583,19 @@ declare interface OrderItem {
     discountValue: number;
   };
   vendorId?: string;
+  // Shipping weight and dimensions for Shiprocket
+  deadWeight?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  volumetricWeight?: number;
+  appliedWeight?: number;
+  secondaryCategory?: {
+    _id: string;
+    name: string;
+  };
 }
 
 // declare interface IOrder {
@@ -577,6 +621,8 @@ declare interface IOrder {
     | "unconfirmed" // For payment pending orders
     | "processing" // Default status after successful order/payment
     | "ready to ship" // When order is picked and ready
+    | "shipped" // When order has been picked up by courier
+    | "out for delivery" // When order is out for delivery
     | "delivered"
     | "cancelled"
     | "returned";
@@ -586,6 +632,8 @@ declare interface IOrder {
   deliveryCharges: number;
   discountAmount?: number;
   discountCode?: string;
+  rewardDiscountAmount?: number;
+  pointsRedeemed?: number;
   total: number;
   addressId: string;
   paymentOption: string;
@@ -606,6 +654,25 @@ declare interface IOrder {
     refund_processed_at?: Date;
     refund_reason?: string;
     refund_receipt?: string; // Unique receipt for refund
+  };
+  // Shiprocket Integration Fields
+  shipping?: {
+    shiprocket_order_id?: number;
+    shiprocket_shipment_id?: number;
+    awb_code?: string; // Air Waybill Number from courier
+    courier_name?: string;
+    tracking_url?: string;
+    shipping_status?: string; // The raw status from Shiprocket
+    eta?: Date | string; // Estimated time of arrival
+    pickup_date?: Date | string;
+    delivered_date?: Date | string;
+    last_update?: Date | string;
+    shipping_history?: Array<{
+      status: string;
+      activity: string;
+      location: string;
+      date: Date | string;
+    }>;
   };
   createdAt: string;
   updatedAt: string;
@@ -642,6 +709,8 @@ declare interface IOrderStatusBreakdown {
   unconfirmed: number;
   processing: number;
   "ready to ship": number;
+  shipped: number;
+  "out for delivery": number;
   delivered: number;
   cancelled: number;
   returned: number;

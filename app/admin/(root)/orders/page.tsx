@@ -36,6 +36,7 @@ import {
   formatPaymentDate,
   formatPaymentAmount,
 } from "@/lib/utils/paymentUtils";
+import { getShippingStatusColor } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { PickupLocationData } from "@/components/dialogs/PickupLocationDialog";
+import { EnhancedPickupLocationDialog } from "@/components/dialogs/EnhancedPickupLocationDialog";
 
 interface CancellationData {
   cancellationReason?: string;
@@ -119,7 +122,8 @@ const deleteOrder = async (id: string) => {
 const updateOrderStatus = async (
   id: string,
   status: string,
-  cancellationData: CancellationData
+  cancellationData: CancellationData,
+  customPickupLocation?: PickupLocationData
 ) => {
   try {
     const response = await fetch(`/api/order/byId/${id}`, {
@@ -127,7 +131,11 @@ const updateOrderStatus = async (
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ status, ...cancellationData }),
+      body: JSON.stringify({ 
+        status, 
+        ...cancellationData,
+        ...(customPickupLocation && { customPickupLocation })
+      }),
     });
 
     const data = await response.json();
@@ -184,6 +192,8 @@ const OrdersPage = () => {
   const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
+  const [pickupLocationDialogOpen, setPickupLocationDialogOpen] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{ orderId: string; status: string } | null>(null);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -303,6 +313,12 @@ const OrdersPage = () => {
         return;
       }
 
+      if (status === "ready to ship") {
+        setPendingStatusChange({ orderId: id, status });
+        setPickupLocationDialogOpen(true);
+        return;
+      }
+
       const response = await updateOrderStatus(id, status, {
         cancellationReason: "",
         isAdminCancellation: false,
@@ -363,6 +379,61 @@ const OrdersPage = () => {
       toast({
         title: "Error",
         description: "Failed to cancel order",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePickupLocationConfirm = async (
+    pickupLocationName?: string,
+    pickupLocationData?: PickupLocationData
+  ) => {
+    if (!pendingStatusChange) return;
+
+    setIsLoading(true);
+    try {
+      // Create custom pickup location object if we have a selected pickup location name
+      let customPickupLocation = pickupLocationData;
+      if (pickupLocationName && !pickupLocationData) {
+        // When using existing location, we don't need to create a new one
+        // Just pass the location name to the handler
+        customPickupLocation = { pickup_location_name: pickupLocationName } as any;
+      }
+      
+      const response = await updateOrderStatus(
+        pendingStatusChange.orderId,
+        pendingStatusChange.status,
+        { isAdminCancellation: false },
+        customPickupLocation
+      );
+
+      if (response.success) {
+        setPickupLocationDialogOpen(false);
+        setPendingStatusChange(null);
+        await fetchOrders();
+        toast({
+          title: "Success",
+          description: pickupLocationName
+            ? `Order status updated with pickup location: ${pickupLocationName}!`
+            : pickupLocationData
+            ? "Order status updated with custom pickup location!"
+            : "Order status updated with default pickup location!",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to update order status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status",
         variant: "destructive",
       });
     } finally {
@@ -540,6 +611,33 @@ const OrdersPage = () => {
         return (
           <div className="font-medium text-green-600">
             {formatPaymentAmount(amount)}
+          </div>
+        );
+      },
+    },
+    {
+      id: "shippingStatus",
+      header: "Shipping Status",
+      cell: ({ row }) => {
+        const order = row.original;
+        const shippingStatus = order.shipping?.shipping_status || "Not Shipped";
+        const trackingUrl = order.shipping?.tracking_url;
+
+        return (
+          <div className="flex flex-col gap-1">
+            <Badge className={getShippingStatusColor(shippingStatus)}>
+              {shippingStatus}
+            </Badge>
+            {trackingUrl && (
+              <a
+                href={trackingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-600 hover:underline"
+              >
+                Track Order
+              </a>
+            )}
           </div>
         );
       },
@@ -872,6 +970,22 @@ const OrdersPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EnhancedPickupLocationDialog
+        open={pickupLocationDialogOpen}
+        onOpenChange={(open) => {
+          setPickupLocationDialogOpen(open);
+          if (!open) {
+            // Reset pending status change if dialog is closed without confirming
+            setPendingStatusChange(null);
+          }
+        }}
+        onConfirm={(pickupLocationName, pickupLocationData) =>
+          handlePickupLocationConfirm(pickupLocationName, pickupLocationData)
+        }
+        onSkip={() => handlePickupLocationConfirm()}
+        isLoading={isLoading}
+      />
     </div>
   );
 };

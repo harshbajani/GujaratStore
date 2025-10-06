@@ -305,6 +305,8 @@ export class DashboardService {
     const breakdown: IOrderStatusBreakdown = {
       processing: 0,
       "ready to ship": 0,
+      shipped: 0,
+      "out for delivery": 0,
       delivered: 0,
       cancelled: 0,
       returned: 0,

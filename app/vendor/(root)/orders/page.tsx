@@ -42,7 +42,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { withVendorProtection } from "../../HOC";
 import { PaymentInfoRow } from "@/components/PaymentInfo/PaymentInfoComponents";
-import { formatPaymentDate, formatPaymentAmount, getPaymentStatusBadge } from "@/lib/utils/paymentUtils";
+import {
+  formatPaymentDate,
+  formatPaymentAmount,
+} from "@/lib/utils/paymentUtils";
+import { getShippingStatusColor } from "@/lib/utils";
 
 interface CancellationData {
   cancellationReason?: string;
@@ -126,7 +130,10 @@ const updateOrderStatus = async (
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ status, ...cancellationData }),
+      body: JSON.stringify({ 
+        status, 
+        ...cancellationData
+      }),
     });
 
     const data = await response.json();
@@ -302,6 +309,9 @@ const OrdersPage = () => {
         return;
       }
 
+      // For vendor orders, "ready to ship" should use vendor store address automatically
+      // No need for pickup location dialog - vendor orders always use vendor store address
+
       const response = await updateOrderStatus(id, status, {
         cancellationReason: "",
         isVendorCancellation: false,
@@ -368,6 +378,7 @@ const OrdersPage = () => {
       setIsLoading(false);
     }
   };
+
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -505,8 +516,8 @@ const OrdersPage = () => {
       cell: ({ row }) => {
         const order = row.original;
         return (
-          <PaymentInfoRow 
-            order={order} 
+          <PaymentInfoRow
+            order={order}
             showPaymentId={true}
             showProcessingTime={false}
           />
@@ -518,18 +529,15 @@ const OrdersPage = () => {
       header: "Payment Date",
       cell: ({ row }) => {
         const order = row.original;
-        const paymentDate = order.paymentInfo?.verified_at || 
-                           (order.paymentOption === "cash-on-delivery" ? order.createdAt : null);
-        
+        const paymentDate =
+          order.paymentInfo?.verified_at ||
+          (order.paymentOption === "cash-on-delivery" ? order.createdAt : null);
+
         if (!paymentDate) {
           return <div className="text-sm text-gray-500">--</div>;
         }
-        
-        return (
-          <div className="text-sm">
-            {formatPaymentDate(paymentDate)}
-          </div>
-        );
+
+        return <div className="text-sm">{formatPaymentDate(paymentDate)}</div>;
       },
     },
     {
@@ -538,10 +546,37 @@ const OrdersPage = () => {
       cell: ({ row }) => {
         const order = row.original;
         const amount = order.paymentInfo?.payment_amount || order.total;
-        
+
         return (
           <div className="font-medium text-green-600">
             {formatPaymentAmount(amount)}
+          </div>
+        );
+      },
+    },
+    {
+      id: "shippingStatus",
+      header: "Shipping Status",
+      cell: ({ row }) => {
+        const order = row.original;
+        const shippingStatus = order.shipping?.shipping_status || "Not Shipped";
+        const trackingUrl = order.shipping?.tracking_url;
+
+        return (
+          <div className="flex flex-col gap-1">
+            <Badge className={getShippingStatusColor(shippingStatus)}>
+              {shippingStatus}
+            </Badge>
+            {trackingUrl && (
+              <a
+                href={trackingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-600 hover:underline"
+              >
+                Track Order
+              </a>
+            )}
           </div>
         );
       },
@@ -874,6 +909,7 @@ const OrdersPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 };

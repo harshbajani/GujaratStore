@@ -35,9 +35,11 @@ export async function GET() {
       );
     }
 
+    // Sanitize embedded subdocument to a plain object
+    const plainStore = JSON.parse(JSON.stringify(vendor.store));
     return NextResponse.json({
       success: true,
-      data: vendor.store,
+      data: plainStore,
     });
   } catch (error) {
     console.error("Store check error:", error);

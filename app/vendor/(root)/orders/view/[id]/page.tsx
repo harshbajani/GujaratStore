@@ -40,6 +40,8 @@ import {
   useUserDetails,
 } from "@/hooks/useOrderHooks";
 import { PaymentInfoCard } from "@/components/PaymentInfo/PaymentInfoComponents";
+import EnhancedShippingInfo from "@/components/admin/EnhancedShippingInfo";
+import ShiprocketPriceCalculator from "@/components/admin/ShiprocketPriceCalculator";
 
 interface CancellationData {
   cancellationReason?: string;
@@ -114,7 +116,10 @@ const ViewOrderPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status, ...cancellationData }),
+        body: JSON.stringify({
+          status,
+          ...cancellationData,
+        }),
       });
 
       const data = await response.json();
@@ -133,6 +138,9 @@ const ViewOrderPage = () => {
         setCancellationDialogOpen(true);
         return;
       }
+
+      // For vendor orders, "ready to ship" should use vendor store address automatically
+      // No need for pickup location dialog - vendor orders always use vendor store address
 
       const response = await updateOrderStatus(order._id, status, {
         isVendorCancellation: false,
@@ -270,8 +278,12 @@ const ViewOrderPage = () => {
                   </Button>
                   <Button
                     size="sm"
-                    variant={order.status === "ready to ship" ? "default" : "outline"}
-                    className={order.status === "ready to ship" ? "bg-brand" : ""}
+                    variant={
+                      order.status === "ready to ship" ? "default" : "outline"
+                    }
+                    className={
+                      order.status === "ready to ship" ? "bg-brand" : ""
+                    }
                     onClick={() => handleStatusChange("ready to ship")}
                   >
                     Ready to Ship
@@ -323,7 +335,8 @@ const ViewOrderPage = () => {
                     {order.paymentOption === "cash-on-delivery"
                       ? "COD"
                       : order.paymentStatus
-                      ? order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)
+                      ? order.paymentStatus.charAt(0).toUpperCase() +
+                        order.paymentStatus.slice(1)
                       : "Pending"}
                   </Badge>
                 </p>
@@ -333,7 +346,7 @@ const ViewOrderPage = () => {
         </Card>
 
         {/* Order Items Card */}
-        <Card className="col-span-1 lg:col-span-2">
+        <Card className="col-span-1">
           <CardHeader className="bg-gray-50 border-b">
             <CardTitle>Order Items</CardTitle>
           </CardHeader>
@@ -442,6 +455,20 @@ const ViewOrderPage = () => {
               <p>No shipping details available.</p>
             )}
           </CardContent>
+        </Card>
+
+        {/* Enhanced Shipping Information Card */}
+        <div className="col-span-1 lg:col-span-3 h-full">
+          <EnhancedShippingInfo
+            order={order}
+            user={userDetails}
+            address={address}
+          />
+        </div>
+
+        {/* Shiprocket Price Calculator Card */}
+        <Card className="col-span-1">
+          <ShiprocketPriceCalculator order={order} address={address} />
         </Card>
 
         {/* Enhanced Payment Information Card */}

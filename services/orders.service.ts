@@ -11,7 +11,7 @@ interface IOrder {
   orderId: string;
   status: string;
   userId: string;
-  items: OrderItem[];
+  items: IOrderItem[];
   subtotal: number;
   deliveryCharges: number;
   total: number;
@@ -114,7 +114,7 @@ export class OrdersService {
   // Helper method to handle order creation with retry logic for duplicate orderIds
   private static async createOrderWithRetry(
     orderData: Partial<IOrder>,
-    items: OrderItem[],
+    items: IOrderItem[],
     maxRetries: number = 3
   ): Promise<ActionResponse<IOrder>> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -268,6 +268,52 @@ export class OrdersService {
         success: false,
         message:
           error instanceof Error ? error.message : "Failed to fetch order",
+      };
+    }
+  }
+
+  // Get order by MongoDB _id with populated product data (for shipping operations)
+  static async getOrderByIdWithProducts(id: string): Promise<ActionResponse<IOrder>> {
+    try {
+      // Don't use cache for this method since we need fresh product data
+      await connectToDB();
+      
+      const order = await Order.findById(id).populate({
+        path: 'items.productId',
+        model: Product,
+        select: 'productName deadWeight appliedWeight volumetricWeight dimensions'
+      });
+      
+      if (!order) {
+        return { success: false, message: "Order not found" };
+      }
+
+      // Simply return the order with populated product data - no complex transformation needed
+      const orderData = order.toObject();
+      
+      console.log('[OrdersService] Order items with product data:', 
+        orderData.items.map((item: any, index: number) => ({
+          index,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          productPopulated: typeof item.productId === 'object',
+          productWeight: typeof item.productId === 'object' ? item.productId.appliedWeight || item.productId.deadWeight : 'Not populated',
+          productDims: typeof item.productId === 'object' && item.productId.dimensions ? 
+            `${item.productId.dimensions.length}x${item.productId.dimensions.width}x${item.productId.dimensions.height}` : 'Not populated'
+        }))
+      );
+
+      return {
+        success: true,
+        data: orderData,
+        message: "Order fetched with product data successfully",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to fetch order with products",
       };
     }
   }
@@ -779,6 +825,8 @@ export class OrdersService {
       "unconfirmed",
       "processing",
       "ready to ship",
+      "shipped",
+      "out for delivery",
       "delivered",
       "cancelled",
       "returned",
@@ -804,7 +852,7 @@ export class OrdersService {
   }
 
   private static async validateProductStock(
-    items: OrderItem[]
+    items: IOrderItem[]
   ): Promise<{ success: boolean; error?: string }> {
     try {
       for (const item of items) {
@@ -841,7 +889,7 @@ export class OrdersService {
   }
 
   private static async updateProductQuantities(
-    items: OrderItem[]
+    items: IOrderItem[]
   ): Promise<void> {
     try {
       const updates = items.map((item) =>

@@ -95,6 +95,14 @@ const AddProductsForm = () => {
       productRating: 0,
       productWarranty: "",
       productReturnPolicy: "",
+      deadWeight: 0.5,
+      dimensions: {
+        length: 10,
+        width: 10,
+        height: 10,
+      },
+      volumetricWeight: 0,
+      appliedWeight: 0,
     },
   });
 
@@ -127,6 +135,32 @@ const AddProductsForm = () => {
       form.setValue("netPrice", safeDiscountedBase + calculatedGstAmount);
     }
   }, [mrp, discountType, discountValue, gstRate, gstType, form]);
+
+  // * Calculate volumetric and applied weight
+  const lengthVal = form.watch("dimensions.length");
+  const widthVal = form.watch("dimensions.width");
+  const heightVal = form.watch("dimensions.height");
+  const deadWeight = form.watch("deadWeight");
+  
+  useEffect(() => {
+    const L = Number(lengthVal) || 0;
+    const W = Number(widthVal) || 0;
+    const H = Number(heightVal) || 0;
+
+    if (L > 0 && W > 0 && H > 0) {
+      // Shiprocket volumetric weight formula: (L x W x H) / 5000
+      const volumetricWeight = (L * W * H) / 5000;
+      form.setValue("volumetricWeight", Math.round(volumetricWeight * 100) / 100);
+      
+      // Applied weight is the higher of dead weight and volumetric weight
+      const appliedWeight = Math.max(deadWeight || 0.5, volumetricWeight);
+      form.setValue("appliedWeight", Math.round(appliedWeight * 100) / 100);
+    } else {
+      // Reset to sensible defaults when dimensions are incomplete
+      form.setValue("volumetricWeight", 0);
+      form.setValue("appliedWeight", Math.round(((deadWeight || 0.5)) * 100) / 100);
+    }
+  }, [lengthVal, widthVal, heightVal, deadWeight, form]);
 
   // * function to look out for attributes based on secondary category
   const { fields } = useFieldArray({
@@ -755,6 +789,145 @@ const AddProductsForm = () => {
               </FormItem>
             )}
           />
+        </div>
+
+        {/* Weight and Dimensions Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold mb-4">Shipping Information</h3>
+          <div className="grid grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="deadWeight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Dead Weight (kg)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      placeholder="0.5"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0.5)}
+                      value={field.value || 0.5}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="volumetricWeight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Volumetric Weight (kg) <span className="text-xs text-gray-500">(Auto-calculated)</span></FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      placeholder="Auto-calculated"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      value={field.value || 0}
+                      className="bg-gray-50"
+                      readOnly
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-4 gap-6">
+            <FormField
+              control={form.control}
+              name="dimensions.length"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Length (cm)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      placeholder="10"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 10)}
+                      value={field.value || 10}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="dimensions.width"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Width (cm)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      placeholder="10"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 10)}
+                      value={field.value || 10}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="dimensions.height"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Height (cm)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      placeholder="10"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 10)}
+                      value={field.value || 10}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="appliedWeight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Applied Weight (kg) <span className="text-xs text-gray-500">(Auto-calculated)</span></FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      placeholder="Auto-calculated"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      value={field.value || 0}
+                      className="bg-gray-50"
+                      readOnly
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
         <div className="w-full">

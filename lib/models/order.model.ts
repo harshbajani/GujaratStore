@@ -52,6 +52,8 @@ const orderSchema = new Schema(
         "unconfirmed", // For payment pending orders
         "processing", // Default status after successful order/payment
         "ready to ship", // When order is picked and ready
+        "shipped", // When order has been picked up by courier
+        "out for delivery", // When order is out for delivery
         "delivered",
         "cancelled",
         "returned",
@@ -116,6 +118,25 @@ const orderSchema = new Schema(
       refund_processed_at: { type: Date },
       refund_reason: { type: String },
       refund_receipt: { type: String }, // Unique receipt for refund
+    },
+    // Shiprocket Integration Fields
+    shipping: {
+      shiprocket_order_id: { type: Number },
+      shiprocket_shipment_id: { type: Number },
+      awb_code: { type: String }, // Air Waybill Number from courier
+      courier_name: { type: String },
+      tracking_url: { type: String },
+      shipping_status: { type: String }, // The raw status from Shiprocket
+      eta: { type: Date }, // Estimated time of arrival
+      pickup_date: { type: Date },
+      delivered_date: { type: Date },
+      last_update: { type: Date },
+      shipping_history: [{
+        status: { type: String },
+        activity: { type: String },
+        location: { type: String },
+        date: { type: Date },
+      }],
     },
   },
   { timestamps: true } // Automatically manages createdAt and updatedAt fields
