@@ -126,10 +126,14 @@ export async function PATCH(
       // Don't fail the cancellation if refund fails
     }
 
-    // Step 2.5: Send refund status email if refund was attempted
+    // Step 2.5: Enqueue refund status email if refund was attempted
     if (refundResponse && order.paymentOption !== "cash-on-delivery") {
       try {
-        const refundEmailData: RefundEmailData = {
+        const { inngest } = await import("@/lib/inngest/client");
+        const status = refundResponse.success
+          ? refundResponse.refundDetails?.refundStatus || "initiated"
+          : "failed";
+        const refundEmailData: RefundEmailData & { refundStatus: string } = {
           orderId: order.orderId,
           userName: user.name,
           userEmail: user.email,
@@ -139,7 +143,7 @@ export async function PATCH(
           orderTotal: order.total.toString(),
           refundAmount: order.total.toString(),
           refundId: refundResponse.refundDetails?.refundId,
-          refundStatus: refundResponse.success ? "initiated" : "failed",
+          refundStatus: status,
           refundReason: reason,
           paymentMethod: order.paymentOption,
           expectedCompletionDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", {
@@ -149,63 +153,56 @@ export async function PATCH(
           }),
         };
 
-        // Send appropriate refund email based on status
-        if (refundResponse.success) {
-          if (refundResponse.refundDetails?.refundStatus === "processed") {
-            await sendRefundProcessedEmail(refundEmailData);
-          } else if (refundResponse.refundDetails?.refundStatus === "manual_review") {
-            await sendRefundUnderReviewEmail(refundEmailData);
-          } else {
-            // Default to initiated for pending/other statuses
-            await sendRefundInitiatedEmail(refundEmailData);
-          }
-        } else {
-          // Send failed email for failed refund processing
-          refundEmailData.refundStatus = "failed";
-          await sendRefundFailedEmail(refundEmailData);
-        }
+        await inngest.send({
+          name: "app/order.refund",
+          data: refundEmailData,
+        });
       } catch (emailError) {
-        console.error("Failed to send refund email:", emailError);
-        // Don't fail the request if refund email fails
+        console.error("Failed to enqueue refund email event:", emailError);
+        // Don't fail the request if refund email enqueue fails
       }
     }
 
-    // Step 3: Send cancellation email
+    // Step 3: Enqueue cancellation email
     try {
-      await sendOrderCancellationEmail({
-        orderId: order.orderId,
-        userName: user.name,
-        userEmail: user.email,
-        email: user.email,
-        orderDate: order.createdAt,
-        items: order.items,
-        subtotal: order.subtotal,
-        deliveryCharges: order.deliveryCharges,
-        total: order.total,
-        createdAt: order.createdAt,
-        paymentOption: order.paymentOption,
-        address: order.address || {
-          name: "",
-          contact: "",
-          address_line_1: "",
-          address_line_2: "",
-          locality: "",
-          state: "",
-          pincode: "",
-          type: "",
+      const { inngest } = await import("@/lib/inngest/client");
+      await inngest.send({
+        name: "app/order.cancelled",
+        data: {
+          orderId: order.orderId,
+          userName: user.name,
+          userEmail: user.email,
+          email: user.email,
+          orderDate: order.createdAt,
+          items: order.items,
+          subtotal: order.subtotal,
+          deliveryCharges: order.deliveryCharges,
+          total: order.total,
+          createdAt: order.createdAt,
+          paymentOption: order.paymentOption,
+          address: order.address || {
+            name: "",
+            contact: "",
+            address_line_1: "",
+            address_line_2: "",
+            locality: "",
+            state: "",
+            pincode: "",
+            type: "",
+          },
+          discountAmount: order.discountAmount || 0,
+          cancellationReason: reason,
+          reason: reason,
+          customerName: user.name,
+          vendorEmail: "contact@thegujaratstore.com",
+          paymentMethod: order.paymentOption,
+          orderTotal: order.total.toString(),
+          refundAmount: order.total.toString(),
         },
-        discountAmount: order.discountAmount || 0,
-        cancellationReason: reason,
-        reason: reason,
-        customerName: user.name,
-        vendorEmail: "contact@thegujaratstore.com",
-        paymentMethod: order.paymentOption,
-        orderTotal: order.total.toString(),
-        refundAmount: order.total.toString(),
       });
     } catch (emailError) {
-      console.error("Failed to send cancellation email:", emailError);
-      // Don't fail the request if email sending fails
+      console.error("Failed to enqueue cancellation email event:", emailError);
+      // Don't fail the request if enqueue fails
     }
 
     // Prepare response message

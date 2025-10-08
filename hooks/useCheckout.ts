@@ -801,11 +801,16 @@ export function useCheckout() {
       };
 
       try {
-        // Send payment failure email without creating order
-        await fetch("/api/payment-failure-email", {
+        // Enqueue payment failure email (no order) via Inngest
+        await fetch("/api/events/payment-failure", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(emailData),
+          body: JSON.stringify({
+            ...emailData,
+            amount: emailData.total?.toString(),
+            paymentMethod: emailData.paymentOption,
+            failureReason: emailData.paymentFailureReason,
+          }),
         });
         console.log(
           "Payment failure email sent successfully (no order created)"
@@ -854,11 +859,16 @@ export function useCheckout() {
       };
 
       try {
-        // Send payment failure email
-        await fetch("/api/payment-failure-email", {
+        // Enqueue payment failure email via Inngest
+        await fetch("/api/events/payment-failure", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(emailData),
+          body: JSON.stringify({
+            ...emailData,
+            amount: emailData.total?.toString(),
+            paymentMethod: emailData.paymentOption,
+            failureReason: emailData.paymentFailureReason,
+          }),
         });
         console.log("Payment failure email sent successfully");
       } catch (emailError) {
@@ -982,48 +992,6 @@ export function useCheckout() {
 
           if (!selectedAddressDetails) {
             throw new Error("Selected address not found");
-          }
-
-          // Prepare email data with properly formatted items
-          const emailData = {
-            orderId,
-            items: state.checkoutData?.items.map((item) => ({
-              ...item,
-              selectedSize: item.selectedSize
-                ? typeof item.selectedSize === "string"
-                  ? item.selectedSize
-                  : item.selectedSize.label
-                : undefined,
-            })),
-            subtotal: state.checkoutData?.subtotal,
-            deliveryCharges: state.checkoutData?.deliveryCharges,
-            discountAmount: state.checkoutData?.discountAmount || 0,
-            rewardDiscountAmount: state.rewardDiscountAmount || 0,
-            pointsRedeemed: state.pointsToRedeem || 0,
-            total: state.checkoutData?.total,
-            paymentOption: state.paymentOption,
-            createdAt: new Date().toISOString(),
-            address: selectedAddressDetails,
-            userName: state.userData?.name,
-            userEmail: state.userData?.email,
-          };
-
-          // Send confirmation email only for processing orders (completed orders)
-          if (orderStatus === "processing") {
-            try {
-              // Send order confirmation email
-              await fetch("/api/order-email", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(emailData),
-              });
-            } catch (emailError) {
-              console.error(
-                "Failed to send order confirmation email:",
-                emailError
-              );
-              // Don't block the order confirmation process if email fails
-            }
           }
 
           // Only clear cart and proceed if payment is successful or COD

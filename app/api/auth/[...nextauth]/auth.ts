@@ -92,12 +92,34 @@ export const authOptions: NextAuthOptions = {
               role: "user",
               isVerified: true, // Google accounts are pre-verified
             });
+
+            // Emit welcome email event for first-time Google users
+            try {
+              const { inngest } = await import("@/lib/inngest/client");
+              await inngest.send({
+                name: "app/user.welcome",
+                data: { email: dbUser.email, name: dbUser.name },
+              });
+            } catch (e) {
+              console.error("Failed to enqueue Google welcome email event:", e);
+            }
           } else if (!dbUser.googleId) {
             // If user exists but doesn't have googleId, update it
             await User.findByIdAndUpdate(dbUser._id, {
               googleId: user.id,
               isVerified: true,
             });
+
+            // Optionally send welcome email when linking Google for the first time
+            try {
+              const { inngest } = await import("@/lib/inngest/client");
+              await inngest.send({
+                name: "app/user.welcome",
+                data: { email: dbUser.email, name: dbUser.name },
+              });
+            } catch (e) {
+              console.error("Failed to enqueue Google link welcome email event:", e);
+            }
           }
 
           return true;

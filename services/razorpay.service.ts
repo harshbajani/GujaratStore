@@ -457,8 +457,8 @@ export class RazorpayService {
       if (orderData.success && orderData.order) {
         const order = orderData.order;
         
-        // Send payment failure email
-        await fetch(`${process.env.NEXT_PUBLIC_APP_BASE_URL}/api/payment-failure-email`, {
+        // Enqueue payment failure email via Inngest
+        await fetch(`${process.env.NEXT_PUBLIC_APP_BASE_URL}/api/events/payment-failure`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -470,9 +470,13 @@ export class RazorpayService {
             total: order.total,
             paymentOption: order.paymentOption,
             createdAt: order.createdAt,
-            userName: 'Customer', // Will be populated from order details
-            userEmail: order.userEmail || 'customer@example.com', // Will be populated from order details
-            paymentFailureReason: failureReason,
+            userName: order.userName || 'Customer',
+            userEmail: order.userEmail || 'customer@example.com',
+            paymentMethod: order.paymentOption,
+            amount: order.total?.toString(),
+            paymentId: undefined,
+            failureReason: failureReason,
+            errorCode: undefined,
           })
         });
         

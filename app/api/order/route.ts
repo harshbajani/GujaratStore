@@ -4,6 +4,8 @@ import { OrdersService } from "@/services/orders.service";
 import { connectToDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import { withAdminOrVendorAuth } from "@/lib/middleware/auth";
+import User from "@/lib/models/user.model";
+import { inngest } from "@/lib/inngest/client";
 
 export const POST = withAdminOrVendorAuth(async (request: Request) => {
   try {
@@ -38,6 +40,47 @@ export const POST = withAdminOrVendorAuth(async (request: Request) => {
         { success: false, error: userFriendlyMessage },
         { status: 400 }
       );
+    }
+
+    // Fire-and-forget: enqueue order confirmation emails via Inngest
+    try {
+      const order: any = result.data;
+      const user = await User.findById(order.userId).lean<{ name: string; email: string; addresses: IAddress[] }>();
+      let address: IAddress | undefined;
+      if (user?.addresses && order.addressId) {
+        address = user.addresses.find((a: any) => a._id?.toString() === order.addressId?.toString());
+      }
+
+      await inngest.send({
+        name: "app/order.confirmed",
+        data: {
+          orderId: order.orderId,
+          items: order.items,
+          subtotal: order.subtotal,
+          deliveryCharges: order.deliveryCharges,
+          discountAmount: order.discountAmount || 0,
+          total: order.total,
+          createdAt: order.createdAt,
+          paymentOption: order.paymentOption,
+          address: address || {
+            name: "",
+            contact: "",
+            address_line_1: "",
+            address_line_2: "",
+            locality: "",
+            state: "",
+            pincode: "",
+            type: "",
+          },
+          userName: user?.name || "",
+          userEmail: user?.email || "",
+          email: user?.email || "",
+          orderDate: order.createdAt,
+        },
+      });
+    } catch (e) {
+      console.error("Failed to enqueue order confirmation emails:", e);
+      // Do not block response
     }
 
     return NextResponse.json(
