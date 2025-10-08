@@ -1,12 +1,6 @@
 import { OrdersService } from "@/services/orders.service";
 import { connectToDB } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
-import {
-  sendAdminCancellationEmail,
-  sendOrderCancellationEmail,
-  sendVendorCancellationEmail,
-  sendOrderReadyToShipEmail,
-} from "@/lib/workflows/emails";
 import User from "@/lib/models/user.model";
 import Vendor from "@/lib/models/vendor.model";
 import { handleShiprocketOrderCreation } from "@/lib/handlers/shiprocket-order.handler";
@@ -99,15 +93,21 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     // If status is changing to "ready to ship", create Shiprocket order
     if (status === "ready to ship") {
       try {
-        const shiprocketResult = await handleShiprocketOrderCreation({ 
+        const shiprocketResult = await handleShiprocketOrderCreation({
           orderId: id,
-          customPickupLocation 
+          customPickupLocation,
         });
         if (!shiprocketResult.success) {
-          console.error("Shiprocket order creation failed:", shiprocketResult.error);
+          console.error(
+            "Shiprocket order creation failed:",
+            shiprocketResult.error
+          );
           // Continue with status update even if Shiprocket fails
         } else {
-          console.log("Shiprocket order created successfully:", shiprocketResult.shiprocketData);
+          console.log(
+            "Shiprocket order created successfully:",
+            shiprocketResult.shiprocketData
+          );
         }
       } catch (shiprocketError) {
         console.error("Shiprocket order creation failed:", shiprocketError);
@@ -141,7 +141,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
       try {
         // Find the user that has this address and get the specific address
-        const userWithAddress = await User.findOne({ "addresses._id": addressId });
+        const userWithAddress = await User.findOne({
+          "addresses._id": addressId,
+        });
         if (userWithAddress) {
           const address = userWithAddress.addresses.find(
             (addr: IAddress) => addr._id?.toString() === addressId.toString()
@@ -153,7 +155,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       } catch (addressError) {
         console.error("Failed to fetch shipping address:", addressError);
       }
-      
+
       return defaultAddress;
     };
 
@@ -162,25 +164,29 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       try {
         const orderData = result.data as IOrder;
         const user = await User.findById(orderData.userId);
-        
+
         if (user) {
           // Get shipping address using the helper function
           const shippingAddress = await getShippingAddress(orderData.addressId);
 
-          await sendOrderReadyToShipEmail({
-            orderId: orderData.orderId,
-            userName: user.name,
-            userEmail: user.email,
-            email: user.email,
-            orderDate: orderData.createdAt,
-            items: orderData.items,
-            subtotal: orderData.subtotal,
-            deliveryCharges: orderData.deliveryCharges,
-            total: orderData.total,
-            createdAt: orderData.createdAt,
-            paymentOption: orderData.paymentOption,
-            address: shippingAddress,
-            discountAmount: orderData.discountAmount,
+          const { inngest } = await import("@/lib/inngest/client");
+          await inngest.send({
+            name: "app/order.ready_to_ship",
+            data: {
+              orderId: orderData.orderId,
+              userName: user.name,
+              userEmail: user.email,
+              email: user.email,
+              orderDate: orderData.createdAt,
+              items: orderData.items,
+              subtotal: orderData.subtotal,
+              deliveryCharges: orderData.deliveryCharges,
+              total: orderData.total,
+              createdAt: orderData.createdAt,
+              paymentOption: orderData.paymentOption,
+              address: shippingAddress,
+              discountAmount: orderData.discountAmount,
+            },
           });
         }
       } catch (emailError) {
@@ -237,7 +243,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
         // Get vendor details
         const { vendorEmail } = await getVendorDetails();
-        
+
         // Get shipping address
         const shippingAddress = await getShippingAddress(orderData.addressId);
 
@@ -250,52 +256,59 @@ export async function PATCH(request: Request, { params }: RouteParams) {
             return NextResponse.json(result, { status: 200 });
           }
 
-          // Send cancellation email to customer with admin context
-          await sendOrderCancellationEmail({
-            orderId: orderData.orderId,
-            userName: user.name,
-            userEmail: user.email,
-            email: user.email,
-            orderDate: orderData.createdAt,
-            items: orderData.items,
-            subtotal: orderData.subtotal,
-            deliveryCharges: orderData.deliveryCharges,
-            total: orderData.total,
-            createdAt: orderData.createdAt,
-            paymentOption: orderData.paymentOption,
-            address: shippingAddress,
-            discountAmount: orderData.discountAmount,
-            cancellationReason: `${cancellationReason} (Cancelled by The Gujarat Store Team)`,
-            reason: cancellationReason,
-            customerName: user.name,
-            vendorEmail: vendorEmail,
-            paymentMethod: orderData.paymentOption,
-            orderTotal: orderData.total.toString(),
-            refundAmount: orderData.total.toString(),
+          const { inngest } = await import("@/lib/inngest/client");
+          // Customer cancellation email (admin context)
+          await inngest.send({
+            name: "app/order.cancelled",
+            data: {
+              orderId: orderData.orderId,
+              userName: user.name,
+              userEmail: user.email,
+              email: user.email,
+              orderDate: orderData.createdAt,
+              items: orderData.items,
+              subtotal: orderData.subtotal,
+              deliveryCharges: orderData.deliveryCharges,
+              total: orderData.total,
+              createdAt: orderData.createdAt,
+              paymentOption: orderData.paymentOption,
+              address: shippingAddress,
+              discountAmount: orderData.discountAmount,
+              cancellationReason: `${cancellationReason} (Cancelled by The Gujarat Store Team)`,
+              reason: cancellationReason,
+              customerName: user.name,
+              vendorEmail: vendorEmail,
+              paymentMethod: orderData.paymentOption,
+              orderTotal: orderData.total.toString(),
+              refundAmount: orderData.total.toString(),
+            },
           });
 
-          // Also send admin notification for internal tracking
-          await sendAdminCancellationEmail({
-            orderId: orderData.orderId,
-            userName: user.name,
-            userEmail: user.email,
-            email: user.email,
-            orderDate: orderData.createdAt,
-            items: orderData.items,
-            subtotal: orderData.subtotal,
-            deliveryCharges: orderData.deliveryCharges,
-            total: orderData.total,
-            createdAt: orderData.createdAt,
-            paymentOption: orderData.paymentOption,
-            address: shippingAddress,
-            discountAmount: orderData.discountAmount,
-            cancellationReason: cancellationReason,
-            reason: cancellationReason,
-            customerName: user.name,
-            vendorEmail: vendorEmail,
-            paymentMethod: orderData.paymentOption,
-            orderTotal: orderData.total.toString(),
-            refundAmount: orderData.total.toString(),
+          // Admin notification
+          await inngest.send({
+            name: "app/order.cancelled.admin",
+            data: {
+              orderId: orderData.orderId,
+              userName: user.name,
+              userEmail: user.email,
+              email: user.email,
+              orderDate: orderData.createdAt,
+              items: orderData.items,
+              subtotal: orderData.subtotal,
+              deliveryCharges: orderData.deliveryCharges,
+              total: orderData.total,
+              createdAt: orderData.createdAt,
+              paymentOption: orderData.paymentOption,
+              address: shippingAddress,
+              discountAmount: orderData.discountAmount,
+              cancellationReason: cancellationReason,
+              reason: cancellationReason,
+              customerName: user.name,
+              vendorEmail: vendorEmail,
+              paymentMethod: orderData.paymentOption,
+              orderTotal: orderData.total.toString(),
+              refundAmount: orderData.total.toString(),
+            },
           });
         } else if (isVendorCancellation) {
           if (!cancellationReason) {
@@ -305,77 +318,88 @@ export async function PATCH(request: Request, { params }: RouteParams) {
             return NextResponse.json(result, { status: 200 });
           }
 
-          // Send cancellation email to customer with vendor context
-          await sendOrderCancellationEmail({
-            orderId: orderData.orderId,
-            userName: user.name,
-            userEmail: user.email,
-            email: user.email,
-            orderDate: orderData.createdAt,
-            items: orderData.items,
-            subtotal: orderData.subtotal,
-            deliveryCharges: orderData.deliveryCharges,
-            total: orderData.total,
-            createdAt: orderData.createdAt,
-            paymentOption: orderData.paymentOption,
-            address: shippingAddress,
-            discountAmount: orderData.discountAmount,
-            cancellationReason: `${cancellationReason} (Cancelled by Vendor)`,
-            reason: cancellationReason,
-            customerName: user.name,
-            vendorEmail: vendorEmail,
-            paymentMethod: orderData.paymentOption,
-            orderTotal: orderData.total.toString(),
-            refundAmount: orderData.total.toString(),
+          const { inngest } = await import("@/lib/inngest/client");
+          // Customer cancellation email (vendor context)
+          await inngest.send({
+            name: "app/order.cancelled",
+            data: {
+              orderId: orderData.orderId,
+              userName: user.name,
+              userEmail: user.email,
+              email: user.email,
+              orderDate: orderData.createdAt,
+              items: orderData.items,
+              subtotal: orderData.subtotal,
+              deliveryCharges: orderData.deliveryCharges,
+              total: orderData.total,
+              createdAt: orderData.createdAt,
+              paymentOption: orderData.paymentOption,
+              address: shippingAddress,
+              discountAmount: orderData.discountAmount,
+              cancellationReason: `${cancellationReason} (Cancelled by Vendor)`,
+              reason: cancellationReason,
+              customerName: user.name,
+              vendorEmail: vendorEmail,
+              paymentMethod: orderData.paymentOption,
+              orderTotal: orderData.total.toString(),
+              refundAmount: orderData.total.toString(),
+            },
           });
 
-          // Also send vendor notification for internal tracking
-          await sendVendorCancellationEmail({
-            orderId: orderData.orderId,
-            userName: user.name,
-            userEmail: user.email,
-            email: user.email,
-            orderDate: orderData.createdAt,
-            items: orderData.items,
-            subtotal: orderData.subtotal,
-            deliveryCharges: orderData.deliveryCharges,
-            total: orderData.total,
-            createdAt: orderData.createdAt,
-            paymentOption: orderData.paymentOption,
-            address: shippingAddress,
-            discountAmount: orderData.discountAmount,
-            cancellationReason: cancellationReason,
-            reason: cancellationReason,
-            customerName: user.name,
-            vendorEmail: vendorEmail,
-            paymentMethod: orderData.paymentOption,
-            orderTotal: orderData.total.toString(),
-            refundAmount: orderData.total.toString(),
+          // Vendor notification
+          await inngest.send({
+            name: "app/order.cancelled.vendor",
+            data: {
+              orderId: orderData.orderId,
+              userName: user.name,
+              userEmail: user.email,
+              email: user.email,
+              orderDate: orderData.createdAt,
+              items: orderData.items,
+              subtotal: orderData.subtotal,
+              deliveryCharges: orderData.deliveryCharges,
+              total: orderData.total,
+              createdAt: orderData.createdAt,
+              paymentOption: orderData.paymentOption,
+              address: shippingAddress,
+              discountAmount: orderData.discountAmount,
+              cancellationReason: cancellationReason,
+              reason: cancellationReason,
+              customerName: user.name,
+              vendorEmail: vendorEmail,
+              paymentMethod: orderData.paymentOption,
+              orderTotal: orderData.total.toString(),
+              refundAmount: orderData.total.toString(),
+            },
           });
         } else {
-          // For user cancellations, use the regular cancellation email
-          await sendOrderCancellationEmail({
-            orderId: orderData.orderId,
-            userName: user.name,
-            userEmail: user.email,
-            email: user.email,
-            orderDate: orderData.createdAt,
-            items: orderData.items,
-            subtotal: orderData.subtotal,
-            deliveryCharges: orderData.deliveryCharges,
-            total: orderData.total,
-            createdAt: orderData.createdAt,
-            paymentOption: orderData.paymentOption,
-            address: shippingAddress,
-            discountAmount: orderData.discountAmount,
-            cancellationReason:
-              cancellationReason || "User requested cancellation",
-            reason: cancellationReason || "User requested cancellation",
-            customerName: user.name,
-            vendorEmail: vendorEmail,
-            paymentMethod: orderData.paymentOption,
-            orderTotal: orderData.total.toString(),
-            refundAmount: orderData.total.toString(),
+          // For user cancellations, emit the regular cancellation email event
+          const { inngest } = await import("@/lib/inngest/client");
+          await inngest.send({
+            name: "app/order.cancelled",
+            data: {
+              orderId: orderData.orderId,
+              userName: user.name,
+              userEmail: user.email,
+              email: user.email,
+              orderDate: orderData.createdAt,
+              items: orderData.items,
+              subtotal: orderData.subtotal,
+              deliveryCharges: orderData.deliveryCharges,
+              total: orderData.total,
+              createdAt: orderData.createdAt,
+              paymentOption: orderData.paymentOption,
+              address: shippingAddress,
+              discountAmount: orderData.discountAmount,
+              cancellationReason:
+                cancellationReason || "User requested cancellation",
+              reason: cancellationReason || "User requested cancellation",
+              customerName: user.name,
+              vendorEmail: vendorEmail,
+              paymentMethod: orderData.paymentOption,
+              orderTotal: orderData.total.toString(),
+              refundAmount: orderData.total.toString(),
+            },
           });
         }
       } catch (emailError) {
@@ -428,4 +452,3 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     );
   }
 }
-

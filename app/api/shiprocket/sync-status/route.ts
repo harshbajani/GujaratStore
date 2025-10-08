@@ -4,7 +4,6 @@ import { connectToDB } from "@/lib/mongodb";
 import Order from "@/lib/models/order.model";
 import User from "@/lib/models/user.model";
 import { getShiprocketSDK } from "@/lib/shiprocket";
-import { sendShippingNotificationEmail } from "@/lib/workflows/emails/shipping/shippingEmails";
 
 // Simple in-memory rate limiter
 interface RateLimitEntry {
@@ -407,7 +406,7 @@ async function sendStatusUpdateNotification(
         }))
       : [];
 
-    const emailData = {
+  const emailData = {
       orderId: order.orderId,
       userName: user.name,
       userEmail: user.email,
@@ -436,9 +435,13 @@ async function sendStatusUpdateNotification(
       trackingHistory: trackingHistory,
     };
 
-    await sendShippingNotificationEmail(notificationType, emailData);
+    const { inngest } = await import("@/lib/inngest/client");
+    await inngest.send({
+      name: "app/shipping.notification",
+      data: { notificationType, emailData },
+    });
     console.log(
-      `Notification sent to ${user.email} for order ${order.orderId}: ${notificationType}`
+      `Enqueued shipping notification to ${user.email} for order ${order.orderId}: ${notificationType}`
     );
   } catch (error) {
     console.error("Error sending status update notification:", error);

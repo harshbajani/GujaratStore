@@ -145,6 +145,24 @@ export async function verifyOTP(
     // Delete OTP record
     await OTP.deleteOne({ email });
 
+    // Send welcome email in background via Inngest
+    try {
+      const { inngest } = await import("@/lib/inngest/client");
+      const user = await User.findOne({ email }).lean<IUser>();
+      if (user) {
+        await inngest.send({
+          name: "app/user.welcome",
+          data: {
+            email: user.email,
+            name: user.name,
+          },
+        });
+      }
+    } catch (e) {
+      console.error("Failed to enqueue welcome email event:", e);
+      // Do not block verification flow on email enqueue failure
+    }
+
     return {
       success: true,
       message: "Email verified successfully",
