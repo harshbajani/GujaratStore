@@ -6,13 +6,6 @@ import { OrderRefundService } from "@/services/order-refund.service";
 import { connectToDB } from "@/lib/mongodb";
 import Order from "@/lib/models/order.model";
 import User from "@/lib/models/user.model";
-import {
-  sendOrderCancellationEmail,
-  sendRefundInitiatedEmail,
-  sendRefundProcessedEmail,
-  sendRefundFailedEmail,
-  sendRefundUnderReviewEmail,
-} from "@/lib/workflows/emails";
 import type { RefundEmailData } from "@/lib/workflows/emails/shared/types";
 
 export async function PATCH(
@@ -64,7 +57,10 @@ export async function PATCH(
     // Verify order ownership
     if (order.userId.toString() !== user._id.toString()) {
       return NextResponse.json(
-        { success: false, message: "Unauthorized: Order does not belong to you" },
+        {
+          success: false,
+          message: "Unauthorized: Order does not belong to you",
+        },
         { status: 403 }
       );
     }
@@ -77,7 +73,7 @@ export async function PATCH(
       "cancelled",
       "returned",
     ];
-    
+
     if (nonCancellableStatuses.includes(order.status)) {
       const statusMessages = {
         "ready to ship":
@@ -100,7 +96,10 @@ export async function PATCH(
     }
 
     // Step 1: Update order status to cancelled
-    const updateResult = await OrdersService.updateOrderStatus(orderId, "cancelled");
+    const updateResult = await OrdersService.updateOrderStatus(
+      orderId,
+      "cancelled"
+    );
     if (!updateResult.success) {
       return NextResponse.json(
         { success: false, message: updateResult.message },
@@ -130,8 +129,12 @@ export async function PATCH(
     if (refundResponse && order.paymentOption !== "cash-on-delivery") {
       try {
         const { inngest } = await import("@/lib/inngest/client");
-        const status = refundResponse.success
-          ? refundResponse.refundDetails?.refundStatus || "initiated"
+        const status: "initiated" | "processed" | "failed" | "manual_review" = refundResponse.success
+          ? (refundResponse.refundDetails?.refundStatus === "processed"
+              ? "processed"
+              : refundResponse.refundDetails?.refundStatus === "manual_review"
+                ? "manual_review"
+                : "initiated")
           : "failed";
         const refundEmailData: RefundEmailData & { refundStatus: string } = {
           orderId: order.orderId,
@@ -146,7 +149,9 @@ export async function PATCH(
           refundStatus: status,
           refundReason: reason,
           paymentMethod: order.paymentOption,
-          expectedCompletionDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", {
+          expectedCompletionDate: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000
+          ).toLocaleDateString("en-IN", {
             year: "numeric",
             month: "short",
             day: "numeric",

@@ -18,10 +18,13 @@ declare interface IUser {
   isVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
+  lastLoginAt?: string | Date;
   wishlist?: (Types.ObjectId | string)[];
   cart?: (Types.ObjectId | string)[];
   order?: (Types.ObjectId | string)[];
   __v: number;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }
 
 declare interface ProfileProps {

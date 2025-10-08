@@ -3,9 +3,15 @@ import { inngest } from "./client";
 import {
   sendWelcomeEmail,
   sendTemporaryPasswordEmail,
+  sendMissYouEmail,
 } from "@/lib/workflows/emails/user/userEmails";
 import { sendOrderEmails } from "@/services/vendor.service";
-import { sendOrderCancellationEmail, sendOrderReadyToShipEmail, sendVendorCancellationEmail, sendAdminCancellationEmail } from "@/lib/workflows/emails/order/orderEmails";
+import {
+  sendOrderCancellationEmail,
+  sendOrderReadyToShipEmail,
+  sendVendorCancellationEmail,
+  sendAdminCancellationEmail,
+} from "@/lib/workflows/emails/order/orderEmails";
 import {
   sendRefundInitiatedEmail,
   sendRefundProcessedEmail,
@@ -20,6 +26,8 @@ import type {
   RefundEmailData,
   PaymentFailureEmailData,
 } from "@/lib/workflows/emails/shared/types";
+import { connectToDB } from "@/lib/mongodb";
+import User from "@/lib/models/user.model";
 
 // Inngest function: Send welcome email when a user is verified/created
 export const userWelcomeEmail = inngest.createFunction(
@@ -163,6 +171,49 @@ export const paymentFailureEmail = inngest.createFunction(
     await step.run("send-payment-failure-email", async () => {
       const data = event.data as PaymentFailureEmailData;
       await sendPaymentFailureEmail(data);
+      return true;
+    });
+    return { success: true };
+  }
+);
+
+// Scheduled: Send "miss you" emails to inactive users (7+ days)
+export const sendInactiveUserEmails = inngest.createFunction(
+  { id: "inactive-user-emails" },
+  { cron: "0 9 * * *" }, // daily at 09:00 UTC
+  async ({ step }) => {
+    await step.run("send-miss-you-batch", async () => {
+      await connectToDB();
+      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      // Find users with lastLoginAt older than cutoff OR no lastLoginAt but createdAt older than cutoff
+      const users = await User.find({
+        $or: [
+          { lastLoginAt: { $lt: cutoff } },
+          {
+            $and: [
+              {
+                $or: [
+                  { lastLoginAt: { $exists: false } },
+                  { lastLoginAt: null },
+                ],
+              },
+              { createdAt: { $lt: cutoff } },
+            ],
+          },
+        ],
+      })
+        .select("email name")
+        .limit(1000)
+        .lean<{ email: string; name: string }[]>();
+
+      for (const u of users) {
+        try {
+          await sendMissYouEmail({ email: u.email, name: u.name });
+        } catch (e) {
+          console.error("Failed to send miss-you email to", u.email, e);
+        }
+      }
       return true;
     });
     return { success: true };

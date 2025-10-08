@@ -11,6 +11,7 @@ import {
   orderAdminCancellationEmail,
   orderVendorCancellationEmail,
   paymentFailureEmail,
+  sendInactiveUserEmails,
 } from "@/lib/inngest/functions";
 
 export const { GET, POST, PUT } = serve({
@@ -25,6 +26,7 @@ export const { GET, POST, PUT } = serve({
     orderAdminCancellationEmail,
     orderVendorCancellationEmail,
     paymentFailureEmail,
+    sendInactiveUserEmails,
     shippingStatusNotification,
   ],
 });

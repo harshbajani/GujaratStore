@@ -230,3 +230,55 @@ export const sendTemporaryPasswordEmail = async (
   await transporter.sendMail(mailOptions);
   console.log(`Temporary password email sent to ${userData.email}`);
 };
+
+/**
+ * Send "We miss you" email to inactive users
+ */
+export const sendMissYouEmail = async (
+  userData: { email: string; name: string }
+): Promise<void> => {
+  const content = `
+    <tr>
+      <td style="padding: 30px;">
+        <h1 style="color: ${EMAIL_CONFIG.BRAND_COLORS.PRIMARY}; text-align: center; margin-top: 0;">
+          👋 We Miss You at ${EMAIL_CONFIG.COMPANY_NAME}
+        </h1>
+        
+        <p style="font-size: 18px; margin-bottom: 20px; text-align: center; color: #333; font-weight: 500;">
+          Hello ${userData.name || "there"}!
+        </p>
+        
+        <p style="font-size: 16px; margin-bottom: 20px; text-align: center; color: #666; line-height: 1.6;">
+          We haven't seen you around in a while, and we'd love to have you back. Discover fresh collections and exclusive offers curated just for you.
+        </p>
+
+        <div style="background-color: ${EMAIL_CONFIG.BRAND_COLORS.SECONDARY}; color: white; border-radius: 8px; padding: 25px; margin: 30px 0; text-align: center;">
+          <h2 style="margin: 0 0 10px; color: white; font-size: 20px;">Come back and explore</h2>
+          <a href="${EMAIL_CONFIG.APP_BASE_URL}"
+             style="display: inline-block; background-color: ${EMAIL_CONFIG.BRAND_COLORS.PRIMARY}; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            Visit The Gujarat Store
+          </a>
+        </div>
+
+        <p style="font-size: 14px; text-align: center; color: #666; margin-top: 20px;">
+          If you need any help, we're just a message away at <a href="mailto:${EMAIL_CONFIG.SUPPORT_EMAIL}" style="color: ${EMAIL_CONFIG.BRAND_COLORS.PRIMARY};">${EMAIL_CONFIG.SUPPORT_EMAIL}</a>.
+        </p>
+      </td>
+    </tr>
+  `;
+
+  const htmlTemplate = wrapEmailTemplate(
+    `We Miss You at ${EMAIL_CONFIG.COMPANY_NAME}`,
+    content
+  );
+
+  const mailOptions = {
+    from: `"${EMAIL_CONFIG.COMPANY_NAME}" <${EMAIL_CONFIG.FROM_EMAIL}>`,
+    to: userData.email,
+    subject: `We Miss You at ${EMAIL_CONFIG.COMPANY_NAME} 👋`,
+    html: htmlTemplate,
+  };
+
+  await transporter.sendMail(mailOptions);
+  console.log(`Miss-you email sent to ${userData.email}`);
+};
