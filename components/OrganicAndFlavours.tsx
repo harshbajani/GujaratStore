@@ -306,7 +306,7 @@ const OrganicAndFlavours = () => {
                     className="mt-4 text-brand border-brand w-44 hover:bg-brand hover:text-white"
                     asChild
                   >
-                    <Link prefetch href="/shop">
+                    <Link prefetch href="/">
                       Explore
                     </Link>
                   </Button>

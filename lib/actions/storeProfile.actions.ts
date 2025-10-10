@@ -26,6 +26,18 @@ export async function createStore(data: StoreData) {
       { new: true }
     ).lean();
 
+    // Ensure Shiprocket pickup location exists for this vendor
+    try {
+      if (updatedVendor && !Array.isArray(updatedVendor) && updatedVendor._id) {
+        const { VendorService } = await import("@/services/vendor.service");
+        await VendorService.createVendorPickupLocation(
+          updatedVendor._id.toString()
+        );
+      }
+    } catch (e) {
+      console.warn("[Store] Failed to ensure pickup location after create:", e);
+    }
+
     if (
       !updatedVendor ||
       Array.isArray(updatedVendor) ||
@@ -70,6 +82,18 @@ export async function updateStore(data: StoreData) {
       { store: schemaData },
       { new: true }
     ).lean();
+
+    // Ensure Shiprocket pickup location exists (or recreate) after updating store
+    try {
+      if (updatedVendor && !Array.isArray(updatedVendor) && updatedVendor._id) {
+        const { VendorService } = await import("@/services/vendor.service");
+        await VendorService.createVendorPickupLocation(
+          updatedVendor._id.toString()
+        );
+      }
+    } catch (e) {
+      console.warn("[Store] Failed to ensure pickup location after update:", e);
+    }
 
     if (
       !updatedVendor ||
@@ -119,7 +143,7 @@ export async function getStore() {
 
     // Sanitize the store data to convert ObjectIds to strings
     const sanitizedStore = JSON.parse(JSON.stringify(vendor.store));
-    if (sanitizedStore._id && typeof sanitizedStore._id === 'object') {
+    if (sanitizedStore._id && typeof sanitizedStore._id === "object") {
       sanitizedStore._id = sanitizedStore._id.toString();
     }
 

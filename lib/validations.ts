@@ -100,13 +100,25 @@ export const Address = z.object({
 });
 
 export const storeAddressSchema = z.object({
-  address_line_1: z.string().min(1, "Address line 1 is required"),
-  address_line_2: z.string().min(1, "Address line 2 is required"),
-  locality: z.string().min(1, "Locality is required"),
+  // Shiprocket requires House/Flat/Road number in Address line 1
+  address_line_1: z
+    .string()
+    .min(5, "Address line 1 is required")
+    .refine(
+      (val) => /(\d|house|flat|road|street|block|plot)/i.test(val || ""),
+      {
+        message:
+          "Address line 1 should include House/Flat/Road number (e.g. 'Flat 12, ABC Residency')",
+      }
+    ),
+  // Keep UI compatibility: we still accept address_line_2 as the area/locality; city is separate
+  address_line_2: z.string().min(1, "Area/Locality is required"),
+  city: z.string().min(1, "City is required"),
+  locality: z.string().min(1, "Locality is required").optional(),
   pincode: z
     .string()
-    .regex(/^[0-9]+$/, "Contact number must contain only numbers")
-    .max(6, "Pincode should be only 6 digits"),
+    .regex(/^[0-9]+$/, "Pincode must contain only numbers")
+    .length(6, "Pincode should be 6 digits"),
   state: z.string().min(1, "State is required"),
   landmark: z.string().optional(),
 });
@@ -286,6 +298,41 @@ export const productSchema = z
     metaTitle: z.string().optional(),
     metaKeywords: z.string().optional(),
     metaDescription: z.string().optional(),
+    // Shipping weight and dimensions for Shiprocket
+    deadWeight: z
+      .number()
+      .positive("Dead weight must be positive")
+      .default(0.5)
+      .optional(),
+    dimensions: z
+      .object({
+        length: z
+          .number()
+          .positive("Length must be positive")
+          .default(10)
+          .optional(),
+        width: z
+          .number()
+          .positive("Width must be positive")
+          .default(10)
+          .optional(),
+        height: z
+          .number()
+          .positive("Height must be positive")
+          .default(10)
+          .optional(),
+      })
+      .optional(),
+    volumetricWeight: z
+      .number()
+      .nonnegative("Volumetric weight must be non-negative")
+      .default(0)
+      .optional(),
+    appliedWeight: z
+      .number()
+      .nonnegative("Applied weight must be non-negative")
+      .default(0)
+      .optional(),
   })
   .refine(
     (data) => {
@@ -440,6 +487,41 @@ export const adminProductSchema = z
     metaTitle: z.string().optional(),
     metaKeywords: z.string().optional(),
     metaDescription: z.string().optional(),
+    // Shipping weight and dimensions for Shiprocket
+    deadWeight: z
+      .number()
+      .positive("Dead weight must be positive")
+      .default(0.5)
+      .optional(),
+    dimensions: z
+      .object({
+        length: z
+          .number()
+          .positive("Length must be positive")
+          .default(10)
+          .optional(),
+        width: z
+          .number()
+          .positive("Width must be positive")
+          .default(10)
+          .optional(),
+        height: z
+          .number()
+          .positive("Height must be positive")
+          .default(10)
+          .optional(),
+      })
+      .optional(),
+    volumetricWeight: z
+      .number()
+      .nonnegative("Volumetric weight must be non-negative")
+      .default(0)
+      .optional(),
+    appliedWeight: z
+      .number()
+      .nonnegative("Applied weight must be non-negative")
+      .default(0)
+      .optional(),
   })
   .refine(
     (data) => {

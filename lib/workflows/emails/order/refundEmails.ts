@@ -234,7 +234,7 @@ export const sendRefundProcessedEmail = async (
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${EMAIL_CONFIG.APP_BASE_URL}/shop" 
+          <a href="${EMAIL_CONFIG.APP_BASE_URL}/" 
              style="background-color: ${EMAIL_CONFIG.BRAND_COLORS.PRIMARY}; 
                     color: white; 
                     padding: 12px 24px; 

@@ -361,7 +361,10 @@ export function useCheckout() {
 
     // Calculate delivery charges based on free delivery threshold
     const originalDeliveryCharges = state.checkoutData.deliveryCharges;
-    const finalDeliveryCharges = calculateDeliveryCharges(subtotal, originalDeliveryCharges);
+    const finalDeliveryCharges = calculateDeliveryCharges(
+      subtotal,
+      originalDeliveryCharges
+    );
 
     const newCheckoutData: CheckoutData = {
       ...state.checkoutData,
@@ -405,7 +408,10 @@ export function useCheckout() {
 
       // Calculate delivery charges based on free delivery threshold
       const originalDeliveryCharges = state.checkoutData.deliveryCharges;
-      const finalDeliveryCharges = calculateDeliveryCharges(subtotal, originalDeliveryCharges);
+      const finalDeliveryCharges = calculateDeliveryCharges(
+        subtotal,
+        originalDeliveryCharges
+      );
 
       const newCheckoutData: CheckoutData = {
         ...state.checkoutData,
@@ -699,7 +705,10 @@ export function useCheckout() {
           razorpay.open();
         };
         script.onerror = async () => {
-          await handlePaymentFailureWithoutOrder(orderId, "Failed to load payment gateway");
+          await handlePaymentFailureWithoutOrder(
+            orderId,
+            "Failed to load payment gateway"
+          );
           throw new Error("Failed to load Razorpay checkout script");
         };
         document.body.appendChild(script);
@@ -792,13 +801,20 @@ export function useCheckout() {
       };
 
       try {
-        // Send payment failure email without creating order
-        await fetch("/api/payment-failure-email", {
+        // Enqueue payment failure email (no order) via Inngest
+        await fetch("/api/events/payment-failure", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(emailData),
+          body: JSON.stringify({
+            ...emailData,
+            amount: emailData.total?.toString(),
+            paymentMethod: emailData.paymentOption,
+            failureReason: emailData.paymentFailureReason,
+          }),
         });
-        console.log("Payment failure email sent successfully (no order created)");
+        console.log(
+          "Payment failure email sent successfully (no order created)"
+        );
       } catch (emailError) {
         console.error("Failed to send payment failure email:", emailError);
         // Don't block the process if email fails
@@ -843,11 +859,16 @@ export function useCheckout() {
       };
 
       try {
-        // Send payment failure email
-        await fetch("/api/payment-failure-email", {
+        // Enqueue payment failure email via Inngest
+        await fetch("/api/events/payment-failure", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(emailData),
+          body: JSON.stringify({
+            ...emailData,
+            amount: emailData.total?.toString(),
+            paymentMethod: emailData.paymentOption,
+            failureReason: emailData.paymentFailureReason,
+          }),
         });
         console.log("Payment failure email sent successfully");
       } catch (emailError) {
@@ -869,12 +890,6 @@ export function useCheckout() {
     orderId: string
   ) => {
     try {
-      console.log("Processing Razorpay payment success for order:", orderId);
-      console.log("Payment response:", {
-        payment_id: response.razorpay_payment_id,
-        order_id: response.razorpay_order_id,
-      });
-
       // Verify payment
       const verifyResponse = await fetch("/api/razorpay/verify-payment", {
         method: "POST",
@@ -888,8 +903,6 @@ export function useCheckout() {
       });
 
       const verifyData = await verifyResponse.json();
-      console.log("Payment verification result:", verifyData);
-
       if (!verifyData.success) {
         // Payment verification failed, send failure email
         await handlePaymentFailure(
@@ -899,10 +912,6 @@ export function useCheckout() {
         throw new Error(verifyData.error || "Payment verification failed");
       }
 
-      // Payment verified successfully, create the order in database
-      console.log(
-        "Payment verified successfully, creating order in database..."
-      );
       await createOrderWithPayment(
         orderId,
         {
@@ -947,8 +956,10 @@ export function useCheckout() {
         price: item.price,
         quantity: item.quantity,
         deliveryDate: item.deliveryDate,
-        selectedSize: item.selectedSize 
-          ? (typeof item.selectedSize === 'string' ? item.selectedSize : item.selectedSize.label) 
+        selectedSize: item.selectedSize
+          ? typeof item.selectedSize === "string"
+            ? item.selectedSize
+            : item.selectedSize.label
           : undefined,
         vendorId: item.vendorId,
       })),
@@ -981,47 +992,6 @@ export function useCheckout() {
 
           if (!selectedAddressDetails) {
             throw new Error("Selected address not found");
-          }
-
-          // Prepare email data with properly formatted items
-          const emailData = {
-            orderId,
-            items: state.checkoutData?.items.map((item) => ({
-              ...item,
-              selectedSize: item.selectedSize 
-                ? (typeof item.selectedSize === 'string' ? item.selectedSize : item.selectedSize.label) 
-                : undefined,
-            })),
-            subtotal: state.checkoutData?.subtotal,
-            deliveryCharges: state.checkoutData?.deliveryCharges,
-            discountAmount: state.checkoutData?.discountAmount || 0,
-            rewardDiscountAmount: state.rewardDiscountAmount || 0,
-            pointsRedeemed: state.pointsToRedeem || 0,
-            total: state.checkoutData?.total,
-            paymentOption: state.paymentOption,
-            createdAt: new Date().toISOString(),
-            address: selectedAddressDetails,
-            userName: state.userData?.name,
-            userEmail: state.userData?.email,
-          };
-
-          // Send confirmation email only for processing orders (completed orders)
-          if (orderStatus === "processing") {
-            try {
-              // Send order confirmation email
-              await fetch("/api/order-email", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(emailData),
-              });
-              console.log("Order confirmation email sent successfully");
-            } catch (emailError) {
-              console.error(
-                "Failed to send order confirmation email:",
-                emailError
-              );
-              // Don't block the order confirmation process if email fails
-            }
           }
 
           // Only clear cart and proceed if payment is successful or COD
@@ -1096,11 +1066,14 @@ export function useCheckout() {
     }
 
     // Validate that all items have vendorId (this should rarely happen now)
-    const itemsWithoutVendor = state.checkoutData.items.filter(item => !item.vendorId);
+    const itemsWithoutVendor = state.checkoutData.items.filter(
+      (item) => !item.vendorId
+    );
     if (itemsWithoutVendor.length > 0) {
-      console.warn('Checkout items without vendorId:', itemsWithoutVendor);
+      console.warn("Checkout items without vendorId:", itemsWithoutVendor);
       toast.error("Product Information Missing", {
-        description: "Some products are missing vendor information. Please refresh the page and try again.",
+        description:
+          "Some products are missing vendor information. Please refresh the page and try again.",
         duration: 5000,
       });
       return;

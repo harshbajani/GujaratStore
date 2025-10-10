@@ -15,41 +15,45 @@ export class VendorService {
 
   private static sanitizeVendor(vendor: any): VendorResponse {
     const sanitized = JSON.parse(JSON.stringify(vendor));
-    
+
     // Convert main _id
     if (sanitized._id) {
       sanitized._id = sanitized._id.toString();
     }
-    
+
     // Convert nested object IDs
     if (sanitized.store && sanitized.store._id) {
       sanitized.store._id = sanitized.store._id.toString();
     }
-    
+
     if (sanitized.documents && sanitized.documents._id) {
       sanitized.documents._id = sanitized.documents._id.toString();
     }
-    
+
     if (sanitized.personalInfo && sanitized.personalInfo._id) {
       sanitized.personalInfo._id = sanitized.personalInfo._id.toString();
     }
-    
+
     // Handle any other nested objects that might have _id fields
     const convertNestedIds = (obj: any) => {
-      if (obj && typeof obj === 'object') {
-        if (obj._id && typeof obj._id === 'object') {
+      if (obj && typeof obj === "object") {
+        if (obj._id && typeof obj._id === "object") {
           obj._id = obj._id.toString();
         }
         for (const key in obj) {
-          if (obj.hasOwnProperty(key) && typeof obj[key] === 'object' && obj[key] !== null) {
+          if (
+            obj.hasOwnProperty(key) &&
+            typeof obj[key] === "object" &&
+            obj[key] !== null
+          ) {
             convertNestedIds(obj[key]);
           }
         }
       }
     };
-    
+
     convertNestedIds(sanitized);
-    
+
     return sanitized;
   }
 
@@ -433,6 +437,140 @@ export class VendorService {
       await Promise.all(keys.map((key) => CacheService.delete(key)));
     } catch (error) {
       console.error("Cache invalidation error:", error);
+    }
+  }
+
+  /**
+   * Create pickup location for vendor in Shiprocket
+   */
+  static async createVendorPickupLocation(
+    vendorId: string
+  ): Promise<ActionResponse<{ location_name: string }>> {
+    try {
+      const vendorResponse = await this.getVendorById(vendorId);
+      if (!vendorResponse.success || !vendorResponse.data) {
+        return {
+          success: false,
+          message: "Vendor not found",
+        };
+      }
+
+      const vendor = vendorResponse.data;
+
+      if (vendor.shiprocket_pickup_location_added && vendor.shiprocket_pickup_location) {
+        // Verify the pickup location actually exists in Shiprocket
+        const { ShiprocketService } = await import("./shiprocket.service");
+        const shiprocketServiceVerify = ShiprocketService.getInstance();
+        try {
+          const locations = await shiprocketServiceVerify.getPickupLocations();
+          const all = Array.isArray(locations) ? locations : (locations?.data?.shipping_address || locations?.shipping_address || []);
+          const exists = (all || []).some((a: any) => {
+            const name = a?.pickup_location || a?.warehouse_code || a?.tag_value || a?.tag;
+            return name && name.toString() === vendor.shiprocket_pickup_location;
+          });
+          if (exists) {
+            return {
+              success: true,
+              message: "Pickup location already exists",
+              data: { location_name: vendor.shiprocket_pickup_location! },
+            };
+          }
+          // If flag true but not found in Shiprocket, fall through to create it
+          console.warn("Vendor has pickup flag but location not found in Shiprocket. Recreating...", vendor.shiprocket_pickup_location);
+        } catch (e) {
+          console.warn("Failed to verify pickup locations; attempting create anyway", e);
+        }
+      }
+
+      // Import ShiprocketService dynamically to avoid circular dependency
+      const { ShiprocketService } = await import("./shiprocket.service");
+      const shiprocketService = ShiprocketService.getInstance();
+
+      const result = await shiprocketService.createVendorPickupLocation(vendor);
+
+      if (result.success && result.location_name) {
+        // Update vendor with pickup location info
+        await this.updateVendor(vendorId, {
+          shiprocket_pickup_location: result.location_name,
+          shiprocket_pickup_location_added: true,
+        });
+
+        return {
+          success: true,
+          message: "Pickup location created successfully",
+          data: { location_name: result.location_name },
+        };
+      } else {
+        return {
+          success: false,
+          message: result.error || "Failed to create pickup location",
+        };
+      }
+    } catch (error) {
+      console.error("Create vendor pickup location error:", error);
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to create pickup location",
+      };
+    }
+  }
+
+  /**
+   * Sync pickup locations for all verified vendors
+   */
+  static async syncAllVendorPickupLocations(): Promise<
+    ActionResponse<{ synced: number; errors: string[] }>
+  > {
+    try {
+      await connectToDB();
+
+      // Get all verified vendors without pickup locations
+      const vendors = await Vendor.find({
+        isVerified: true,
+        shiprocket_pickup_location_added: { $ne: true },
+      }).lean<IVendor[]>();
+
+      const results = {
+        synced: 0,
+        errors: [] as string[],
+      };
+
+      for (const vendor of vendors) {
+        try {
+          const response = await this.createVendorPickupLocation(
+            vendor._id.toString()
+          );
+          if (response.success) {
+            results.synced++;
+          } else {
+            results.errors.push(`${vendor.name}: ${response.message}`);
+          }
+        } catch (error) {
+          results.errors.push(
+            `${vendor.name}: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
+          );
+        }
+      }
+
+      return {
+        success: true,
+        message: `Synced ${results.synced} vendors, ${results.errors.length} errors`,
+        data: results,
+      };
+    } catch (error) {
+      console.error("Sync vendor pickup locations error:", error);
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to sync pickup locations",
+      };
     }
   }
 }

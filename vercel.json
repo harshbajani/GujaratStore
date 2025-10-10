@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/shiprocket/sync-status",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "functions": {
+    "app/api/shiprocket/sync-status/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}

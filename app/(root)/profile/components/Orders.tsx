@@ -211,7 +211,7 @@ const Orders = () => {
           asChild
           className="bg-brand hover:bg-brand/90"
         >
-          <Link prefetch href="/shop">
+          <Link prefetch href="/">
             Start Shopping
           </Link>
         </Button>

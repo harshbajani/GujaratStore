@@ -1,4 +1,3 @@
-
 services:
   gujarat-store:
     container_name: the-gujarat-store
@@ -18,6 +17,11 @@ services:
         - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
         - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
         - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET}
+        - SHIPROCKET_EMAIL=${SHIPROCKET_EMAIL}
+        - SHIPROCKET_PASSWORD=${SHIPROCKET_PASSWORD}
+        - SHIPROCKET_API_BASE_URL=${SHIPROCKET_API_BASE_URL}
+        - SHIPROCKET_DEFAULT_PICKUP_LOCATION=${SHIPROCKET_DEFAULT_PICKUP_LOCATION}
+        - CRON_SECRET=${CRON_SECRET}
     ports:
       - "3000:3000"
     environment:
@@ -33,6 +37,11 @@ services:
       - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
       - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
       - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET}
+      - SHIPROCKET_EMAIL=${SHIPROCKET_EMAIL}
+      - SHIPROCKET_PASSWORD=${SHIPROCKET_PASSWORD}
+      - SHIPROCKET_API_BASE_URL=${SHIPROCKET_API_BASE_URL}
+      - SHIPROCKET_DEFAULT_PICKUP_LOCATION=${SHIPROCKET_DEFAULT_PICKUP_LOCATION}
+      - CRON_SECRET=${CRON_SECRET}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
@@ -43,7 +52,15 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     restart: always
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/api/health",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3

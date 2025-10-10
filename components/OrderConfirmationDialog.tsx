@@ -24,7 +24,7 @@ const OrderConfirmationDialog = ({
 
   const handleContinueShopping = () => {
     onClose();
-    router.push("/shop");
+    router.push("/");
   };
 
   const handleViewOrderSummary = () => {

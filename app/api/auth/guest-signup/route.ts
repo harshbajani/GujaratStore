@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongodb";
 import User from "@/lib/models/user.model";
-import {
-  sendWelcomeEmail,
-  sendTemporaryPasswordEmail,
-} from "@/lib/workflows/emails";
+import { inngest } from "@/lib/inngest/client";
 
 export async function POST(request: Request) {
   try {
@@ -34,26 +31,24 @@ export async function POST(request: Request) {
       isVerified: true, // Auto-verify guest users
     });
 
-    // Send both welcome email and temporary password email
+    // Enqueue emails in background via Inngest
     try {
       await Promise.all([
-        sendWelcomeEmail({
-          email,
-          name,
-          password,
+        inngest.send({
+          name: "app/user.welcome",
+          data: { email, name },
         }),
-        sendTemporaryPasswordEmail({
-          email,
-          name,
-          password,
+        inngest.send({
+          name: "app/user.guest_password_issued",
+          data: { email, name, password },
         }),
       ]);
       console.log(
-        `Both welcome and temporary password emails sent to ${email}`
+        `Queued welcome and temporary password emails for ${email}`
       );
     } catch (emailError) {
-      console.error("Failed to send emails:", emailError);
-      // Don't fail the user creation if emails fail
+      console.error("Failed to enqueue email events:", emailError);
+      // Don't fail the user creation if enqueue fails
     }
 
     return NextResponse.json({

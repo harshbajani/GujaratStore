@@ -61,6 +61,11 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Please verify your email before signing in");
           }
 
+          // Update last login timestamp
+          try {
+            await Model.findByIdAndUpdate(account._id, { lastLoginAt: new Date() });
+          } catch {}
+
           return {
             id: account._id.toString(),
             email: account.email,
@@ -91,15 +96,43 @@ export const authOptions: NextAuthOptions = {
               googleId: user.id, // Store Google ID
               role: "user",
               isVerified: true, // Google accounts are pre-verified
+              lastLoginAt: new Date(),
             });
+
+            // Emit welcome email event for first-time Google users
+            try {
+              const { inngest } = await import("@/lib/inngest/client");
+              await inngest.send({
+                name: "app/user.welcome",
+                data: { email: dbUser.email, name: dbUser.name },
+              });
+            } catch (e) {
+              console.error("Failed to enqueue Google welcome email event:", e);
+            }
           } else if (!dbUser.googleId) {
             // If user exists but doesn't have googleId, update it
             await User.findByIdAndUpdate(dbUser._id, {
               googleId: user.id,
               isVerified: true,
+              lastLoginAt: new Date(),
             });
+
+            // Optionally send welcome email when linking Google for the first time
+            try {
+              const { inngest } = await import("@/lib/inngest/client");
+              await inngest.send({
+                name: "app/user.welcome",
+                data: { email: dbUser.email, name: dbUser.name },
+              });
+            } catch (e) {
+              console.error("Failed to enqueue Google link welcome email event:", e);
+            }
           }
 
+          // Update last login timestamp for google sign in
+          try {
+            await User.findOneAndUpdate({ email: user.email }, { lastLoginAt: new Date() });
+          } catch {}
           return true;
         } catch (error) {
           console.error("Error in Google sign in:", error);
