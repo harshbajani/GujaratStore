@@ -7,6 +7,7 @@
 import { getShiprocketSDK } from "@/lib/shiprocket";
 import { VendorService } from "@/services/vendor.service";
 import { OrdersService } from "@/services/orders.service";
+import { ShiprocketService } from "@/services/shiprocket.service";
 import User from "@/lib/models/user.model";
 import Order from "@/lib/models/order.model";
 import { connectToDB } from "@/lib/mongodb";
@@ -56,6 +57,7 @@ export async function handleShiprocketOrderCreation(
 
     await connectToDB();
     const sdk = getShiprocketSDK();
+    const shiprocketService = ShiprocketService.getInstance();
 
     // Get order details with populated product data for weight/dimensions
     const order = await OrdersService.getOrderByIdWithProducts(orderId);
@@ -94,7 +96,18 @@ export async function handleShiprocketOrderCreation(
     // - Otherwise, use default/admin pickup location
 
     let vendorData: any = null;
-    let finalPickupLocationName = null;
+    let finalPickupLocationName: string | null = null;
+
+    // For vendor orders, fetch vendor
+    if (!skipVendorValidation && orderData.items && orderData.items.length > 0) {
+      const vendorId = orderData.items[0].vendorId;
+      if (vendorId) {
+        const vendorResponse = await VendorService.getVendorById(vendorId);
+        if (vendorResponse.success && vendorResponse.data) {
+          vendorData = vendorResponse.data;
+        }
+      }
+    }
 
     if (customPickupLocation) {
       console.log(
@@ -109,34 +122,26 @@ export async function handleShiprocketOrderCreation(
         );
         finalPickupLocationName = customPickupLocation.pickup_location_name;
       } else {
-        // Admin has provided a custom pickup location - create it
+        // Admin has provided a custom pickup location - create it via backend
         console.log(
           "[Shiprocket Handler] Using admin-provided custom pickup location:",
           customPickupLocation.name
         );
 
-        // Create pickup location name for custom location with 36 character limit
-        const sanitizedName = customPickupLocation.name.replace(
-          /[^a-zA-Z0-9_]/g,
-          "_"
-        );
+        // Create pickup location name with 36 character limit
+        const sanitizedName = customPickupLocation.name.replace(/[^a-zA-Z0-9_]/g, "_");
         const timestamp = Date.now().toString().slice(-6);
         let customLocationName = `Admin_${sanitizedName}_${timestamp}`;
-
-        // Enforce 36 character limit (Shiprocket requirement)
         if (customLocationName.length > 36) {
-          const prefixLength = 6 + timestamp.length + 1; // "Admin_" + timestamp + "_"
+          const prefixLength = 6 + timestamp.length + 1;
           const maxNameLength = 36 - prefixLength;
           const truncatedName = sanitizedName.slice(0, maxNameLength);
           customLocationName = `Admin_${truncatedName}_${timestamp}`;
-
-          if (customLocationName.length > 36) {
-            customLocationName = customLocationName.slice(0, 36);
-          }
+          if (customLocationName.length > 36) customLocationName = customLocationName.slice(0, 36);
         }
 
-        // Add pickup location to Shiprocket
-        const pickupResult = await sdk.pickups.addPickupLocation({
+        // Add pickup location via backend
+        const pickupData = {
           pickup_location: customLocationName,
           name: customPickupLocation.name,
           email: customPickupLocation.email,
@@ -147,22 +152,15 @@ export async function handleShiprocketOrderCreation(
           state: customPickupLocation.state,
           country: customPickupLocation.country,
           pin_code: customPickupLocation.pin_code,
-        });
+        } as any;
 
-        if (pickupResult.success) {
+        try {
+          await shiprocketService.addPickupLocation(pickupData);
           finalPickupLocationName = customLocationName;
-          console.log(
-            "[Shiprocket Handler] Admin pickup location created successfully"
-          );
-        } else {
-          console.error(
-            "[Shiprocket Handler] Failed to create admin pickup location:",
-            pickupResult.error
-          );
-          // Fall back to default pickup location
-          finalPickupLocationName =
-            process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION ||
-            "The_Gujarat_Store_67b331ad";
+          console.log("[Shiprocket Handler] Admin pickup location created successfully");
+        } catch (e) {
+          console.error("[Shiprocket Handler] Failed to create admin pickup location:", e);
+          finalPickupLocationName = process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION || "The_Gujarat_Store_67b331ad";
         }
       }
     } else if (
@@ -170,102 +168,28 @@ export async function handleShiprocketOrderCreation(
       orderData.items.length > 0 &&
       !skipVendorValidation
     ) {
-      // Vendor order - use vendor store address
-      const vendorId = orderData.items[0].vendorId; // Use first item's vendor
-      if (vendorId) {
-        const vendorResponse = await VendorService.getVendorById(vendorId);
-        if (vendorResponse.success && vendorResponse.data) {
-          vendorData = vendorResponse.data;
-
-          // Ensure vendor has pickup location in Shiprocket
-          if (!vendorData.shiprocket_pickup_location_added) {
-            console.log(
-              "[Shiprocket Handler] Creating pickup location for vendor:",
-              vendorData.name
-            );
-            const pickupResult = await sdk.pickups.createVendorPickupLocation(
-              vendorData
-            );
-
-            if (pickupResult.success && pickupResult.location_name) {
-              // Update vendor with pickup location info
-              await VendorService.updateVendor(vendorData._id, {
-                shiprocket_pickup_location: pickupResult.location_name,
-                shiprocket_pickup_location_added: true,
-              });
-              vendorData.shiprocket_pickup_location =
-                pickupResult.location_name;
-              vendorData.shiprocket_pickup_location_added = true;
-              finalPickupLocationName = pickupResult.location_name;
-            } else {
-              console.error(
-                "[Shiprocket Handler] Failed to create pickup location:",
-                pickupResult.error
-              );
-              // Use default pickup location for vendor orders too
-              finalPickupLocationName =
-                process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION ||
-                "The_Gujarat_Store_67b331ad";
-            }
+      // Vendor order - ensure vendor pickup location via backend
+      if (vendorData) {
+        try {
+          const pickupResult = await shiprocketService.createVendorPickupLocation(vendorData);
+          if (pickupResult.success && pickupResult.location_name) {
+            // Optionally persist on vendor
+            await VendorService.updateVendor(vendorData._id, {
+              shiprocket_pickup_location: pickupResult.location_name,
+              shiprocket_pickup_location_added: true,
+            });
+            finalPickupLocationName = pickupResult.location_name;
           } else {
-            // Verify that the stored pickup location actually exists; recreate if missing
-            try {
-              const locationsResp = await sdk.pickups.getAllPickupLocations();
-              const locations = locationsResp.success
-                ? Array.isArray(locationsResp.data)
-                  ? locationsResp.data
-                  : locationsResp.data?.shipping_address ||
-                    locationsResp.data ||
-                    []
-                : [];
-              const exists = (locations || []).some((a: any) => {
-                const name =
-                  a?.pickup_location ||
-                  a?.warehouse_code ||
-                  a?.tag_value ||
-                  a?.tag;
-                return (
-                  name &&
-                  name.toString() === vendorData.shiprocket_pickup_location
-                );
-              });
-              if (!exists) {
-                const recreate = await sdk.pickups.createVendorPickupLocation(
-                  vendorData
-                );
-                if (recreate.success && recreate.location_name) {
-                  await VendorService.updateVendor(vendorData._id, {
-                    shiprocket_pickup_location: recreate.location_name,
-                    shiprocket_pickup_location_added: true,
-                  });
-                  vendorData.shiprocket_pickup_location =
-                    recreate.location_name;
-                }
-              }
-            } catch (e) {
-              console.warn(
-                "[Shiprocket Handler] Could not verify pickup locations",
-                e
-              );
-            }
-            finalPickupLocationName = vendorData.shiprocket_pickup_location;
+            finalPickupLocationName = process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION || "The_Gujarat_Store_67b331ad";
           }
-        } else {
-          // Vendor not found, use default
-          finalPickupLocationName =
-            process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION || "Default";
+        } catch (e) {
+          console.error("[Shiprocket Handler] Vendor pickup creation failed:", e);
+          finalPickupLocationName = process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION || "The_Gujarat_Store_67b331ad";
         }
-      } else {
-        // No vendor ID, use default
-        finalPickupLocationName =
-          process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION ||
-          "The_Gujarat_Store_67b331ad";
       }
     } else {
       // Admin order or skipVendorValidation - use default/admin pickup location
-      finalPickupLocationName =
-        process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION ||
-        "The_Gujarat_Store_67b331ad";
+      finalPickupLocationName = process.env.SHIPROCKET_DEFAULT_PICKUP_LOCATION || "The_Gujarat_Store_67b331ad";
     }
 
     // Create vendor data with final pickup location for formatting
@@ -285,26 +209,20 @@ export async function handleShiprocketOrderCreation(
       effectiveVendorData
     );
 
+    // If a specific pickup location was determined (custom or vendor-created), override here
+    if (finalPickupLocationName) {
+      shiprocketOrderData.pickup_location = finalPickupLocationName;
+    }
+
     console.log(
       "[Shiprocket Handler] Creating Shiprocket order with pickup location:",
       shiprocketOrderData.pickup_location
     );
 
-    // Create order in Shiprocket
-    const shiprocketResponse = await sdk.orders.createOrder(
-      shiprocketOrderData
-    );
-
-    if (!shiprocketResponse.success) {
-      return {
-        success: false,
-        error:
-          shiprocketResponse.error?.message ||
-          "Failed to create Shiprocket order",
-      };
-    }
-
-    const responseData = shiprocketResponse.data!;
+    // Create order via backend (expects raw ShiprocketOrder payload)
+    const responseData = await shiprocketService.createOrderWithContext({
+      order: shiprocketOrderData,
+    });
 
     // Update order with Shiprocket details
     await Order.findByIdAndUpdate(orderId, {
