@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { ClipboardList } from "lucide-react";
@@ -131,10 +132,10 @@ const updateOrderStatus = async (
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ 
-        status, 
+      body: JSON.stringify({
+        status,
         ...cancellationData,
-        ...(customPickupLocation && { customPickupLocation })
+        ...(customPickupLocation && { customPickupLocation }),
       }),
     });
 
@@ -192,8 +193,12 @@ const OrdersPage = () => {
   const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
-  const [pickupLocationDialogOpen, setPickupLocationDialogOpen] = useState(false);
-  const [pendingStatusChange, setPendingStatusChange] = useState<{ orderId: string; status: string } | null>(null);
+  const [pickupLocationDialogOpen, setPickupLocationDialogOpen] =
+    useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    orderId: string;
+    status: string;
+  } | null>(null);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -399,9 +404,11 @@ const OrdersPage = () => {
       if (pickupLocationName && !pickupLocationData) {
         // When using existing location, we don't need to create a new one
         // Just pass the location name to the handler
-        customPickupLocation = { pickup_location_name: pickupLocationName } as any;
+        customPickupLocation = {
+          pickup_location_name: pickupLocationName,
+        } as any;
       }
-      
+
       const response = await updateOrderStatus(
         pendingStatusChange.orderId,
         pendingStatusChange.status,

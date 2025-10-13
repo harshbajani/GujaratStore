@@ -83,16 +83,17 @@ export async function updateStore(data: StoreData) {
       { new: true }
     ).lean();
 
-    // Ensure Shiprocket pickup location exists (or recreate) after updating store
+    // Force update Shiprocket pickup location after store changes
     try {
       if (updatedVendor && !Array.isArray(updatedVendor) && updatedVendor._id) {
+        console.log('[Store] Store updated - forcing pickup location update in Shiprocket');
         const { VendorService } = await import("@/services/vendor.service");
-        await VendorService.createVendorPickupLocation(
+        await VendorService.updateVendorPickupLocation(
           updatedVendor._id.toString()
         );
       }
     } catch (e) {
-      console.warn("[Store] Failed to ensure pickup location after update:", e);
+      console.warn("[Store] Failed to update pickup location after store update:", e);
     }
 
     if (

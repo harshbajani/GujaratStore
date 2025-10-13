@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse, NextRequest } from "next/server";
 import { updateOrderFromWebhook } from "@/lib/handlers/shiprocket-order.handler";
-import { sendShippingNotificationEmail } from "@/lib/workflows/emails/shipping/shippingEmails";
+
+const BACKEND_URL = process.env.SHIPROCKET_BACKEND_URL || "http://localhost:8000";
 
 // Shiprocket webhook payload interface
 interface ShiprocketWebhookPayload {
@@ -45,8 +46,19 @@ export async function POST(request: NextRequest) {
       })),
     };
 
-    // Use the handler to update the order
+    // Process webhook in our database
     const result = await updateOrderFromWebhook(webhookData);
+
+    // Also notify the backend (optional - for consistency)
+    try {
+      await fetch(`${BACKEND_URL}/shiprocket/webhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (backendError) {
+      console.warn('[Webhook] Backend notification failed:', backendError);
+    }
 
     if (!result.success) {
       return NextResponse.json(

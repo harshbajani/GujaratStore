@@ -441,6 +441,63 @@ export class VendorService {
   }
 
   /**
+   * Update pickup location for vendor in Shiprocket (forces update)
+   */
+  static async updateVendorPickupLocation(
+    vendorId: string
+  ): Promise<ActionResponse<{ location_name: string }>> {
+    try {
+      const vendorResponse = await this.getVendorById(vendorId);
+      if (!vendorResponse.success || !vendorResponse.data) {
+        return {
+          success: false,
+          message: "Vendor not found",
+        };
+      }
+
+      const vendor = vendorResponse.data;
+      const oldLocationName = vendor.shiprocket_pickup_location;
+      console.log(`[VendorService] Force updating pickup location for vendor: ${vendor.name}`);
+      console.log(`[VendorService] Old pickup location: ${oldLocationName}`);
+
+      // Import ShiprocketService dynamically to avoid circular dependency
+      const { ShiprocketService } = await import("./shiprocket.service");
+      const shiprocketService = ShiprocketService.getInstance();
+
+      // Use fresh vendor data (with updated store information) to update pickup location
+      const result = await shiprocketService.updateVendorPickupLocation(vendor, oldLocationName);
+
+      if (result.success && result.location_name) {
+        // Update vendor with new pickup location info
+        await this.updateVendor(vendorId, {
+          shiprocket_pickup_location: result.location_name,
+          shiprocket_pickup_location_added: true,
+        });
+
+        return {
+          success: true,
+          message: "Pickup location updated successfully",
+          data: { location_name: result.location_name },
+        };
+      } else {
+        return {
+          success: false,
+          message: result.error || "Failed to update pickup location",
+        };
+      }
+    } catch (error) {
+      console.error("Update vendor pickup location error:", error);
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to update pickup location",
+      };
+    }
+  }
+
+  /**
    * Create pickup location for vendor in Shiprocket
    */
   static async createVendorPickupLocation(
