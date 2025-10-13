@@ -2,15 +2,18 @@ import { NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongodb";
 import Order from "@/lib/models/order.model";
 
+const BACKEND_URL = process.env.SHIPROCKET_BACKEND_URL || "http://localhost:8000";
+
 export async function POST(request: Request) {
   try {
+    const body = await request.json();
     const {
       orderId,
       courierName,
       shippingRate,
       estimatedDelivery,
       rateDetails,
-    } = await request.json();
+    } = body;
 
     // Basic validation
     if (!orderId || !courierName || !shippingRate) {
@@ -23,9 +26,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // First update the order in our database
     await connectToDB();
-
-    // Find the order
+    
     const order = await Order.findById(orderId);
     if (!order) {
       return NextResponse.json(
@@ -59,8 +62,19 @@ export async function POST(request: Request) {
     }
 
     await Order.findByIdAndUpdate(orderId, updateData);
-
     console.log(`[Apply Rate] Applied ${courierName} rate of ₹${shippingRate} to order ${order.orderId}`);
+
+    // Also notify the backend (optional - for consistency)
+    try {
+      await fetch(`${BACKEND_URL}/shiprocket/apply-rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    } catch (backendError) {
+      console.warn('[Apply Rate] Backend notification failed:', backendError);
+      // Don't fail the request if backend notification fails
+    }
 
     return NextResponse.json({
       success: true,

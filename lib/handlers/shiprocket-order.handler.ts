@@ -4,7 +4,6 @@
  * Handles Shiprocket order creation and management
  */
 
-import { getShiprocketSDK } from "@/lib/shiprocket";
 import { VendorService } from "@/services/vendor.service";
 import { OrdersService } from "@/services/orders.service";
 import { ShiprocketService } from "@/services/shiprocket.service";
@@ -56,7 +55,6 @@ export async function handleShiprocketOrderCreation(
     console.log(`[Shiprocket Handler] Processing order: ${orderId}`);
 
     await connectToDB();
-    const sdk = getShiprocketSDK();
     const shiprocketService = ShiprocketService.getInstance();
 
     // Get order details with populated product data for weight/dimensions
@@ -201,8 +199,8 @@ export async function handleShiprocketOrderCreation(
         }
       : null;
 
-    // Format order for Shiprocket
-    const shiprocketOrderData = sdk.orders.formatOrderForShiprocket(
+    // Format order for Shiprocket using the service
+    const shiprocketOrderData = shiprocketService.formatOrderForShiprocket(
       orderData,
       address,
       user,
@@ -270,7 +268,7 @@ export async function updateOrderFromWebhook(
     console.log("[Shiprocket Handler] Processing webhook data:", webhookData);
 
     await connectToDB();
-    const sdk = getShiprocketSDK();
+    const shiprocketService = ShiprocketService.getInstance();
 
     const {
       order_id,
@@ -294,7 +292,7 @@ export async function updateOrderFromWebhook(
     }
 
     // Map Shiprocket status to system status
-    const systemStatus = sdk.orders.mapStatusToSystem(current_status);
+    const systemStatus = shiprocketService.mapStatusToSystem(current_status);
 
     // Update order with new information
     const updateData: any = {

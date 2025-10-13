@@ -177,10 +177,10 @@ const ShiprocketPriceCalculator: React.FC<ShiprocketPriceCalculatorProps> = ({
 
       const data = await response.json();
 
-      if (data.success && data.rates) {
+      if (data.success && data.data && data.data.rates) {
         setCalculator((prev) => ({
           ...prev,
-          rates: data.rates,
+          rates: data.data.rates,
           isLoading: false,
         }));
       } else {
