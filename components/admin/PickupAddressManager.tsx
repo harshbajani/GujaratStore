@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { RegionDropdown } from "react-country-region-selector";
 import {
   Dialog,
   DialogContent,
@@ -113,9 +114,17 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
           addresses = inner.shipping_address;
         } else if (Array.isArray(outer?.shipping_address)) {
           addresses = outer.shipping_address;
-        } else if (outer && typeof outer === "object" && outer.pickup_location) {
+        } else if (
+          outer &&
+          typeof outer === "object" &&
+          outer.pickup_location
+        ) {
           addresses = [outer];
-        } else if (inner && typeof inner === "object" && inner.pickup_location) {
+        } else if (
+          inner &&
+          typeof inner === "object" &&
+          inner.pickup_location
+        ) {
           addresses = [inner];
         } else if (Array.isArray(inner)) {
           addresses = inner;
@@ -130,9 +139,17 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
         // - a.address_2 = actual city
         // - a.city = actual address line 2/locality
         const locations: PickupLocation[] = addresses.map((a: any) => ({
-          id: a.id ?? a.address_id ?? a.rto_address_id ?? Math.floor(Math.random() * 1e9),
+          id:
+            a.id ??
+            a.address_id ??
+            a.rto_address_id ??
+            Math.floor(Math.random() * 1e9),
           pickup_location:
-            a.pickup_location ?? a.warehouse_code ?? a.tag_value ?? a.tag ?? "Unknown",
+            a.pickup_location ??
+            a.warehouse_code ??
+            a.tag_value ??
+            a.tag ??
+            "Unknown",
           name: a.name ?? a.vendor_name ?? a.company_name ?? "",
           email: a.email ?? "",
           phone: a.phone ?? a.alternate_phone ?? "",
@@ -142,9 +159,15 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
           state: a.state ?? "",
           country: a.country ?? "India",
           pin_code: (a.pin_code ?? "").toString(),
-          phone_verified: Boolean(a.phone_verified === 1 || a.phone_verified === true),
-          email_verified: Boolean(a.email_verified === 1 || a.email_verified === true),
-          is_default: Boolean(a.is_primary_location === 1 || a.is_default === true),
+          phone_verified: Boolean(
+            a.phone_verified === 1 || a.phone_verified === true
+          ),
+          email_verified: Boolean(
+            a.email_verified === 1 || a.email_verified === true
+          ),
+          is_default: Boolean(
+            a.is_primary_location === 1 || a.is_default === true
+          ),
           created_at: a.created_at ?? "",
           updated_at: a.updated_at ?? "",
         }));
@@ -173,6 +196,25 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
   };
 
   const handleCreateLocation = async () => {
+    // Client-side validation and sanitation for Shiprocket requirements
+    const sanitizeAddressLine1 = (line1: string): string => {
+      if (!line1) return "";
+      let s = line1.trim();
+      s = s
+        .replace(/\bMarg\b/gi, "Road")
+        .replace(/\bRd\.?\b/gi, "Road")
+        .replace(/\bSt\.?\b/gi, "Street");
+      const hasKeyword = /(house|flat|plot|block|road|street|no\.?)/i.test(s);
+      if (!hasKeyword) {
+        const m = s.match(/\b(\d+[A-Za-z\-\/]*)\b/);
+        if (m) s = `House No. ${m[1]}, ${s}`;
+        else s = `House No. 1, ${s}`;
+      }
+      return s.substring(0, 120);
+    };
+
+    const cleanedPin = (formData.pin_code || "").replace(/\D/g, "").slice(0, 6);
+
     if (
       !formData.pickup_location ||
       !formData.name ||
@@ -181,15 +223,24 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
       !formData.address ||
       !formData.city ||
       !formData.state ||
-      !formData.pin_code
+      cleanedPin.length !== 6
     ) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description:
+          cleanedPin.length !== 6
+            ? "PIN code must be 6 digits"
+            : "Please fill in all required fields",
         variant: "destructive",
       });
       return;
     }
+
+    const payload = {
+      ...formData,
+      address: sanitizeAddressLine1(formData.address),
+      pin_code: cleanedPin,
+    };
 
     setIsCreating(true);
     try {
@@ -200,7 +251,7 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
         },
         body: JSON.stringify({
           action: "create-admin",
-          ...formData,
+          ...payload,
         }),
       });
 
@@ -211,12 +262,12 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
           title: "Success",
           description: "Pickup location created successfully!",
         });
-        
+
         // Notify parent component about the new location
         if (onLocationCreated) {
           onLocationCreated(formData.pickup_location);
         }
-        
+
         setShowCreateDialog(false);
         setFormData({
           pickup_location: "",
@@ -282,22 +333,23 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
                   <SelectValue placeholder="Choose pickup location..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.isArray(pickupLocations) && pickupLocations.map((location) => (
-                    <SelectItem
-                      key={location.id}
-                      value={location.pickup_location}
-                    >
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <span>{location.pickup_location}</span>
-                        {location.is_default && (
-                          <Badge variant="secondary" className="text-xs">
-                            Default
-                          </Badge>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {Array.isArray(pickupLocations) &&
+                    pickupLocations.map((location) => (
+                      <SelectItem
+                        key={location.id}
+                        value={location.pickup_location}
+                      >
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          <span>{location.pickup_location}</span>
+                          {location.is_default && (
+                            <Badge variant="secondary" className="text-xs">
+                              Default
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
 
@@ -333,7 +385,9 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
                   disabled={isLoading}
                 >
                   <RefreshCw
-                    className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+                    className={`h-4 w-4 mr-2 ${
+                      isLoading ? "animate-spin" : ""
+                    }`}
                   />
                   Refresh
                 </Button>
@@ -355,7 +409,8 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
                   <p>Loading pickup locations...</p>
                 </div>
-              ) : Array.isArray(pickupLocations) && pickupLocations.length > 0 ? (
+              ) : Array.isArray(pickupLocations) &&
+                pickupLocations.length > 0 ? (
                 <div className="space-y-3">
                   {pickupLocations.map((location) => (
                     <div
@@ -410,7 +465,9 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
                             <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
                             <div>
                               <p>{location.address}</p>
-                              {location.address_2 && <p>{location.address_2}</p>}
+                              {location.address_2 && (
+                                <p>{location.address_2}</p>
+                              )}
                               <p>
                                 {location.city}, {location.state}{" "}
                                 {location.pin_code}
@@ -427,7 +484,9 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
                 <div className="text-center py-8 text-gray-500">
                   <Building className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No pickup locations found</p>
-                  <p className="text-sm">Create your first pickup location to get started</p>
+                  <p className="text-sm">
+                    Create your first pickup location to get started
+                  </p>
                 </div>
               )}
             </div>
@@ -444,9 +503,7 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="pickup_location">
-                  Pickup Location Name *
-                </Label>
+                <Label htmlFor="pickup_location">Pickup Location Name *</Label>
                 <Input
                   id="pickup_location"
                   value={formData.pickup_location}
@@ -515,7 +572,7 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
               <div>
                 <Label htmlFor="city">City *</Label>
                 <Input
@@ -528,12 +585,12 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
               </div>
               <div>
                 <Label htmlFor="state">State *</Label>
-                <Input
-                  id="state"
+                <RegionDropdown
+                  country={"India"}
                   value={formData.state}
-                  onChange={(e) => handleInputChange("state", e.target.value)}
-                  placeholder="Maharashtra"
-                  className="mt-1"
+                  onChange={(val: string) => handleInputChange("state", val)}
+                  defaultOptionLabel="Select a state"
+                  className="w-full px-2 py-2 rounded-lg border border-input bg-white text-sm"
                 />
               </div>
               <div>
@@ -555,7 +612,9 @@ const PickupAddressManager: React.FC<PickupAddressManagerProps> = ({
                 <Input
                   id="pin_code"
                   value={formData.pin_code}
-                  onChange={(e) => handleInputChange("pin_code", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("pin_code", e.target.value)
+                  }
                   placeholder="400001"
                   className="mt-1"
                 />

@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { VendorService } from "@/services/vendor.service";
-import { getShiprocketSDK } from "@/lib/shiprocket";
+
+const BACKEND_URL =
+  process.env.SHIPROCKET_BACKEND_URL || "http://localhost:8000";
 
 export async function GET(request: Request) {
   try {
@@ -8,15 +11,13 @@ export async function GET(request: Request) {
     const action = searchParams.get("action");
 
     if (action === "list") {
-      // Get all pickup locations from Shiprocket
-      const sdk = getShiprocketSDK();
-      const response = await sdk.pickups.getAllPickupLocations();
+      // Proxy to backend
+      const response = await fetch(
+        `${BACKEND_URL}/shiprocket/pickup-locations?action=list`
+      );
+      const data = await response.json();
 
-      return NextResponse.json({
-        success: response.success,
-        data: response.data,
-        error: response.error?.message,
-      });
+      return NextResponse.json(data, { status: response.status });
     }
 
     return NextResponse.json(
@@ -37,7 +38,20 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { action, vendorId, pickup_location, name, email, phone, address, address_2, city, state, country, pin_code } = await request.json();
+    const {
+      action,
+      vendorId,
+      pickup_location,
+      name,
+      email,
+      phone,
+      address,
+      address_2,
+      city,
+      state,
+      country,
+      pin_code,
+    } = await request.json();
 
     if (action === "create") {
       if (!vendorId) {
@@ -48,7 +62,7 @@ export async function POST(request: Request) {
       }
 
       const result = await VendorService.createVendorPickupLocation(vendorId);
-      
+
       if (result.success) {
         return NextResponse.json({
           success: true,
@@ -64,78 +78,35 @@ export async function POST(request: Request) {
     }
 
     if (action === "create-admin") {
-      // Admin creating a custom pickup location
-      if (!pickup_location || !name || !email || !phone || !address || !city || !state || !country || !pin_code) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            message: "Missing required fields: pickup_location, name, email, phone, address, city, state, country, pin_code" 
-          },
-          { status: 400 }
-        );
-      }
-
-      const sdk = getShiprocketSDK();
-      const token = await sdk.auth.getToken();
-      
-      if (!token) {
-        return NextResponse.json(
-          { success: false, message: "Authentication failed" },
-          { status: 401 }
-        );
-      }
-
-      console.log("[Admin Pickup] Creating new pickup location:", pickup_location);
-
-      // Call Shiprocket API to create pickup location
-      const response = await sdk.http.post(
-        "/settings/company/addpickup",
+      // Proxy to backend for admin pickup location creation
+      const response = await fetch(
+        `${BACKEND_URL}/shiprocket/pickup-locations`,
         {
-          pickup_location,
-          name,
-          email,
-          phone,
-          address,
-          address_2: address_2 || '',
-          city,
-          state,
-          country,
-          pin_code: pin_code.toString()
-        },
-        token
-      );
-
-      if (response.success) {
-        return NextResponse.json({
-          success: true,
-          message: "Pickup location created successfully",
-          data: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "create-admin",
             pickup_location,
             name,
             email,
             phone,
             address,
+            address_2,
             city,
             state,
             country,
-            pin_code
-          }
-        });
-      } else {
-        console.error("[Admin Pickup] Create API Error:", response.error);
-        return NextResponse.json(
-          { 
-            success: false, 
-            message: response.error?.message || "Failed to create pickup location" 
-          },
-          { status: 400 }
-        );
-      }
+            pin_code,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      return NextResponse.json(data, { status: response.status });
     }
 
     if (action === "sync-all") {
       const result = await VendorService.syncAllVendorPickupLocations();
-      
+
       return NextResponse.json({
         success: result.success,
         message: result.message,

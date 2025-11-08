@@ -13,6 +13,7 @@ import {
   Package,
   Truck,
   ClipboardList,
+  FileDown,
 } from "lucide-react";
 import { withVendorProtection } from "@/app/vendor/HOC";
 import {
@@ -57,6 +58,7 @@ const ViewOrderPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
 
   const { order, loading, fetchOrder } = useOrder(orderId);
   const { address } = useShippingAddress(order?.addressId);
@@ -208,6 +210,59 @@ const ViewOrderPage = () => {
     }
   };
 
+  const handleDownloadInvoice = async () => {
+    if (!order?.shipping?.shiprocket_order_id) {
+      toast({
+        title: "Error",
+        description:
+          "Shiprocket order ID not found. Invoice can only be downloaded for orders that have been shipped.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDownloadingInvoice(true);
+    try {
+      const response = await fetch("/api/admin/shiprocket/invoice/download", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ids: [order.shipping.shiprocket_order_id.toString()],
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to download invoice");
+      }
+
+      if (data.data?.invoice_url) {
+        // Open invoice URL in new tab for download
+        window.open(data.data.invoice_url, "_blank");
+        toast({
+          title: "Success",
+          description: "Invoice downloaded successfully!",
+          variant: "default",
+        });
+      } else {
+        throw new Error("Invoice URL not found in response");
+      }
+    } catch (error) {
+      console.error("Error downloading invoice:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to download invoice",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingInvoice(false);
+    }
+  };
+
   if (loading) {
     return <Loader />;
   }
@@ -312,6 +367,20 @@ const ViewOrderPage = () => {
                   >
                     Cancel
                   </Button>
+                  {order.shipping?.shiprocket_order_id && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      onClick={handleDownloadInvoice}
+                      disabled={isDownloadingInvoice}
+                    >
+                      <FileDown className="h-4 w-4 mr-2" />
+                      {isDownloadingInvoice
+                        ? "Downloading..."
+                        : "Download Invoice"}
+                    </Button>
+                  )}
                 </div>
               </div>
               <div className="flex-1">
